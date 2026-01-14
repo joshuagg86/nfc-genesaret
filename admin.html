@@ -305,7 +305,7 @@
                 window.location.href = 'index.html';
             } else {
                 document.getElementById('userName').textContent = localStorage.getItem('userName') || 'Admin';
-                loadEventos();
+                cargarEventos();
             }
         });
 
@@ -352,7 +352,7 @@
                 document.getElementById('eventName').value = '';
                 document.getElementById('eventDesc').value = '';
                 document.getElementById('eventDate').value = '';
-                loadEventos();
+                cargarEventos();
             }).catch(error => alert('Error: ' + error.message));
         }
 
@@ -360,7 +360,7 @@
             if (confirm('¿Estás seguro?')) {
                 db.collection('eventos').doc(eventId).delete().then(() => {
                     showSuccess('Evento eliminado');
-                    loadEventos();
+                    cargarEventos();
                 });
             }
         }
