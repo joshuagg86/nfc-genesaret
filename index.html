@@ -358,45 +358,27 @@
 
             auth.signInWithEmailAndPassword(email, password)
                 .then(userCredential => {
-                    // Guardar datos de sesión
+                    // Guardar datos de sesión inmediatamente
                     localStorage.setItem('userId', userCredential.user.uid);
                     localStorage.setItem('userEmail', email);
                     localStorage.setItem('userRole', role);
+                    localStorage.setItem('userName', email.split('@')[0]); // Usar parte del email como nombre por defecto
                     
-                    // Obtener nombre del usuario
-                    db.collection('usuarios').doc(userCredential.user.uid).get()
-                        .then(doc => {
-                            if (doc.exists) {
-                                const userName = doc.data().name || email.split('@')[0];
-                                localStorage.setItem('userName', userName);
-                            } else {
-                                localStorage.setItem('userName', email.split('@')[0]);
-                            }
-                            
-                            showLoading(false);
-                            // Redirigir según rol
-                            if (role === 'admin') {
-                                window.location.href = 'admin.html';
-                            } else {
-                                window.location.href = 'vendedor.html';
-                            }
-                        })
-                        .catch(error => {
-                            console.log('Error al obtener datos:', error);
-                            showLoading(false);
-                            // Igualmente redirigir
-                            localStorage.setItem('userName', email.split('@')[0]);
-                            if (role === 'admin') {
-                                window.location.href = 'admin.html';
-                            } else {
-                                window.location.href = 'vendedor.html';
-                            }
-                        });
+                    showLoading(false);
+                    
+                    // Redirigir según rol
+                    setTimeout(() => {
+                        if (role === 'admin') {
+                            window.location.href = 'admin.html';
+                        } else {
+                            window.location.href = 'vendedor.html';
+                        }
+                    }, 500);
                 })
                 .catch(error => {
                     showLoading(false);
                     if (error.code === 'auth/user-not-found') {
-                        showError('Usuario no encontrado. ¿Quizás no te has registrado?');
+                        showError('Usuario no encontrado. Regístrate primero');
                     } else if (error.code === 'auth/wrong-password') {
                         showError('Contraseña incorrecta');
                     } else if (error.code === 'auth/invalid-email') {
@@ -431,28 +413,31 @@
 
             showLoading(true);
 
+            // Primero crear el usuario en Authentication
             auth.createUserWithEmailAndPassword(email, password)
                 .then(userCredential => {
-                    // Guardar datos en Firestore
-                    return db.collection('usuarios').doc(userCredential.user.uid).set({
+                    // Luego guardar datos en Firestore (sin esperar a que termine)
+                    db.collection('usuarios').doc(userCredential.user.uid).set({
                         name: name,
                         email: email,
                         role: role,
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        createdAt: new Date(),
                         activo: true
-                    }).then(() => {
-                        showLoading(false);
-                        showError('✅ Cuenta creada. Ahora inicia sesión');
-                        setTimeout(() => {
-                            toggleForms();
-                            document.getElementById('loginEmail').value = email;
-                            document.getElementById('loginPassword').value = '';
-                            document.getElementById('registerName').value = '';
-                            document.getElementById('registerEmail').value = '';
-                            document.getElementById('registerPassword').value = '';
-                            document.getElementById('registerConfirm').value = '';
-                        }, 1500);
-                    });
+                    }).catch(err => console.log('Error guardando en Firestore:', err));
+                    
+                    // Sin esperar, mostrar éxito y cambiar a login
+                    showLoading(false);
+                    showError('✅ Cuenta creada exitosamente. Inicia sesión');
+                    
+                    setTimeout(() => {
+                        toggleForms();
+                        document.getElementById('loginEmail').value = email;
+                        document.getElementById('loginPassword').value = '';
+                        document.getElementById('registerName').value = '';
+                        document.getElementById('registerEmail').value = '';
+                        document.getElementById('registerPassword').value = '';
+                        document.getElementById('registerConfirm').value = '';
+                    }, 1500);
                 })
                 .catch(error => {
                     showLoading(false);
