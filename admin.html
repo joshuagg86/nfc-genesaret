@@ -231,7 +231,7 @@
                         <label>Fecha</label>
                         <input type="date" id="eventDate">
                     </div>
-                    <button class="btn-primary" onclick="createEvent()" style="width: 100%;">Crear Evento</button>
+                    <button class="btn-primary" onclick="crearEvento()" style="width: 100%;">Crear Evento</button>
                 </div>
 
                 <div class="card">
@@ -248,7 +248,7 @@
                     <h3>➕ Agregar Artículo</h3>
                     <div class="form-group">
                         <label>Evento</label>
-                        <select id="articuloEvento" onchange="loadArticulos()"></select>
+                        <select id="articuloEvento" onchange="cargarArticulos()"></select>
                     </div>
                     <div class="form-group">
                         <label>Nombre del Artículo</label>
@@ -258,7 +258,7 @@
                         <label>Precio ($)</label>
                         <input type="number" id="articuloPrice" placeholder="0.00" min="0" step="0.01">
                     </div>
-                    <button class="btn-primary" onclick="addArticulo()" style="width: 100%;">Agregar Artículo</button>
+                    <button class="btn-primary" onclick="agregarArticulo()" style="width: 100%;">Agregar Artículo</button>
                 </div>
 
                 <div class="card">
@@ -330,7 +330,7 @@
             setTimeout(() => alert.classList.remove('show'), 3000);
         }
 
-        function createEvent() {
+        function crearEvento() {
             const name = document.getElementById('eventName').value.trim();
             const desc = document.getElementById('eventDesc').value.trim();
             const date = document.getElementById('eventDate').value;
@@ -356,7 +356,7 @@
             }).catch(error => alert('Error: ' + error.message));
         }
 
-        function deleteEvent(eventId) {
+        function eliminarEvento(eventId) {
             if (confirm('¿Estás seguro?')) {
                 db.collection('eventos').doc(eventId).delete().then(() => {
                     showSuccess('Evento eliminado');
@@ -365,7 +365,7 @@
             }
         }
 
-        function loadEventos() {
+        function cargarEventos() {
             db.collection('eventos')
                 .where('adminId', '==', currentUserId)
                 .orderBy('createdAt', 'desc')
@@ -382,7 +382,7 @@
                                 <td>${evento.nombre}</td>
                                 <td>${fecha}</td>
                                 <td>
-                                    <button class="btn-danger" onclick="deleteEvent('${doc.id}')" style="padding: 4px 8px; font-size: 11px;">Eliminar</button>
+                                    <button class="btn-danger" onclick="eliminarEvento('${doc.id}')" style="padding: 4px 8px; font-size: 11px;">Eliminar</button>
                                 </td>
                             </tr>
                         `;
@@ -395,7 +395,7 @@
                 });
         }
 
-        function addArticulo() {
+        function agregarArticulo() {
             const eventId = document.getElementById('articuloEvento').value;
             const name = document.getElementById('articuloName').value.trim();
             const price = parseFloat(document.getElementById('articuloPrice').value);
@@ -414,17 +414,17 @@
                 showSuccess('✅ Artículo agregado');
                 document.getElementById('articuloName').value = '';
                 document.getElementById('articuloPrice').value = '';
-                loadArticulos();
+                cargarArticulos();
             }).catch(error => alert('Error: ' + error.message));
         }
 
-        function deleteArticulo(articuloId) {
+        function eliminarArticulo(articuloId) {
             if (confirm('¿Eliminar?')) {
                 db.collection('articulos').doc(articuloId).delete();
             }
         }
 
-        function loadArticulos() {
+        function cargarArticulos() {
             const eventId = document.getElementById('articuloEvento').value;
             if (!eventId) {
                 document.getElementById('articulosList').innerHTML = '<p style="color: #94a3b8; font-size: 13px;">Selecciona un evento</p>';
@@ -443,7 +443,7 @@
                                 <td>${art.nombre}</td>
                                 <td>$${art.precio.toFixed(2)}</td>
                                 <td>
-                                    <button class="btn-danger" onclick="deleteArticulo('${doc.id}')" style="padding: 4px 8px; font-size: 11px;">Eliminar</button>
+                                    <button class="btn-danger" onclick="eliminarArticulo('${doc.id}')" style="padding: 4px 8px; font-size: 11px;">Eliminar</button>
                                 </td>
                             </tr>
                         `;
