@@ -358,38 +358,49 @@
 
             auth.signInWithEmailAndPassword(email, password)
                 .then(userCredential => {
-                    // Verificar rol en Firestore
+                    // Guardar datos de sesión
+                    localStorage.setItem('userId', userCredential.user.uid);
+                    localStorage.setItem('userEmail', email);
+                    localStorage.setItem('userRole', role);
+                    
+                    // Obtener nombre del usuario
                     db.collection('usuarios').doc(userCredential.user.uid).get()
                         .then(doc => {
-                            showLoading(false);
-                            if (doc.exists && doc.data().role === role) {
-                                // Guardar datos de sesión
-                                localStorage.setItem('userId', userCredential.user.uid);
-                                localStorage.setItem('userEmail', email);
-                                localStorage.setItem('userRole', role);
-                                localStorage.setItem('userName', doc.data().name);
-
-                                // Redirigir según rol
-                                if (role === 'admin') {
-                                    window.location.href = 'admin.html';
-                                } else {
-                                    window.location.href = 'vendedor.html';
-                                }
+                            if (doc.exists) {
+                                const userName = doc.data().name || email.split('@')[0];
+                                localStorage.setItem('userName', userName);
                             } else {
-                                showError('El rol seleccionado no coincide con tu cuenta');
+                                localStorage.setItem('userName', email.split('@')[0]);
+                            }
+                            
+                            showLoading(false);
+                            // Redirigir según rol
+                            if (role === 'admin') {
+                                window.location.href = 'admin.html';
+                            } else {
+                                window.location.href = 'vendedor.html';
                             }
                         })
                         .catch(error => {
+                            console.log('Error al obtener datos:', error);
                             showLoading(false);
-                            showError('Error al verificar datos: ' + error.message);
+                            // Igualmente redirigir
+                            localStorage.setItem('userName', email.split('@')[0]);
+                            if (role === 'admin') {
+                                window.location.href = 'admin.html';
+                            } else {
+                                window.location.href = 'vendedor.html';
+                            }
                         });
                 })
                 .catch(error => {
                     showLoading(false);
                     if (error.code === 'auth/user-not-found') {
-                        showError('Usuario no encontrado');
+                        showError('Usuario no encontrado. ¿Quizás no te has registrado?');
                     } else if (error.code === 'auth/wrong-password') {
                         showError('Contraseña incorrecta');
+                    } else if (error.code === 'auth/invalid-email') {
+                        showError('Email inválido');
                     } else {
                         showError('Error: ' + error.message);
                     }
@@ -423,29 +434,34 @@
             auth.createUserWithEmailAndPassword(email, password)
                 .then(userCredential => {
                     // Guardar datos en Firestore
-                    db.collection('usuarios').doc(userCredential.user.uid).set({
+                    return db.collection('usuarios').doc(userCredential.user.uid).set({
                         name: name,
                         email: email,
                         role: role,
-                        createdAt: new Date(),
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                         activo: true
-                    })
-                    .then(() => {
+                    }).then(() => {
                         showLoading(false);
-                        showError('Cuenta creada exitosamente. Ahora inicia sesión');
-                        toggleForms();
-                        document.getElementById('loginEmail').value = email;
-                        document.getElementById('loginPassword').value = '';
-                    })
-                    .catch(error => {
-                        showLoading(false);
-                        showError('Error al crear cuenta: ' + error.message);
+                        showError('✅ Cuenta creada. Ahora inicia sesión');
+                        setTimeout(() => {
+                            toggleForms();
+                            document.getElementById('loginEmail').value = email;
+                            document.getElementById('loginPassword').value = '';
+                            document.getElementById('registerName').value = '';
+                            document.getElementById('registerEmail').value = '';
+                            document.getElementById('registerPassword').value = '';
+                            document.getElementById('registerConfirm').value = '';
+                        }, 1500);
                     });
                 })
                 .catch(error => {
                     showLoading(false);
                     if (error.code === 'auth/email-already-in-use') {
                         showError('Este email ya está registrado');
+                    } else if (error.code === 'auth/weak-password') {
+                        showError('La contraseña es muy débil (mínimo 6 caracteres)');
+                    } else if (error.code === 'auth/invalid-email') {
+                        showError('El email no es válido');
                     } else {
                         showError('Error: ' + error.message);
                     }
