@@ -82,6 +82,7 @@
 
         input[type="email"],
         input[type="password"],
+        input[type="text"],
         select {
             width: 100%;
             padding: 12px 16px;
@@ -93,8 +94,7 @@
             transition: all 0.3s ease;
         }
 
-        input[type="email"]:focus,
-        input[type="password"]:focus,
+        input:focus,
         select:focus {
             outline: none;
             border-color: #f59e0b;
@@ -138,15 +138,9 @@
             box-shadow: 0 10px 25px rgba(245, 158, 11, 0.3);
         }
 
-        .btn-secondary {
-            background: rgba(148, 163, 184, 0.1);
-            color: #e2e8f0;
-            border: 1px solid rgba(148, 163, 184, 0.3);
-        }
-
-        .btn-secondary:hover {
-            background: rgba(148, 163, 184, 0.2);
-            border-color: rgba(148, 163, 184, 0.5);
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
 
         .error {
@@ -161,6 +155,21 @@
         }
 
         .error.show {
+            display: block;
+        }
+
+        .success {
+            background: rgba(34, 197, 94, 0.1);
+            color: #86efac;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #22c55e;
+            font-size: 13px;
+            display: none;
+        }
+
+        .success.show {
             display: block;
         }
 
@@ -189,17 +198,12 @@
             display: block;
         }
 
-        .divider {
-            height: 1px;
-            background: rgba(148, 163, 184, 0.2);
-            margin: 30px 0;
-        }
-
         .loading {
             display: none;
             text-align: center;
             color: #94a3b8;
             font-size: 13px;
+            margin-top: 15px;
         }
 
         .spinner {
@@ -232,8 +236,8 @@
             </div>
 
             <div class="error" id="error"></div>
+            <div class="success" id="success"></div>
 
-            <!-- Formulario de Login -->
             <div class="form-section active" id="loginForm">
                 <div class="form-group">
                     <label for="loginEmail">Email</label>
@@ -253,14 +257,13 @@
                     </select>
                 </div>
 
-                <button class="btn-primary" onclick="login()">Iniciar Sesión</button>
+                <button class="btn-primary" onclick="window.handleLogin()">Iniciar Sesión</button>
 
                 <div class="toggle-form">
-                    ¿No tienes cuenta? <a onclick="toggleForms()">Regístrate aquí</a>
+                    ¿No tienes cuenta? <a onclick="window.handleToggleForms()">Regístrate aquí</a>
                 </div>
             </div>
 
-            <!-- Formulario de Registro -->
             <div class="form-section" id="registerForm">
                 <div class="form-group">
                     <label for="registerName">Nombre Completo</label>
@@ -290,10 +293,10 @@
                     </select>
                 </div>
 
-                <button class="btn-primary" onclick="register()">Crear Cuenta</button>
+                <button class="btn-primary" onclick="window.handleRegister()">Crear Cuenta</button>
 
                 <div class="toggle-form">
-                    ¿Ya tienes cuenta? <a onclick="toggleForms()">Inicia sesión aquí</a>
+                    ¿Ya tienes cuenta? <a onclick="window.handleToggleForms()">Inicia sesión aquí</a>
                 </div>
             </div>
 
@@ -304,26 +307,23 @@
         </div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js"></script>
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
+        import { getFirestore, collection, doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
 
-    <script>
-        // Configuración de Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyC56h2z_HnfFH6h0QEqYjOFoUolNwDeJDQ",
             authDomain: "nfc-genesaret.firebaseapp.com",
             projectId: "nfc-genesaret",
             storageBucket: "nfc-genesaret.firebasestorage.app",
             messagingSenderId: "58470602922",
-            appId: "1:58470602922:web:661854ac1cc6f11f8c58d3",
-            measurementId: "G-7MRPJNDPMW"
+            appId: "1:58470602922:web:661854ac1cc6f11f8c58d3"
         };
 
-        // Inicializar Firebase
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
 
         function showError(message) {
             const errorDiv = document.getElementById('error');
@@ -334,17 +334,27 @@
             }, 5000);
         }
 
+        function showSuccess(message) {
+            const successDiv = document.getElementById('success');
+            successDiv.textContent = message;
+            successDiv.classList.add('show');
+            setTimeout(() => {
+                successDiv.classList.remove('show');
+            }, 5000);
+        }
+
         function toggleForms() {
             document.getElementById('loginForm').classList.toggle('active');
             document.getElementById('registerForm').classList.toggle('active');
             document.getElementById('error').classList.remove('show');
+            document.getElementById('success').classList.remove('show');
         }
 
         function showLoading(show) {
             document.getElementById('loading').classList.toggle('show', show);
         }
 
-        function login() {
+        window.handleLogin = function() {
             const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value;
             const role = document.getElementById('loginRole').value;
@@ -356,17 +366,15 @@
 
             showLoading(true);
 
-            auth.signInWithEmailAndPassword(email, password)
+            signInWithEmailAndPassword(auth, email, password)
                 .then(userCredential => {
-                    // Guardar datos de sesión inmediatamente
                     localStorage.setItem('userId', userCredential.user.uid);
                     localStorage.setItem('userEmail', email);
                     localStorage.setItem('userRole', role);
-                    localStorage.setItem('userName', email.split('@')[0]); // Usar parte del email como nombre por defecto
+                    localStorage.setItem('userName', email.split('@')[0]);
                     
                     showLoading(false);
                     
-                    // Redirigir según rol
                     setTimeout(() => {
                         if (role === 'admin') {
                             window.location.href = 'admin.html';
@@ -389,7 +397,7 @@
                 });
         }
 
-        function register() {
+        window.handleRegister = function() {
             const name = document.getElementById('registerName').value.trim();
             const email = document.getElementById('registerEmail').value.trim();
             const password = document.getElementById('registerPassword').value;
@@ -413,30 +421,23 @@
 
             showLoading(true);
 
-            // Primero crear el usuario en Authentication
-            auth.createUserWithEmailAndPassword(email, password)
+            createUserWithEmailAndPassword(auth, email, password)
                 .then(userCredential => {
-                    // Luego guardar datos en Firestore (sin esperar a que termine)
-                    db.collection('usuarios').doc(userCredential.user.uid).set({
+                    setDoc(doc(db, 'usuarios', userCredential.user.uid), {
                         name: name,
                         email: email,
                         role: role,
                         createdAt: new Date(),
                         activo: true
-                    }).catch(err => console.log('Error guardando en Firestore:', err));
+                    }).catch(err => console.log('Error guardando:', err));
                     
-                    // Sin esperar, mostrar éxito y cambiar a login
                     showLoading(false);
-                    showError('✅ Cuenta creada exitosamente. Inicia sesión');
+                    showSuccess('✅ Cuenta creada. Inicia sesión');
                     
                     setTimeout(() => {
                         toggleForms();
                         document.getElementById('loginEmail').value = email;
                         document.getElementById('loginPassword').value = '';
-                        document.getElementById('registerName').value = '';
-                        document.getElementById('registerEmail').value = '';
-                        document.getElementById('registerPassword').value = '';
-                        document.getElementById('registerConfirm').value = '';
                     }, 1500);
                 })
                 .catch(error => {
@@ -444,28 +445,30 @@
                     if (error.code === 'auth/email-already-in-use') {
                         showError('Este email ya está registrado');
                     } else if (error.code === 'auth/weak-password') {
-                        showError('La contraseña es muy débil (mínimo 6 caracteres)');
+                        showError('Contraseña muy débil');
                     } else if (error.code === 'auth/invalid-email') {
-                        showError('El email no es válido');
+                        showError('Email inválido');
                     } else {
                         showError('Error: ' + error.message);
                     }
                 });
         }
 
-        // Enter para enviar formulario
+        window.handleToggleForms = function() {
+            toggleForms();
+        }
+
         document.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 if (document.getElementById('loginForm').classList.contains('active')) {
-                    login();
+                    window.handleLogin();
                 } else {
-                    register();
+                    window.handleRegister();
                 }
             }
         });
 
-        // Verificar si ya hay sesión activa
-        auth.onAuthStateChanged(user => {
+        onAuthStateChanged(auth, (user) => {
             if (user) {
                 const role = localStorage.getItem('userRole');
                 if (role === 'admin') {
