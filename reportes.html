@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes - NFC Genesaret</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 12px;
+        }
+
+        h1 {
+            font-size: 24px;
+        }
+
+        button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(245, 158, 11, 0.3);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #f59e0b;
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #94a3b8;
+        }
+
+        .card {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card h3 {
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .table th {
+            background: rgba(15, 23, 42, 0.8);
+            padding: 12px;
+            text-align: left;
+            font-size: 12px;
+            color: #cbd5e1;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .table td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+            font-size: 13px;
+        }
+
+        .table tr:hover {
+            background: rgba(148, 163, 184, 0.05);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: rgba(34, 197, 94, 0.1);
+            color: #86efac;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Reportes en Tiempo Real</h1>
+            <button class="btn-primary" onclick="downloadHTMLReport()">📥 Descargar Reporte HTML</button>
+        </header>
+
+        <div class="grid">
+            <div class="stat-card">
+                <div class="stat-label">Ingresos Totales</div>
+                <div class="stat-value">$<span id="totalIncome">0.00</span></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Transacciones</div>
+                <div class="stat-value"><span id="totalTrans">0</span></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Pulseras Registradas</div>
+                <div class="stat-value"><span id="totalPulseras">0</span></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Saldo Total Distribuido</div>
+                <div class="stat-value">$<span id="totalSaldo">0.00</span></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>📋 Historial de Transacciones</h3>
+            <div id="transacionesList"></div>
+        </div>
+
+        <div class="card">
+            <h3>🏷️ Estado de Pulseras</h3>
+            <div id="pulserasList"></div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK Compat -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyC56h2z_HnfFH6h0QEqYjOFoUolNwDeJDQ",
+            authDomain: "nfc-genesaret.firebaseapp.com",
+            projectId: "nfc-genesaret",
+            storageBucket: "nfc-genesaret.firebasestorage.app",
+            messagingSenderId: "58470602922",
+            appId: "1:58470602922:web:661854ac1cc6f11f8c58d3"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let allTransactions = [];
+        let allPulseras = [];
+
+        db.collection('transacciones').onSnapshot(snapshot => {
+            allTransactions = [];
+            snapshot.forEach(doc => {
+                allTransactions.push(doc.data());
+            });
+            updateReports();
+        });
+
+        db.collection('pulseras').onSnapshot(snapshot => {
+            allPulseras = [];
+            snapshot.forEach(doc => {
+                allPulseras.push(doc.data());
+            });
+            loadPulseras();
+        });
+
+        function updateReports() {
+            let totalIncome = 0;
+            allTransactions.forEach(trans => {
+                totalIncome += trans.monto;
+            });
+            document.getElementById('totalIncome').textContent = totalIncome.toFixed(2);
+            document.getElementById('totalTrans').textContent = allTransactions.length;
+
+            document.getElementById('totalPulseras').textContent = allPulseras.length;
+
+            let totalSaldo = 0;
+            allPulseras.forEach(pulsera => {
+                totalSaldo += pulsera.saldoInicial;
+            });
+            document.getElementById('totalSaldo').textContent = totalSaldo.toFixed(2);
+
+            loadTransacciones();
+        }
+
+        function loadTransacciones() {
+            let html = '<table class="table"><thead><tr><th>Fecha</th><th>Pulsera</th><th>Producto</th><th>Monto</th><th>Vendedor</th></tr></thead><tbody>';
+            
+            const sorted = [...allTransactions].sort((a, b) => {
+                const aTime = a.fecha.toDate ? a.fecha.toDate() : new Date(a.fecha);
+                const bTime = b.fecha.toDate ? b.fecha.toDate() : new Date(b.fecha);
+                return bTime - aTime;
+            });
+
+            sorted.forEach(trans => {
+                const fecha = (trans.fecha.toDate ? trans.fecha.toDate() : new Date(trans.fecha)).toLocaleString('es-MX');
+                html += `
+                    <tr>
+                        <td>${fecha}</td>
+                        <td>${trans.pulsera}</td>
+                        <td>${trans.articulo}</td>
+                        <td>$${trans.monto.toFixed(2)}</td>
+                        <td><span class="badge badge-success">${trans.vendedor}</span></td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            document.getElementById('transacionesList').innerHTML = html;
+        }
+
+        function loadPulseras() {
+            let html = '<table class="table"><thead><tr><th>ID</th><th>Nombre</th><th>Saldo Inicial</th><th>Saldo Actual</th><th>Usado</th></tr></thead><tbody>';
+            
+            allPulseras.forEach(pulsera => {
+                const usado = (pulsera.saldoInicial - pulsera.saldoActual).toFixed(2);
+                html += `
+                    <tr>
+                        <td>${pulsera.id}</td>
+                        <td>${pulsera.nombre}</td>
+                        <td>$${pulsera.saldoInicial.toFixed(2)}</td>
+                        <td>$${pulsera.saldoActual.toFixed(2)}</td>
+                        <td>$${usado}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            document.getElementById('pulserasList').innerHTML = html;
+        }
+
+        function downloadHTMLReport() {
+            let html = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte NFC Genesaret</title>
+    <style>
+        body { font-family: Arial; background: #f5f5f5; padding: 20px; }
+        .header { background: #f59e0b; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .section { background: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .section h2 { color: #f59e0b; margin-bottom: 15px; border-bottom: 2px solid #f59e0b; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { background: #1e293b; color: white; padding: 10px; text-align: left; }
+        td { padding: 10px; border-bottom: 1px solid #ddd; }
+        tr:hover { background: #f9fafb; }
+        .stat { display: inline-block; width: 23%; margin: 1%; padding: 15px; background: #f0f0f0; border-radius: 8px; text-align: center; }
+        .stat-value { font-size: 24px; font-weight: bold; color: #f59e0b; }
+        .stat-label { color: #666; font-size: 12px; margin-top: 5px; }
+        .generated { text-align: center; color: #999; font-size: 12px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 Reporte de Transacciones - NFC Genesaret</h1>
+        <p>Generado: ${new Date().toLocaleString('es-MX')}</p>
+    </div>
+
+    <div class="section">
+        <h2>📈 Resumen Ejecutivo</h2>
+        <div class="stat">
+            <div class="stat-value">$${allTransactions.reduce((a, b) => a + b.monto, 0).toFixed(2)}</div>
+            <div class="stat-label">Ingresos Totales</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value">${allTransactions.length}</div>
+            <div class="stat-label">Transacciones</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value">${allPulseras.length}</div>
+            <div class="stat-label">Pulseras</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value">$${allPulseras.reduce((a, b) => a + b.saldoInicial, 0).toFixed(2)}</div>
+            <div class="stat-label">Saldo Total</div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>🛍️ Transacciones</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Pulsera</th>
+                    <th>Producto</th>
+                    <th>Monto</th>
+                    <th>Vendedor</th>
+                </tr>
+            </thead>
+            <tbody>
+            ${allTransactions.map(t => {
+                const fecha = (t.fecha.toDate ? t.fecha.toDate() : new Date(t.fecha)).toLocaleString('es-MX');
+                return `
+                <tr>
+                    <td>${fecha}</td>
+                    <td>${t.pulsera}</td>
+                    <td>${t.articulo}</td>
+                    <td>$${t.monto.toFixed(2)}</td>
+                    <td>${t.vendedor}</td>
+                </tr>
+            `;
+            }).join('')}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>🏷️ Estado de Pulseras</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Saldo Inicial</th>
+                    <th>Saldo Actual</th>
+                    <th>Utilizado</th>
+                </tr>
+            </thead>
+            <tbody>
+            ${allPulseras.map(p => `
+                <tr>
+                    <td>${p.id}</td>
+                    <td>${p.nombre}</td>
+                    <td>$${p.saldoInicial.toFixed(2)}</td>
+                    <td>$${p.saldoActual.toFixed(2)}</td>
+                    <td>$${(p.saldoInicial - p.saldoActual).toFixed(2)}</td>
+                </tr>
+            `).join('')}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="generated">
+        Reporte confidencial - NFC Genesaret ${new Date().getFullYear()}
+    </div>
+</body>
+</html>
+            `;
+
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Reporte-NFC-${new Date().toISOString().split('T')[0]}.html`;
+            a.click();
+        }
+    </script>
+</body>
+</html>

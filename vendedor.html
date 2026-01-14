@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendedor - NFC Genesaret</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 12px;
+        }
+
+        h1 {
+            font-size: 24px;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .user-info {
+            text-align: right;
+            font-size: 13px;
+            color: #94a3b8;
+        }
+
+        button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 13px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(245, 158, 11, 0.3);
+        }
+
+        .btn-success {
+            background: rgba(34, 197, 94, 0.1);
+            color: #86efac;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .card h2 {
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            color: #cbd5e1;
+            font-weight: 500;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            border-radius: 6px;
+            color: #e2e8f0;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #f59e0b;
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+        }
+
+        .nfc-reader {
+            background: rgba(245, 158, 11, 0.1);
+            border: 2px dashed #f59e0b;
+            border-radius: 8px;
+            padding: 25px;
+            text-align: center;
+            margin: 15px 0;
+        }
+
+        .nfc-reader.active {
+            background: rgba(34, 197, 94, 0.1);
+            border-color: #22c55e;
+        }
+
+        .nfc-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .nfc-status {
+            font-size: 14px;
+            color: #cbd5e1;
+            margin-bottom: 15px;
+        }
+
+        .nfc-reader button {
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .product-info {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 6px;
+            padding: 12px;
+            margin: 10px 0;
+            display: none;
+        }
+
+        .product-info.show {
+            display: block;
+        }
+
+        .product-info strong {
+            color: #f59e0b;
+        }
+
+        .saldo-info {
+            font-size: 16px;
+            padding: 15px;
+            background: rgba(245, 158, 11, 0.1);
+            border-left: 4px solid #f59e0b;
+            border-radius: 6px;
+            margin: 10px 0;
+            display: none;
+        }
+
+        .saldo-info.show {
+            display: block;
+        }
+
+        .saldo-info strong {
+            color: #f59e0b;
+        }
+
+        .alert {
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 13px;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert-success {
+            background: rgba(34, 197, 94, 0.1);
+            color: #86efac;
+            border-left: 3px solid #22c55e;
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            border-left: 3px solid #ef4444;
+        }
+
+        .stat-box {
+            text-align: center;
+            padding: 15px;
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+
+        .stat-box .number {
+            font-size: 24px;
+            font-weight: 700;
+            color: #f59e0b;
+        }
+
+        .stat-box .label {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 5px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .button-group button {
+            flex: 1;
+        }
+
+        .transaction-card {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        .transaction-card strong {
+            color: #86efac;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🛒 Puesto de Venta</h1>
+            <div class="header-right">
+                <div class="user-info">
+                    <div>Hola, <strong id="userName">Vendedor</strong></div>
+                </div>
+                <button class="btn-danger" onclick="logout()">Cerrar Sesión</button>
+            </div>
+        </header>
+
+        <div class="alert alert-success" id="successAlert"></div>
+        <div class="alert alert-error" id="errorAlert"></div>
+
+        <div class="grid">
+            <div class="card">
+                <h2>💳 Cobrar</h2>
+
+                <div class="form-group">
+                    <label>Selecciona tu Producto</label>
+                    <select id="productSelect" onchange="selectProduct()">
+                        <option value="">Cargando productos...</option>
+                    </select>
+                </div>
+
+                <div class="product-info" id="productInfo">
+                    <strong>Producto:</strong> <span id="selectedProduct"></span><br>
+                    <strong>Precio:</strong> $<span id="selectedPrice"></span>
+                </div>
+
+                <div class="nfc-reader" id="nfcReader">
+                    <div class="nfc-icon">📱</div>
+                    <div class="nfc-status">Escanea la pulsera del cliente</div>
+                    <button class="btn-primary" onclick="startNFCRead()">Leer Pulsera NFC</button>
+                </div>
+
+                <div class="saldo-info" id="saldoInfo">
+                    <strong>Saldo Disponible:</strong> $<span id="saldoActual"></span>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-success" onclick="procesarPago()" id="btnPagar" style="display: none;">✓ Cobrar</button>
+                    <button class="btn-danger" onclick="resetScan()">Limpiar</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>📊 Mi Turno</h2>
+
+                <div class="stat-box">
+                    <div class="number" id="ventasCount">0</div>
+                    <div class="label">Ventas Realizadas</div>
+                </div>
+
+                <div class="stat-box">
+                    <div class="number">$<span id="totalVentas">0.00</span></div>
+                    <div class="label">Total Vendido</div>
+                </div>
+
+                <h3 style="margin-top: 20px; font-size: 14px; margin-bottom: 10px;">Últimas Transacciones</h3>
+                <div id="transactionsList" style="max-height: 300px; overflow-y: auto;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK Compat -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyC56h2z_HnfFH6h0QEqYjOFoUolNwDeJDQ",
+            authDomain: "nfc-genesaret.firebaseapp.com",
+            projectId: "nfc-genesaret",
+            storageBucket: "nfc-genesaret.firebasestorage.app",
+            messagingSenderId: "58470602922",
+            appId: "1:58470602922:web:661854ac1cc6f11f8c58d3"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        let currentUserId = localStorage.getItem('userId');
+        let selectedProduct = null;
+        let selectedPrice = null;
+        let scannedPulsera = null;
+
+        // Verificar autenticación
+        auth.onAuthStateChanged(user => {
+            if (!user || localStorage.getItem('userRole') !== 'vendedor') {
+                window.location.href = 'index.html';
+            } else {
+                document.getElementById('userName').textContent = localStorage.getItem('userName') || 'Vendedor';
+                loadProducts();
+                loadMyTransactions();
+            }
+        });
+
+        function logout() {
+            auth.signOut().then(() => {
+                localStorage.clear();
+                window.location.href = 'index.html';
+            });
+        }
+
+        function showSuccess(msg) {
+            const alert = document.getElementById('successAlert');
+            alert.textContent = msg;
+            alert.classList.add('show');
+            setTimeout(() => alert.classList.remove('show'), 3000);
+        }
+
+        function showError(msg) {
+            const alert = document.getElementById('errorAlert');
+            alert.textContent = msg;
+            alert.classList.add('show');
+            setTimeout(() => alert.classList.remove('show'), 3000);
+        }
+
+        function loadProducts() {
+            db.collection('articulos')
+                .orderBy('createdAt', 'desc')
+                .onSnapshot(snapshot => {
+                    let html = '<option value="">Selecciona un producto</option>';
+                    snapshot.forEach(doc => {
+                        const producto = doc.data();
+                        html += `<option value="${doc.id}|${producto.nombre}|${producto.precio}">
+                            ${producto.nombre} - $${producto.precio.toFixed(2)}
+                        </option>`;
+                    });
+                    document.getElementById('productSelect').innerHTML = html;
+                });
+        }
+
+        function selectProduct() {
+            const select = document.getElementById('productSelect');
+            const value = select.value;
+
+            if (!value) {
+                selectedProduct = null;
+                selectedPrice = null;
+                document.getElementById('productInfo').classList.remove('show');
+                document.getElementById('btnPagar').style.display = 'none';
+                return;
+            }
+
+            const [id, name, price] = value.split('|');
+            selectedProduct = name;
+            selectedPrice = parseFloat(price);
+            scannedPulsera = null;
+
+            document.getElementById('productInfo').classList.add('show');
+            document.getElementById('selectedProduct').textContent = name;
+            document.getElementById('selectedPrice').textContent = price;
+            document.getElementById('btnPagar').style.display = 'block';
+
+            resetScan();
+        }
+
+        function startNFCRead() {
+            if (!selectedProduct) {
+                showError('Por favor selecciona un producto primero');
+                return;
+            }
+
+            if ('NDEFReader' in window) {
+                const ndef = new NDEFReader();
+                ndef.scan().then(() => {
+                    ndef.onreading = event => {
+                        let nfcId = '';
+                        for (const record of event.message.records) {
+                            if (record.recordType === 'text') {
+                                nfcId = new TextDecoder().decode(record.data);
+                            }
+                        }
+                        readPulseraData(nfcId || 'NFC-' + Date.now());
+                    };
+                }).catch(error => {
+                    showError('Error al leer NFC: ' + error);
+                });
+            } else {
+                showError('Tu navegador no soporta NFC.');
+            }
+        }
+
+        function readPulseraData(pulseraId) {
+            db.collection('pulseras')
+                .where('id', '==', pulseraId)
+                .get()
+                .then(snapshot => {
+                    if (snapshot.empty) {
+                        showError('Pulsera no encontrada');
+                        return;
+                    }
+
+                    snapshot.forEach(doc => {
+                        const pulsera = doc.data();
+                        scannedPulsera = {
+                            id: doc.id,
+                            nombre: pulsera.nombre,
+                            saldo: pulsera.saldoActual
+                        };
+
+                        document.getElementById('saldoInfo').classList.add('show');
+                        document.getElementById('saldoActual').textContent = pulsera.saldoActual.toFixed(2);
+
+                        const nfcReader = document.getElementById('nfcReader');
+                        nfcReader.classList.add('active');
+                        nfcReader.innerHTML = `
+                            <div class="nfc-icon">✅</div>
+                            <div class="nfc-status"><strong>${pulsera.nombre}</strong></div>
+                            <div style="font-size: 12px; color: #94a3b8; margin-top: 5px;">Saldo: $${pulsera.saldoActual.toFixed(2)}</div>
+                        `;
+                    });
+                })
+                .catch(error => showError('Error: ' + error.message));
+        }
+
+        function procesarPago() {
+            if (!selectedProduct || !scannedPulsera) {
+                showError('Algo falta. Intenta de nuevo');
+                return;
+            }
+
+            if (scannedPulsera.saldo < selectedPrice) {
+                showError('Saldo insuficiente');
+                return;
+            }
+
+            const nuevoSaldo = scannedPulsera.saldo - selectedPrice;
+
+            db.collection('pulseras').doc(scannedPulsera.id).update({
+                saldoActual: nuevoSaldo
+            }).then(() => {
+                db.collection('transacciones').add({
+                    pulseraId: scannedPulsera.id,
+                    pulsera: scannedPulsera.nombre,
+                    articulo: selectedProduct,
+                    monto: selectedPrice,
+                    saldoAnterior: scannedPulsera.saldo,
+                    saldoNuevo: nuevoSaldo,
+                    vendedor: localStorage.getItem('userName'),
+                    vendedorId: currentUserId,
+                    fecha: new Date()
+                }).then(() => {
+                    showSuccess('✓ Pago de $' + selectedPrice.toFixed(2) + ' registrado');
+                    resetScan();
+                    loadMyTransactions();
+                });
+            }).catch(error => showError('Error: ' + error.message));
+        }
+
+        function resetScan() {
+            scannedPulsera = null;
+            document.getElementById('nfcReader').classList.remove('active');
+            document.getElementById('nfcReader').innerHTML = `
+                <div class="nfc-icon">📱</div>
+                <div class="nfc-status">Escanea la pulsera del cliente</div>
+                <button class="btn-primary" onclick="startNFCRead()">Leer Pulsera NFC</button>
+            `;
+            document.getElementById('saldoInfo').classList.remove('show');
+        }
+
+        function loadMyTransactions() {
+            db.collection('transacciones')
+                .where('vendedorId', '==', currentUserId)
+                .orderBy('fecha', 'desc')
+                .limit(10)
+                .onSnapshot(snapshot => {
+                    let html = '';
+                    let count = 0;
+                    let total = 0;
+
+                    snapshot.forEach(doc => {
+                        const trans = doc.data();
+                        count++;
+                        total += trans.monto;
+                        const hora = trans.fecha.toDate().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+
+                        html += `
+                            <div class="transaction-card">
+                                <strong>${trans.pulsera}</strong><br>
+                                <small>${trans.articulo} - $${trans.monto.toFixed(2)}</small><br>
+                                <small style="color: #64748b; font-size: 11px;">${hora}</small>
+                            </div>
+                        `;
+                    });
+
+                    document.getElementById('ventasCount').textContent = count;
+                    document.getElementById('totalVentas').textContent = total.toFixed(2);
+                    document.getElementById('transactionsList').innerHTML = html || '<p style="color: #94a3b8; font-size: 12px;">Sin ventas aún</p>';
+                });
+        }
+    </script>
+</body>
+</html>
