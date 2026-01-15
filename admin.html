@@ -1105,7 +1105,6 @@
 
         function cargarEventos() {
             db.collection('eventos')
-                .where('adminId', '==', currentUserId)
                 .orderBy('createdAt', 'desc')
                 .onSnapshot(snapshot => {
                     let html = '<table class="table"><thead><tr><th>Nombre</th><th>Fecha</th><th>Acciones</th></tr></thead><tbody>';
@@ -1345,7 +1344,6 @@
         function actualizarEstadisticas() {
             // Obtener eventos
             db.collection('eventos')
-                .where('adminId', '==', currentUserId)
                 .onSnapshot(snapshot => {
                     document.getElementById('totalEventos').textContent = snapshot.size;
                 });
