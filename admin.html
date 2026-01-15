@@ -492,10 +492,13 @@
             // Primero cargar eventos en el selector
             db.collection('eventos').onSnapshot(snapshot => {
                 let html = '<option value="">Selecciona un evento</option>';
+                let eventosMap = {};
                 snapshot.forEach(doc => {
                     html += `<option value="${doc.id}">${doc.data().nombre}</option>`;
+                    eventosMap[doc.id] = doc.data().nombre;
                 });
                 document.getElementById('pulseraEvento').innerHTML = html;
+                window.eventosMap = eventosMap; // Guardar mapa global
             });
 
             // Luego cargar pulseras
@@ -506,12 +509,13 @@
                     snapshot.forEach(doc => {
                         const pulsera = doc.data();
                         const eventId = pulsera.eventId || 'N/A';
+                        const eventNombre = window.eventosMap && window.eventosMap[eventId] ? window.eventosMap[eventId] : eventId;
                         
                         html += `
                             <tr>
                                 <td>${pulsera.id}</td>
                                 <td>${pulsera.nombre}</td>
-                                <td>${eventId === 'N/A' ? 'N/A' : eventId}</td>
+                                <td>${eventNombre}</td>
                                 <td>$${pulsera.saldoInicial.toFixed(2)}</td>
                                 <td>$${pulsera.saldoActual.toFixed(2)}</td>
                                 <td>
@@ -651,7 +655,7 @@
         function cargarCuentas() {
             db.collection('usuarios')
                 .onSnapshot(snapshot => {
-                    let html = '<table class="table"><thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Fecha Creación</th><th>Contraseña</th></tr></thead><tbody>';
+                    let html = '<table class="table"><thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Fecha Creación</th><th>Contraseña</th><th>Acciones</th></tr></thead><tbody>';
 
                     snapshot.forEach(doc => {
                         const usuario = doc.data();
@@ -665,6 +669,7 @@
                                 <td>${rolBadge}</td>
                                 <td>${fecha}</td>
                                 <td><button class="btn-primary" onclick="mostrarContrasena('${usuario.email}')" style="padding: 4px 8px; font-size: 11px;">Ver</button></td>
+                                <td><button class="btn-danger" onclick="eliminarCuenta('${doc.id}', '${usuario.email}')" style="padding: 4px 8px; font-size: 11px;">Eliminar</button></td>
                             </tr>
                         `;
                     });
@@ -685,6 +690,18 @@
                     .catch(error => {
                         alert('❌ Contraseña incorrecta');
                     });
+            }
+        }
+
+        function eliminarCuenta(usuarioId, email) {
+            if (confirm('¿Estás seguro de que deseas eliminar la cuenta de ' + email + '?\n\nEsta acción no se puede deshacer.')) {
+                // Eliminar documento del usuario de Firestore
+                db.collection('usuarios').doc(usuarioId).delete().then(() => {
+                    showSuccess('Cuenta eliminada correctamente');
+                    cargarCuentas();
+                }).catch(error => {
+                    showError('Error al eliminar: ' + error.message);
+                });
             }
         }
 
