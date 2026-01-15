@@ -13,7 +13,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            background: linear-gradient(135deg, #003d7a 0%, #001a2e 50%, #0d47a1 100%);
             color: #e2e8f0;
             min-height: 100vh;
         }
@@ -33,6 +33,17 @@
             background: rgba(30, 41, 59, 0.8);
             border: 1px solid rgba(148, 163, 184, 0.2);
             border-radius: 12px;
+        }
+
+        .logo-header {
+            width: 50px;
+            height: 50px;
+            margin-right: 15px;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
         }
 
         h1 {
@@ -197,7 +208,10 @@
 <body>
     <div class="container">
         <header>
-            <h1>💳 Admin Panel</h1>
+            <div class="header-title">
+                <img src="logo.png" alt="Logo" class="logo-header">
+                <h1>💳 Admin Panel</h1>
+            </div>
             <div class="header-right">
                 <div class="user-info">
                     <div>Hola, <strong id="userName">Admin</strong></div>
@@ -226,10 +240,6 @@
                     <div class="form-group">
                         <label>Descripción</label>
                         <input type="text" id="eventDesc" placeholder="ej: Evento benéfico">
-                    </div>
-                    <div class="form-group">
-                        <label>Fecha</label>
-                        <input type="date" id="eventDate">
                     </div>
                     <button class="btn-primary" onclick="crearEvento()" style="width: 100%;">Crear Evento</button>
                 </div>
@@ -333,9 +343,8 @@
         function crearEvento() {
             const name = document.getElementById('eventName').value.trim();
             const desc = document.getElementById('eventDesc').value.trim();
-            const date = document.getElementById('eventDate').value;
 
-            if (!name || !date) {
+            if (!name) {
                 alert('Completa los campos requeridos');
                 return;
             }
@@ -343,7 +352,7 @@
             db.collection('eventos').add({
                 nombre: name,
                 descripcion: desc,
-                fecha: new Date(date),
+                fecha: new Date(),
                 adminId: currentUserId,
                 createdAt: new Date(),
                 activo: true
@@ -351,7 +360,6 @@
                 showSuccess('✅ Evento creado');
                 document.getElementById('eventName').value = '';
                 document.getElementById('eventDesc').value = '';
-                document.getElementById('eventDate').value = '';
                 cargarEventos();
             }).catch(error => alert('Error: ' + error.message));
         }
