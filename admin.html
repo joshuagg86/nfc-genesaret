@@ -27,45 +27,30 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0 20px;
+            padding: 15px 20px;
             background: rgba(30, 41, 59, 0.95);
             border-bottom: 1px solid rgba(148, 163, 184, 0.2);
             z-index: 1000;
             backdrop-filter: blur(10px);
-            height: 80px;
-            width: 100%;
         }
 
         .header-left {
             display: flex;
             align-items: center;
-            gap: 0;
-            margin-right: auto;
         }
 
         .logo-header {
-            width: 70px;
-            height: 70px;
-            display: block;
-            flex-shrink: 0;
-            object-fit: contain;
+            width: 50px;
+            height: 50px;
         }
 
         .hamburger {
             background: none;
             border: none;
             cursor: pointer;
-            font-size: 32px;
+            font-size: 28px;
             color: #e2e8f0;
             padding: 0;
-            display: block;
-            flex-shrink: 0;
-            margin-left: auto;
-            height: 70px;
-            width: 70px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
 
         .header-title {
@@ -168,12 +153,7 @@
 
         @media (max-width: 768px) {
             body {
-                padding-top: 80px;
-            }
-
-            header {
-                height: 80px;
-                padding: 0 20px;
+                padding-top: 70px;
             }
 
             .hamburger {
@@ -195,8 +175,8 @@
             }
 
             header {
-                height: 80px;
-                padding: 0 20px;
+                height: auto;
+                padding: 15px 20px;
             }
 
             .logo-header {
