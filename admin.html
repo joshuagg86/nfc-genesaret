@@ -50,6 +50,29 @@
             padding: 0;
         }
 
+        .header-user {
+            display: none;
+            flex-direction: row;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-user-info {
+            text-align: right;
+        }
+
+        .header-user-info h4 {
+            margin: 0;
+            font-size: 14px;
+            color: #e2e8f0;
+        }
+
+        .header-user-info p {
+            margin: 0;
+            font-size: 11px;
+            color: #94a3b8;
+        }
+
         .header-title {
             display: none !important;
         }
@@ -218,6 +241,10 @@
 
             .tab-btn.active {
                 color: #f59e0b;
+            }
+
+            .header-user {
+                display: flex !important;
             }
 
             body {
@@ -615,6 +642,13 @@
                 <button class="tab-btn" onclick="switchTab('cuentas')">Cuentas</button>
                 <button class="tab-btn" onclick="switchTab('reportes')">Reportes</button>
             </div>
+            <div class="header-user">
+                <div class="header-user-info">
+                    <h4>Admin</h4>
+                    <p>Hola, <span id="userName">Admin</span></p>
+                </div>
+                <button class="btn-danger" onclick="logout()" style="padding: 8px 12px; font-size: 12px;">Cerrar Sesión</button>
+            </div>
             <button class="hamburger" id="hamburger" onclick="toggleMenu()">☰</button>
         </header>
 
@@ -632,7 +666,7 @@
                     <button class="mobile-menu-item" onclick="switchTabMobile('articulos')">Artículos</button>
                     <button class="mobile-menu-item" onclick="switchTabMobile('cuentas')">Cuentas</button>
                     <button class="mobile-menu-item" onclick="switchTabMobile('reportes')">Reportes</button>
-                    <button class="mobile-menu-item logout btn-danger" onclick="logout()">Cerrar Sesión</button>
+                    <button class="mobile-menu-item logout" onclick="logout()">Cerrar Sesión</button>
                 </div>
             </div>
         </div>
