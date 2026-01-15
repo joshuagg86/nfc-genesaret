@@ -266,19 +266,64 @@
             flex: 1;
         }
 
-        .transaction-card {
-            background: rgba(34, 197, 94, 0.1);
-            border: 1px solid rgba(34, 197, 94, 0.3);
-            border-radius: 6px;
-            padding: 10px;
-            margin-bottom: 8px;
-            font-size: 12px;
-        }
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
 
-        .transaction-card strong {
-            color: #86efac;
+            .card {
+                padding: 15px;
+            }
+
+            .card h2 {
+                font-size: 16px;
+            }
+
+            input, select {
+                padding: 10px;
+                font-size: 14px;
+            }
+
+            button {
+                padding: 10px;
+                font-size: 12px;
+            }
+
+            .stat-box {
+                padding: 12px;
+                font-size: 12px;
+            }
+
+            .stat-box .number {
+                font-size: 20px;
+            }
+
+            .stat-box .label {
+                font-size: 11px;
+            }
+
+            .transaction-card {
+                padding: 8px;
+                font-size: 11px;
+            }
+
+            .nfc-reader {
+                padding: 15px;
+            }
+
+            .nfc-icon {
+                font-size: 32px;
+            }
+
+            .nfc-status {
+                font-size: 12px;
+            }
+
+            .saldo-info {
+                font-size: 14px;
+                padding: 12px;
+            }
         }
-    </style>
 </head>
 <body>
     <div class="container">
