@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vendedor - NFC Genesaret</title>
+    <title>Admin - NFC Genesaret</title>
     <style>
         * {
             margin: 0;
@@ -19,7 +19,7 @@
         }
 
         .container {
-            max-width: 900px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
         }
@@ -82,28 +82,40 @@
             box-shadow: 0 10px 25px rgba(245, 158, 11, 0.3);
         }
 
-        .btn-success {
-            background: rgba(34, 197, 94, 0.1);
-            color: #86efac;
-            border: 1px solid rgba(34, 197, 94, 0.3);
-        }
-
         .btn-danger {
             background: rgba(239, 68, 68, 0.1);
             color: #fca5a5;
             border: 1px solid rgba(239, 68, 68, 0.3);
         }
 
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
         }
 
-        @media (max-width: 768px) {
-            .grid {
-                grid-template-columns: 1fr;
-            }
+        .tab-btn {
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            color: #94a3b8;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .tab-btn.active {
+            color: #f59e0b;
+            border-bottom-color: #f59e0b;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
         }
 
         .card {
@@ -111,11 +123,12 @@
             border: 1px solid rgba(148, 163, 184, 0.2);
             border-radius: 12px;
             padding: 20px;
+            margin-bottom: 20px;
         }
 
-        .card h2 {
+        .card h3 {
             margin-bottom: 15px;
-            font-size: 18px;
+            font-size: 16px;
         }
 
         .form-group {
@@ -130,86 +143,41 @@
             font-weight: 500;
         }
 
-        select {
+        input, select {
             width: 100%;
-            padding: 12px;
+            padding: 10px;
             background: rgba(15, 23, 42, 0.6);
             border: 1px solid rgba(148, 163, 184, 0.3);
             border-radius: 6px;
             color: #e2e8f0;
-            font-size: 14px;
-            cursor: pointer;
+            font-size: 13px;
         }
 
-        select:focus {
+        input:focus, select:focus {
             outline: none;
             border-color: #f59e0b;
             box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
         }
 
-        .nfc-reader {
-            background: rgba(245, 158, 11, 0.1);
-            border: 2px dashed #f59e0b;
-            border-radius: 8px;
-            padding: 25px;
-            text-align: center;
-            margin: 15px 0;
-        }
-
-        .nfc-reader.active {
-            background: rgba(34, 197, 94, 0.1);
-            border-color: #22c55e;
-        }
-
-        .nfc-icon {
-            font-size: 48px;
-            margin-bottom: 10px;
-        }
-
-        .nfc-status {
-            font-size: 14px;
-            color: #cbd5e1;
-            margin-bottom: 15px;
-        }
-
-        .nfc-reader button {
-            margin-top: 10px;
+        .table {
             width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
         }
 
-        .product-info {
-            background: rgba(245, 158, 11, 0.1);
-            border: 1px solid rgba(245, 158, 11, 0.3);
-            border-radius: 6px;
+        .table th {
+            background: rgba(15, 23, 42, 0.8);
             padding: 12px;
-            margin: 10px 0;
-            display: none;
+            text-align: left;
+            font-size: 12px;
+            color: #cbd5e1;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
         }
 
-        .product-info.show {
-            display: block;
-        }
-
-        .product-info strong {
-            color: #f59e0b;
-        }
-
-        .saldo-info {
-            font-size: 16px;
-            padding: 15px;
-            background: rgba(245, 158, 11, 0.1);
-            border-left: 4px solid #f59e0b;
-            border-radius: 6px;
-            margin: 10px 0;
-            display: none;
-        }
-
-        .saldo-info.show {
-            display: block;
-        }
-
-        .saldo-info strong {
-            color: #f59e0b;
+        .table td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+            font-size: 13px;
         }
 
         .alert {
@@ -217,53 +185,23 @@
             border-radius: 6px;
             margin-bottom: 15px;
             font-size: 13px;
-            display: none;
-        }
-
-        .alert.show {
-            display: block;
         }
 
         .alert-success {
             background: rgba(34, 197, 94, 0.1);
             color: #86efac;
             border-left: 3px solid #22c55e;
+            display: none;
         }
 
-        .alert-error {
-            background: rgba(239, 68, 68, 0.1);
-            color: #fca5a5;
-            border-left: 3px solid #ef4444;
+        .alert-success.show {
+            display: block;
         }
 
-        .stat-box {
-            text-align: center;
-            padding: 15px;
-            background: rgba(15, 23, 42, 0.8);
-            border-radius: 6px;
-            margin-bottom: 10px;
-        }
-
-        .stat-box .number {
-            font-size: 24px;
-            font-weight: 700;
-            color: #f59e0b;
-        }
-
-        .stat-box .label {
-            font-size: 12px;
-            color: #94a3b8;
-            margin-top: 5px;
-        }
-
-        .button-group {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .button-group button {
-            flex: 1;
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
         }
 
         @media (max-width: 768px) {
@@ -275,8 +213,8 @@
                 padding: 15px;
             }
 
-            .card h2 {
-                font-size: 16px;
+            .card h3 {
+                font-size: 14px;
             }
 
             input, select {
@@ -289,39 +227,23 @@
                 font-size: 12px;
             }
 
-            .stat-box {
-                padding: 12px;
-                font-size: 12px;
-            }
-
-            .stat-box .number {
-                font-size: 20px;
-            }
-
-            .stat-box .label {
-                font-size: 11px;
-            }
-
-            .transaction-card {
+            .table th {
                 padding: 8px;
-                font-size: 11px;
+                font-size: 10px;
             }
 
-            .nfc-reader {
-                padding: 15px;
+            .table td {
+                padding: 8px;
+                font-size: 10px;
             }
 
-            .nfc-icon {
-                font-size: 32px;
+            .form-group {
+                margin-bottom: 12px;
             }
 
-            .nfc-status {
+            label {
+                margin-bottom: 5px;
                 font-size: 12px;
-            }
-
-            .saldo-info {
-                font-size: 14px;
-                padding: 12px;
             }
         }
     </style>
@@ -331,107 +253,147 @@
         <header>
             <div class="header-title">
                 <img src="logo.png" alt="Logo" class="logo-header">
-                <h1>Venta</h1>
+                <h1>Admin</h1>
             </div>
             <div class="header-right">
                 <div class="user-info">
-                    <div>Hola, <strong id="userName">Vendedor</strong></div>
+                    <div>Hola, <strong id="userName">Admin</strong></div>
                 </div>
                 <button class="btn-danger" onclick="logout()">Cerrar Sesión</button>
             </div>
         </header>
 
         <div class="alert alert-success" id="successAlert"></div>
-        <div class="alert alert-error" id="errorAlert"></div>
 
-        <div class="grid">
-            <div class="card">
-                <h2>💳 Cobrar</h2>
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('eventos')">Eventos</button>
+            <button class="tab-btn" onclick="switchTab('pulseras')">Pulseras</button>
+            <button class="tab-btn" onclick="switchTab('articulos')">Artículos</button>
+            <button class="tab-btn" onclick="switchTab('cuentas')">Cuentas</button>
+            <button class="tab-btn" onclick="switchTab('reportes')">Reportes</button>
+        </div>
 
-                <div class="form-group">
-                    <label>Selecciona tu Evento</label>
-                    <select id="eventSelect" onchange="cargarProductosPorEvento()">
-                        <option value="">Cargando eventos...</option>
-                    </select>
+        <!-- TAB: EVENTOS -->
+        <div class="tab-content active" id="eventos">
+            <div class="grid">
+                <div class="card">
+                    <h3>📅 Crear Evento</h3>
+                    <div class="form-group">
+                        <label>Nombre del Evento</label>
+                        <input type="text" id="eventName" placeholder="ej: Kermés 2026">
+                    </div>
+                    <div class="form-group">
+                        <label>Descripción</label>
+                        <input type="text" id="eventDesc" placeholder="ej: Evento benéfico">
+                    </div>
+                    <button class="btn-primary" onclick="crearEvento()" style="width: 100%;">Crear Evento</button>
                 </div>
 
-                <div class="form-group">
-                    <label>Selecciona tu Producto</label>
-                    <select id="productSelect" onchange="selectProduct()">
-                        <option value="">Selecciona un evento primero</option>
-                    </select>
+                <div class="card">
+                    <h3>📊 Eventos Registrados</h3>
+                    <div id="eventsList"></div>
                 </div>
+            </div>
+        </div>
 
-                <div class="product-info" id="productInfo">
-                    <strong>Producto:</strong> <span id="selectedProduct"></span><br>
-                    <strong>Precio:</strong> $<span id="selectedPrice"></span>
-                </div>
+        <!-- TAB: PULSERAS -->
+        <div class="tab-content" id="pulseras">
+            <div class="grid">
+                <div class="card">
+                    <h3>📱 Registrar Pulsera</h3>
+                    <div class="form-group">
+                        <label>Selecciona Evento</label>
+                        <select id="pulseraEvento">
+                            <option value="">Cargando eventos...</option>
+                        </select>
+                    </div>
 
-                <div class="nfc-reader" id="nfcReader">
-                    <div class="nfc-icon">📱</div>
-                    <div class="nfc-status">Escanea la pulsera del cliente</div>
-                    <button class="btn-primary" onclick="startNFCRead()">Leer Pulsera NFC</button>
-                </div>
+                    <div style="background: rgba(245, 158, 11, 0.1); border: 2px dashed #f59e0b; border-radius: 8px; padding: 15px; margin: 15px 0; text-align: center;">
+                        <div style="font-size: 30px; margin-bottom: 10px;">📱</div>
+                        <div id="nfcStatusAdmin" style="color: #f59e0b; margin-bottom: 10px; font-size: 12px;">Listo para leer NFC</div>
+                        <button class="btn-primary" onclick="iniciarLecturaNFCAdmin()" style="width: 100%; margin-bottom: 10px;">Leer ID de Pulsera NFC</button>
+                    </div>
 
-                <div class="saldo-info" id="saldoInfo">
-                    <strong>Saldo Disponible:</strong> $<span id="saldoActual"></span>
-                </div>
-
-                <div class="form-group" style="background: rgba(34, 197, 94, 0.1); padding: 12px; border-radius: 6px; border-left: 3px solid #22c55e; margin: 15px 0;">
-                    <label style="color: #86efac; font-size: 12px;">📌 MODO SIMULACIÓN (sin NFC real)</label>
-                    <select id="simulatedPulsera" onchange="selectSimulatedPulsera()" style="margin-top: 8px;">
-                        <option value="">Selecciona una pulsera para simular...</option>
-                    </select>
-                </div>
-
-                <div class="button-group">
-                    <button class="btn-success" onclick="procesarPago()" id="btnPagar" style="display: none;">✓ Cobrar</button>
-                    <button class="btn-danger" onclick="resetScan()">Limpiar</button>
+                    <div class="form-group">
+                        <label>ID de Pulsera (NFC)</label>
+                        <input type="text" id="pulseraId" placeholder="Se rellenará automáticamente al leer NFC">
+                    </div>
+                    <div class="form-group">
+                        <label>Nombre del Portador</label>
+                        <input type="text" id="pulseraNombre" placeholder="ej: Juan García">
+                    </div>
+                    <div class="form-group">
+                        <label>Saldo Inicial ($)</label>
+                        <input type="number" id="pulseraSaldo" placeholder="0.00" min="0" step="0.01">
+                    </div>
+                    <button class="btn-primary" onclick="registrarPulsera()" style="width: 100%;">Registrar Pulsera</button>
                 </div>
             </div>
 
             <div class="card">
-                <h2>🔍 Consultar Saldo</h2>
-
-                <div class="nfc-reader" id="nfcReaderConsulta">
-                    <div class="nfc-icon">📱</div>
-                    <div class="nfc-status">Escanea la pulsera para ver el saldo</div>
-                    <button class="btn-primary" onclick="startNFCReadConsulta()">Leer Pulsera NFC</button>
-                </div>
-
-                <div class="saldo-info" id="saldoInfoConsulta" style="display: none; background: rgba(34, 197, 94, 0.1); border-left: 4px solid #22c55e;">
-                    <strong>Titular:</strong> <span id="consultaNombre"></span><br>
-                    <strong style="color: #86efac; font-size: 18px; display: block; margin-top: 10px;">Saldo: $<span id="consultaSaldo"></span></strong>
-                </div>
-
-                <div class="form-group" style="background: rgba(34, 197, 94, 0.1); padding: 12px; border-radius: 6px; border-left: 3px solid #22c55e; margin: 15px 0;">
-                    <label style="color: #86efac; font-size: 12px;">📌 MODO SIMULACIÓN (sin NFC real)</label>
-                    <select id="simulatedPulseraConsulta" onchange="consultarSaldoSimulado()" style="margin-top: 8px;">
-                        <option value="">Selecciona una pulsera para consultar...</option>
-                    </select>
-                </div>
-
-                <button class="btn-danger" onclick="resetConsulta()" style="width: 100%;">Limpiar</button>
+                <h3>🏷️ Pulseras Registradas</h3>
+                <div id="pulserasList"></div>
             </div>
 
             <div class="card">
-                <h2>📊 Mi Turno</h2>
+                <h3>🧪 Simular Transacción (Testing)</h3>
+                <div class="form-group">
+                    <label>Selecciona Pulsera</label>
+                    <select id="simPulsera" onchange="loadSimArticulos()">
+                        <option value="">Cargando pulseras...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Selecciona Artículo</label>
+                    <select id="simArticulo">
+                        <option value="">Selecciona una pulsera primero</option>
+                    </select>
+                </div>
+                <button class="btn-primary" onclick="simularTransaccion()" style="width: 100%; margin-top: 10px;">Simular Cobro</button>
+            </div>
+        </div>
 
-                <div class="stat-box">
-                    <div class="number" id="ventasCount">0</div>
-                    <div class="label">Ventas Realizadas</div>
+        <!-- TAB: ARTÍCULOS -->
+        <div class="tab-content" id="articulos">
+            <div class="grid">
+                <div class="card">
+                    <h3>➕ Agregar Artículo</h3>
+                    <div class="form-group">
+                        <label>Evento</label>
+                        <select id="articuloEvento" onchange="cargarArticulos()"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Nombre del Artículo</label>
+                        <input type="text" id="articuloName" placeholder="ej: Tamales">
+                    </div>
+                    <div class="form-group">
+                        <label>Precio ($)</label>
+                        <input type="number" id="articuloPrice" placeholder="0.00" min="0" step="0.01">
+                    </div>
+                    <button class="btn-primary" onclick="agregarArticulo()" style="width: 100%;">Agregar Artículo</button>
                 </div>
 
-                <div class="stat-box">
-                    <div class="number">$<span id="totalVentas">0.00</span></div>
-                    <div class="label">Total Vendido</div>
+                <div class="card">
+                    <h3>🛒 Artículos por Evento</h3>
+                    <div id="articulosList"></div>
                 </div>
+            </div>
+        </div>
 
-                <h3 style="margin-top: 20px; font-size: 14px; margin-bottom: 10px;">Últimas Transacciones</h3>
-                <div id="transactionsList" style="max-height: 300px; overflow-y: auto;"></div>
+        <!-- TAB: CUENTAS -->
+        <div class="tab-content" id="cuentas">
+            <div class="card">
+                <h3>👥 Cuentas del Sistema</h3>
+                <div id="cuentasList"></div>
+            </div>
+        </div>
 
-                <h3 style="margin-top: 20px; font-size: 14px; margin-bottom: 10px;">📊 Ventas por Artículo</h3>
-                <div id="ventasPorArticulo" style="max-height: 300px; overflow-y: auto;"></div>
+        <!-- TAB: REPORTES -->
+        <div class="tab-content" id="reportes">
+            <div class="card">
+                <h3>📊 Reportes en Tiempo Real</h3>
+                <p style="color: #94a3b8;">Los reportes se actualizan automáticamente desde Firebase.</p>
+                <button class="btn-primary" onclick="irAReportes()" style="margin-top: 15px; width: 100%;">Ver Dashboard de Reportes →</button>
             </div>
         </div>
     </div>
@@ -456,27 +418,50 @@
         const db = firebase.firestore();
 
         let currentUserId = localStorage.getItem('userId');
-        let selectedProduct = null;
-        let selectedPrice = null;
-        let scannedPulsera = null;
+        let authChecked = false;
 
         // Verificar autenticación
         auth.onAuthStateChanged(user => {
-            if (!user || localStorage.getItem('userRole') !== 'vendedor') {
+            if (authChecked) return; // Solo ejecutar una vez
+            authChecked = true;
+
+            if (!user) {
                 window.location.href = 'index.html';
-            } else {
-                document.getElementById('userName').textContent = localStorage.getItem('userName') || 'Vendedor';
-                loadProducts();
-                cargarPulseras();
-                loadMyTransactions();
+                return;
             }
+
+            // Verificar el rol desde Firestore
+            db.collection('usuarios').doc(user.uid).get().then(doc => {
+                if (doc.exists && doc.data().role === 'admin') {
+                    document.getElementById('userName').textContent = localStorage.getItem('userName') || 'Admin';
+                    cargarEventos();
+                    cargarPulseras();
+                    cargarCuentas();
+                    loadSimPulseras();
+                } else {
+                    window.location.href = 'index.html';
+                }
+            }).catch(() => {
+                window.location.href = 'index.html';
+            });
         });
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tab).classList.add('active');
+            event.target.classList.add('active');
+        }
 
         function logout() {
             auth.signOut().then(() => {
                 localStorage.clear();
                 window.location.href = 'index.html';
-            });
+            }).catch(error => alert('Error: ' + error.message));
+        }
+
+        function irAReportes() {
+            window.location.href = './reportes.html';
         }
 
         function showSuccess(msg) {
@@ -486,489 +471,394 @@
             setTimeout(() => alert.classList.remove('show'), 3000);
         }
 
-        function showError(msg) {
-            const alert = document.getElementById('errorAlert');
-            alert.textContent = msg;
-            alert.classList.add('show');
-            setTimeout(() => alert.classList.remove('show'), 3000);
+        function iniciarLecturaNFCAdmin() {
+            if (!('NDEFReader' in window)) {
+                alert('❌ Tu navegador no soporta NFC');
+                return;
+            }
+
+            document.getElementById('nfcStatusAdmin').textContent = '⏳ Acerca la pulsera...';
+            document.getElementById('nfcStatusAdmin').style.color = '#f59e0b';
+
+            const ndef = new NDEFReader();
+            ndef.scan().then(() => {
+                ndef.onreading = event => {
+                    let pulseraId = '';
+
+                    try {
+                        for (const record of event.message.records) {
+                            if (record.recordType === 'text') {
+                                pulseraId = new TextDecoder().decode(record.data);
+                                break;
+                            }
+                        }
+
+                        if (pulseraId) {
+                            document.getElementById('pulseraId').value = pulseraId;
+                            document.getElementById('nfcStatusAdmin').textContent = '✅ ID leído: ' + pulseraId;
+                            document.getElementById('nfcStatusAdmin').style.color = '#86efac';
+                        } else {
+                            document.getElementById('nfcStatusAdmin').textContent = '⚠️ Sin ID de texto encontrado';
+                            document.getElementById('nfcStatusAdmin').style.color = '#f59e0b';
+                        }
+                    } catch (error) {
+                        document.getElementById('nfcStatusAdmin').textContent = '❌ Error: ' + error.message;
+                        document.getElementById('nfcStatusAdmin').style.color = '#ef4444';
+                    }
+                };
+
+                ndef.onreadingerror = () => {
+                    document.getElementById('nfcStatusAdmin').textContent = '❌ Error al leer NFC';
+                    document.getElementById('nfcStatusAdmin').style.color = '#ef4444';
+                };
+            }).catch(error => {
+                document.getElementById('nfcStatusAdmin').textContent = '❌ ' + error.message;
+                document.getElementById('nfcStatusAdmin').style.color = '#ef4444';
+            });
         }
 
-        function loadProducts() {
-            // Cargar eventos primero
-            db.collection('eventos')
-                .orderBy('createdAt', 'desc')
+        function registrarPulsera() {
+            const eventId = document.getElementById('pulseraEvento').value;
+            const id = document.getElementById('pulseraId').value.trim();
+            const nombre = document.getElementById('pulseraNombre').value.trim();
+            const saldo = parseFloat(document.getElementById('pulseraSaldo').value);
+
+            if (!eventId || !id || !nombre || isNaN(saldo)) {
+                alert('Completa los campos requeridos');
+                return;
+            }
+
+            db.collection('pulseras').add({
+                eventId: eventId,
+                id: id,
+                nombre: nombre,
+                saldoInicial: saldo,
+                saldoActual: saldo,
+                createdAt: new Date(),
+                activo: true
+            }).then(() => {
+                showSuccess('✅ Pulsera registrada');
+                document.getElementById('pulseraEvento').value = '';
+                document.getElementById('pulseraId').value = '';
+                document.getElementById('pulseraNombre').value = '';
+                document.getElementById('pulseraSaldo').value = '';
+                cargarPulseras();
+            }).catch(error => alert('Error: ' + error.message));
+        }
+
+        function eliminarPulsera(pulseraId) {
+            if (confirm('¿Estás seguro?')) {
+                db.collection('pulseras').doc(pulseraId).delete().then(() => {
+                    showSuccess('Pulsera eliminada');
+                    cargarPulseras();
+                });
+            }
+        }
+
+        function cargarPulseras() {
+            // Primero cargar eventos en el selector
+            db.collection('eventos').onSnapshot(snapshot => {
+                let html = '<option value="">Selecciona un evento</option>';
+                let eventosMap = {};
+                snapshot.forEach(doc => {
+                    html += `<option value="${doc.id}">${doc.data().nombre}</option>`;
+                    eventosMap[doc.id] = doc.data().nombre;
+                });
+                document.getElementById('pulseraEvento').innerHTML = html;
+                window.eventosMap = eventosMap; // Guardar mapa global
+            });
+
+            // Luego cargar pulseras
+            db.collection('pulseras')
                 .onSnapshot(snapshot => {
-                    let html = '<option value="">Selecciona un evento</option>';
+                    let html = '<table class="table"><thead><tr><th>ID</th><th>Nombre</th><th>Evento</th><th>Saldo Inicial</th><th>Saldo Actual</th><th>Acciones</th></tr></thead><tbody>';
+
                     snapshot.forEach(doc => {
-                        html += `<option value="${doc.id}">${doc.data().nombre}</option>`;
+                        const pulsera = doc.data();
+                        const eventId = pulsera.eventId || 'N/A';
+                        const eventNombre = window.eventosMap && window.eventosMap[eventId] ? window.eventosMap[eventId] : eventId;
+                        
+                        html += `
+                            <tr>
+                                <td>${pulsera.id}</td>
+                                <td>${pulsera.nombre}</td>
+                                <td>${eventNombre}</td>
+                                <td>$${pulsera.saldoInicial.toFixed(2)}</td>
+                                <td>$${pulsera.saldoActual.toFixed(2)}</td>
+                                <td>
+                                    <button class="btn-danger" onclick="eliminarPulsera('${doc.id}')" style="padding: 4px 8px; font-size: 11px;">Eliminar</button>
+                                </td>
+                            </tr>
+                        `;
                     });
-                    document.getElementById('eventSelect').innerHTML = html;
+
+                    html += '</tbody></table>';
+                    document.getElementById('pulserasList').innerHTML = html || '<p style="color: #94a3b8;">No hay pulseras registradas</p>';
                 });
         }
 
-        function cargarProductosPorEvento() {
-            const eventId = document.getElementById('eventSelect').value;
-            
+        function crearEvento() {
+            const name = document.getElementById('eventName').value.trim();
+            const desc = document.getElementById('eventDesc').value.trim();
+
+            if (!name) {
+                alert('Completa los campos requeridos');
+                return;
+            }
+
+            db.collection('eventos').add({
+                nombre: name,
+                descripcion: desc,
+                fecha: new Date(),
+                adminId: currentUserId,
+                createdAt: new Date(),
+                activo: true
+            }).then(() => {
+                showSuccess('✅ Evento creado');
+                document.getElementById('eventName').value = '';
+                document.getElementById('eventDesc').value = '';
+                cargarEventos();
+            }).catch(error => alert('Error: ' + error.message));
+        }
+
+        function eliminarEvento(eventId) {
+            if (confirm('¿Estás seguro?')) {
+                db.collection('eventos').doc(eventId).delete().then(() => {
+                    showSuccess('Evento eliminado');
+                    cargarEventos();
+                });
+            }
+        }
+
+        function cargarEventos() {
+            db.collection('eventos')
+                .where('adminId', '==', currentUserId)
+                .orderBy('createdAt', 'desc')
+                .onSnapshot(snapshot => {
+                    let html = '<table class="table"><thead><tr><th>Nombre</th><th>Fecha</th><th>Acciones</th></tr></thead><tbody>';
+                    let selectHTML = '<option value="">Selecciona un evento</option>';
+
+                    snapshot.forEach(doc => {
+                        const evento = doc.data();
+                        const fecha = evento.fecha.toDate().toLocaleDateString('es-MX');
+
+                        html += `
+                            <tr>
+                                <td>${evento.nombre}</td>
+                                <td>${fecha}</td>
+                                <td>
+                                    <button class="btn-danger" onclick="eliminarEvento('${doc.id}')" style="padding: 4px 8px; font-size: 11px;">Eliminar</button>
+                                </td>
+                            </tr>
+                        `;
+                        selectHTML += `<option value="${doc.id}">${evento.nombre}</option>`;
+                    });
+
+                    html += '</tbody></table>';
+                    document.getElementById('eventsList').innerHTML = html || '<p style="color: #94a3b8;">No hay eventos</p>';
+                    document.getElementById('articuloEvento').innerHTML = selectHTML;
+                });
+        }
+
+        function agregarArticulo() {
+            const eventId = document.getElementById('articuloEvento').value;
+            const name = document.getElementById('articuloName').value.trim();
+            const price = parseFloat(document.getElementById('articuloPrice').value);
+
+            if (!eventId || !name || isNaN(price)) {
+                alert('Completa los campos requeridos');
+                return;
+            }
+
+            db.collection('articulos').add({
+                eventId: eventId,
+                nombre: name,
+                precio: price,
+                createdAt: new Date()
+            }).then(() => {
+                showSuccess('✅ Artículo agregado');
+                document.getElementById('articuloName').value = '';
+                document.getElementById('articuloPrice').value = '';
+                cargarArticulos();
+            }).catch(error => alert('Error: ' + error.message));
+        }
+
+        function eliminarArticulo(articuloId) {
+            if (confirm('¿Eliminar?')) {
+                db.collection('articulos').doc(articuloId).delete();
+            }
+        }
+
+        function cargarArticulos() {
+            const eventId = document.getElementById('articuloEvento').value;
             if (!eventId) {
-                document.getElementById('productSelect').innerHTML = '<option value="">Selecciona un evento primero</option>';
+                document.getElementById('articulosList').innerHTML = '<p style="color: #94a3b8; font-size: 13px;">Selecciona un evento</p>';
                 return;
             }
 
             db.collection('articulos')
                 .where('eventId', '==', eventId)
                 .onSnapshot(snapshot => {
-                    let html = '<option value="">Selecciona un producto</option>';
-                    snapshot.forEach(doc => {
-                        const producto = doc.data();
-                        html += `<option value="${doc.id}|${producto.nombre}|${producto.precio}">
-                            ${producto.nombre} - $${producto.precio.toFixed(2)}
-                        </option>`;
-                    });
-                    document.getElementById('productSelect').innerHTML = html;
-                });
-        }
-
-        function selectProduct() {
-            const select = document.getElementById('productSelect');
-            const value = select.value;
-
-            if (!value) {
-                selectedProduct = null;
-                selectedPrice = null;
-                document.getElementById('productInfo').classList.remove('show');
-                document.getElementById('btnPagar').style.display = 'none';
-                return;
-            }
-
-            const [id, name, price] = value.split('|');
-            selectedProduct = name;
-            selectedPrice = parseFloat(price);
-            scannedPulsera = null;
-
-            document.getElementById('productInfo').classList.add('show');
-            document.getElementById('selectedProduct').textContent = name;
-            document.getElementById('selectedPrice').textContent = price;
-            document.getElementById('btnPagar').style.display = 'block';
-
-            resetScan();
-        }
-
-        function startNFCRead() {
-            if (!selectedProduct) {
-                showError('Por favor selecciona un producto primero');
-                return;
-            }
-
-            if (!('NDEFReader' in window)) {
-                showError('Tu navegador no soporta NFC');
-                return;
-            }
-
-            const nfcReader = document.getElementById('nfcReader');
-            nfcReader.innerHTML = `
-                <div class="nfc-icon">⏳</div>
-                <div class="nfc-status">Acerca la pulsera...</div>
-            `;
-
-            const ndef = new NDEFReader();
-            ndef.scan().then(() => {
-                ndef.onreading = event => {
-                    let pulseraId = '';
-
-                    try {
-                        for (const record of event.message.records) {
-                            if (record.recordType === 'text') {
-                                pulseraId = new TextDecoder().decode(record.data);
-                                break;
-                            }
-                        }
-
-                        if (pulseraId) {
-                            readPulseraData(pulseraId);
-                        } else {
-                            showError('No se encontró ID en la pulsera');
-                            resetScan();
-                        }
-                    } catch (error) {
-                        showError('Error al leer: ' + error.message);
-                        resetScan();
-                    }
-                };
-
-                ndef.onreadingerror = () => {
-                    showError('Error de lectura NFC');
-                    resetScan();
-                };
-            }).catch(error => {
-                showError('Error: ' + error.message);
-                resetScan();
-            });
-        }
-
-        function readPulseraData(pulseraId) {
-            db.collection('pulseras')
-                .where('id', '==', pulseraId)
-                .get()
-                .then(snapshot => {
-                    if (snapshot.empty) {
-                        showError('Pulsera no encontrada');
-                        return;
-                    }
+                    let html = '<table class="table"><thead><tr><th>Artículo</th><th>Precio</th><th>Acciones</th></tr></thead><tbody>';
 
                     snapshot.forEach(doc => {
-                        const pulsera = doc.data();
-                        scannedPulsera = {
-                            id: doc.id,
-                            nombre: pulsera.nombre,
-                            saldo: pulsera.saldoActual
-                        };
-
-                        document.getElementById('saldoInfo').classList.add('show');
-                        document.getElementById('saldoActual').textContent = pulsera.saldoActual.toFixed(2);
-
-                        const nfcReader = document.getElementById('nfcReader');
-                        nfcReader.classList.add('active');
-                        nfcReader.innerHTML = `
-                            <div class="nfc-icon">✅</div>
-                            <div class="nfc-status"><strong>${pulsera.nombre}</strong></div>
-                            <div style="font-size: 12px; color: #94a3b8; margin-top: 5px;">Saldo: $${pulsera.saldoActual.toFixed(2)}</div>
+                        const art = doc.data();
+                        html += `
+                            <tr>
+                                <td>${art.nombre}</td>
+                                <td>$${art.precio.toFixed(2)}</td>
+                                <td>
+                                    <button class="btn-danger" onclick="eliminarArticulo('${doc.id}')" style="padding: 4px 8px; font-size: 11px;">Eliminar</button>
+                                </td>
+                            </tr>
                         `;
                     });
-                })
-                .catch(error => showError('Error: ' + error.message));
-        }
 
-        function procesarPago() {
-            if (!selectedProduct || !scannedPulsera) {
-                showError('Algo falta. Intenta de nuevo');
-                return;
-            }
-
-            if (scannedPulsera.saldo < selectedPrice) {
-                showError('Saldo insuficiente');
-                return;
-            }
-
-            const nuevoSaldo = scannedPulsera.saldo - selectedPrice;
-            const eventId = document.getElementById('eventSelect').value;
-
-            db.collection('pulseras').doc(scannedPulsera.id).update({
-                saldoActual: nuevoSaldo
-            }).then(() => {
-                db.collection('transacciones').add({
-                    eventId: eventId,
-                    pulseraId: scannedPulsera.id,
-                    pulsera: scannedPulsera.nombre,
-                    articulo: selectedProduct,
-                    monto: selectedPrice,
-                    saldoAnterior: scannedPulsera.saldo,
-                    saldoNuevo: nuevoSaldo,
-                    vendedor: localStorage.getItem('userName'),
-                    vendedorId: currentUserId,
-                    fecha: new Date()
-                }).then(() => {
-                    showSuccess('✓ Pago de $' + selectedPrice.toFixed(2) + ' registrado');
-                    resetScan();
-                    loadMyTransactions();
+                    html += '</tbody></table>';
+                    document.getElementById('articulosList').innerHTML = html;
                 });
-            }).catch(error => showError('Error: ' + error.message));
         }
 
-        function resetScan() {
-            scannedPulsera = null;
-            document.getElementById('nfcReader').classList.remove('active');
-            document.getElementById('nfcReader').innerHTML = `
-                <div class="nfc-icon">📱</div>
-                <div class="nfc-status">Escanea la pulsera del cliente</div>
-                <button class="btn-primary" onclick="startNFCRead()">Leer Pulsera NFC</button>
-            `;
-            document.getElementById('saldoInfo').classList.remove('show');
+        function cargarCuentas() {
+            db.collection('usuarios')
+                .onSnapshot(snapshot => {
+                    let html = '<table class="table"><thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Fecha Creación</th><th>Contraseña</th><th>Acciones</th></tr></thead><tbody>';
+
+                    snapshot.forEach(doc => {
+                        const usuario = doc.data();
+                        const fecha = usuario.createdAt.toDate().toLocaleDateString('es-MX');
+                        const rolBadge = usuario.role === 'admin' ? '👨‍💼 Admin' : '🛍️ Vendedor';
+
+                        html += `
+                            <tr>
+                                <td>${usuario.name}</td>
+                                <td>${usuario.email}</td>
+                                <td>${rolBadge}</td>
+                                <td>${fecha}</td>
+                                <td><button class="btn-primary" onclick="mostrarContrasena('${usuario.email}')" style="padding: 4px 8px; font-size: 11px;">Ver</button></td>
+                                <td><button class="btn-danger" onclick="eliminarCuenta('${doc.id}', '${usuario.email}')" style="padding: 4px 8px; font-size: 11px;">Eliminar</button></td>
+                            </tr>
+                        `;
+                    });
+
+                    html += '</tbody></table>';
+                    document.getElementById('cuentasList').innerHTML = html || '<p style="color: #94a3b8;">No hay cuentas registradas</p>';
+                });
         }
 
-        function cargarPulseras() {
+        function mostrarContrasena(email) {
+            const password = prompt('Ingresa la contraseña para esta cuenta para verificar:\n\nEmail: ' + email, '');
+            if (password) {
+                auth.signInWithEmailAndPassword(email, password)
+                    .then(() => {
+                        alert('✅ Contraseña correcta para: ' + email);
+                        auth.signOut();
+                    })
+                    .catch(error => {
+                        alert('❌ Contraseña incorrecta');
+                    });
+            }
+        }
+
+        function eliminarCuenta(usuarioId, email) {
+            if (confirm('¿Estás seguro de que deseas eliminar la cuenta de ' + email + '?\n\nEsta acción no se puede deshacer.')) {
+                // Eliminar documento del usuario de Firestore
+                db.collection('usuarios').doc(usuarioId).delete().then(() => {
+                    showSuccess('Cuenta eliminada correctamente');
+                    cargarCuentas();
+                }).catch(error => {
+                    showError('Error al eliminar: ' + error.message);
+                });
+            }
+        }
+
+        function loadSimPulseras() {
             db.collection('pulseras')
                 .onSnapshot(snapshot => {
-                    let html = '<option value="">Selecciona una pulsera para simular...</option>';
+                    let html = '<option value="">Selecciona una pulsera</option>';
                     snapshot.forEach(doc => {
                         const pulsera = doc.data();
                         html += `<option value="${doc.id}|${pulsera.nombre}|${pulsera.saldoActual}">
                             ${pulsera.nombre} - $${pulsera.saldoActual.toFixed(2)}
                         </option>`;
                     });
-                    document.getElementById('simulatedPulsera').innerHTML = html;
-                    
-                    // También cargar para consulta
-                    let htmlConsulta = '<option value="">Selecciona una pulsera para consultar...</option>';
+                    document.getElementById('simPulsera').innerHTML = html;
+                });
+        }
+
+        function loadSimArticulos() {
+            const select = document.getElementById('simPulsera');
+            const value = select.value;
+
+            if (!value) {
+                document.getElementById('simArticulo').innerHTML = '<option value="">Selecciona una pulsera primero</option>';
+                return;
+            }
+
+            db.collection('articulos')
+                .onSnapshot(snapshot => {
+                    let html = '<option value="">Selecciona un artículo</option>';
                     snapshot.forEach(doc => {
-                        const pulsera = doc.data();
-                        htmlConsulta += `<option value="${doc.id}|${pulsera.nombre}|${pulsera.saldoActual}">
-                            ${pulsera.nombre} - $${pulsera.saldoActual.toFixed(2)}
+                        const art = doc.data();
+                        html += `<option value="${doc.id}|${art.nombre}|${art.precio}">
+                            ${art.nombre} - $${art.precio.toFixed(2)}
                         </option>`;
                     });
-                    document.getElementById('simulatedPulseraConsulta').innerHTML = htmlConsulta;
+                    document.getElementById('simArticulo').innerHTML = html;
                 });
         }
 
-        function selectSimulatedPulsera() {
-            const select = document.getElementById('simulatedPulsera');
-            const value = select.value;
+        function simularTransaccion() {
+            const pulseraValue = document.getElementById('simPulsera').value;
+            const articuloValue = document.getElementById('simArticulo').value;
 
-            if (!value) {
-                resetScan();
+            if (!pulseraValue || !articuloValue) {
+                alert('Selecciona una pulsera y un artículo');
                 return;
             }
 
-            const [docId, nombre, saldo] = value.split('|');
-            scannedPulsera = {
-                id: docId,
-                nombre: nombre,
-                saldo: parseFloat(saldo)
-            };
+            const [pulseraId, pulseraNombre, saldoActual] = pulseraValue.split('|');
+            const [articuloId, articuloNombre, precio] = articuloValue.split('|');
 
-            document.getElementById('saldoInfo').classList.add('show');
-            document.getElementById('saldoActual').textContent = saldo;
+            const precioNum = parseFloat(precio);
+            const saldoNum = parseFloat(saldoActual);
 
-            const nfcReader = document.getElementById('nfcReader');
-            nfcReader.classList.add('active');
-            nfcReader.innerHTML = `
-                <div class="nfc-icon">✅</div>
-                <div class="nfc-status"><strong>${nombre}</strong></div>
-                <div style="font-size: 12px; color: #94a3b8; margin-top: 5px;">Saldo: $${saldo}</div>
-            `;
-        }
-
-        function startNFCReadConsulta() {
-            if (!('NDEFReader' in window)) {
-                showError('Tu navegador no soporta NFC');
+            if (saldoNum < precioNum) {
+                alert('Saldo insuficiente');
                 return;
             }
 
-            const nfcReader = document.getElementById('nfcReaderConsulta');
-            nfcReader.innerHTML = `
-                <div class="nfc-icon">⏳</div>
-                <div class="nfc-status">Acerca la pulsera...</div>
-            `;
+            const nuevoSaldo = saldoNum - precioNum;
 
-            const ndef = new NDEFReader();
-            ndef.scan().then(() => {
-                ndef.onreading = event => {
-                    let pulseraId = '';
+            // Obtener el eventId de la pulsera
+            db.collection('pulseras').doc(pulseraId).get().then(doc => {
+                const eventId = doc.data().eventId || '';
 
-                    try {
-                        for (const record of event.message.records) {
-                            if (record.recordType === 'text') {
-                                pulseraId = new TextDecoder().decode(record.data);
-                                break;
-                            }
-                        }
-
-                        if (pulseraId) {
-                            leerPulseraConsulta(pulseraId);
-                        } else {
-                            showError('No se encontró ID en la pulsera');
-                            resetConsulta();
-                        }
-                    } catch (error) {
-                        showError('Error al leer: ' + error.message);
-                        resetConsulta();
-                    }
-                };
-
-                ndef.onreadingerror = () => {
-                    showError('Error de lectura NFC');
-                    resetConsulta();
-                };
-            }).catch(error => {
-                showError('Error: ' + error.message);
-                resetConsulta();
-            });
-        }
-
-        function leerPulseraConsulta(pulseraId) {
-            db.collection('pulseras')
-                .where('id', '==', pulseraId)
-                .get()
-                .then(snapshot => {
-                    if (snapshot.empty) {
-                        showError('Pulsera no encontrada');
-                        return;
-                    }
-
-                    snapshot.forEach(doc => {
-                        const pulsera = doc.data();
-                        
-                        document.getElementById('consultaNombre').textContent = pulsera.nombre;
-                        document.getElementById('consultaSaldo').textContent = pulsera.saldoActual.toFixed(2);
-                        document.getElementById('saldoInfoConsulta').style.display = 'block';
-
-                        const nfcReader = document.getElementById('nfcReaderConsulta');
-                        nfcReader.classList.add('active');
-                        nfcReader.innerHTML = `
-                            <div class="nfc-icon">✅</div>
-                            <div class="nfc-status"><strong>${pulsera.nombre}</strong></div>
-                            <div style="font-size: 12px; color: #94a3b8; margin-top: 5px;">Saldo: $${pulsera.saldoActual.toFixed(2)}</div>
-                        `;
+                // Actualizar saldo de la pulsera
+                db.collection('pulseras').doc(pulseraId).update({
+                    saldoActual: nuevoSaldo
+                }).then(() => {
+                    // Registrar transacción
+                    db.collection('transacciones').add({
+                        eventId: eventId,
+                        pulseraId: pulseraId,
+                        pulsera: pulseraNombre,
+                        articulo: articuloNombre,
+                        monto: precioNum,
+                        saldoAnterior: saldoNum,
+                        saldoNuevo: nuevoSaldo,
+                        vendedor: 'Simulación Admin',
+                        vendedorId: currentUserId,
+                        fecha: new Date()
+                    }).then(() => {
+                        showSuccess('✅ Transacción simulada correctamente');
+                        document.getElementById('simPulsera').value = '';
+                        document.getElementById('simArticulo').value = '';
+                        cargarPulseras();
+                        loadSimPulseras();
                     });
-                })
-                .catch(error => showError('Error: ' + error.message));
-        }
-
-        function consultarSaldoSimulado() {
-            const select = document.getElementById('simulatedPulseraConsulta');
-            const value = select.value;
-
-            if (!value) {
-                resetConsulta();
-                return;
-            }
-
-            const [docId, nombre, saldo] = value.split('|');
-
-            document.getElementById('consultaNombre').textContent = nombre;
-            document.getElementById('consultaSaldo').textContent = saldo;
-            document.getElementById('saldoInfoConsulta').style.display = 'block';
-
-            const nfcReader = document.getElementById('nfcReaderConsulta');
-            nfcReader.classList.add('active');
-            nfcReader.innerHTML = `
-                <div class="nfc-icon">✅</div>
-                <div class="nfc-status"><strong>${nombre}</strong></div>
-                <div style="font-size: 12px; color: #94a3b8; margin-top: 5px;">Saldo: $${saldo}</div>
-            `;
-        }
-
-        function resetConsulta() {
-            document.getElementById('nfcReaderConsulta').classList.remove('active');
-            document.getElementById('nfcReaderConsulta').innerHTML = `
-                <div class="nfc-icon">📱</div>
-                <div class="nfc-status">Escanea la pulsera para ver el saldo</div>
-                <button class="btn-primary" onclick="startNFCReadConsulta()">Leer Pulsera NFC</button>
-            `;
-            document.getElementById('saldoInfoConsulta').style.display = 'none';
-            document.getElementById('simulatedPulseraConsulta').value = '';
-        }
-
-        function iniciarPruebaLecturaRaw() {
-            if (!('NDEFReader' in window)) {
-                document.getElementById('nfcTestStatus').textContent = '❌ Tu navegador no soporta NFC';
-                document.getElementById('nfcTestStatus').style.color = '#ef4444';
-                return;
-            }
-
-            document.getElementById('nfcTestStatus').textContent = '⏳ Acerca tu tarjeta al lector...';
-            document.getElementById('nfcTestStatus').style.color = '#f59e0b';
-            document.getElementById('nfcTestResults').style.display = 'none';
-
-            const ndef = new NDEFReader();
-            ndef.scan().then(() => {
-                ndef.onreading = event => {
-                    let allData = '';
-                    let recordCount = 0;
-
-                    try {
-                        for (const record of event.message.records) {
-                            recordCount++;
-                            allData += `\n[Registro ${recordCount}]\n`;
-                            allData += `Tipo: ${record.recordType}\n`;
-                            
-                            if (record.recordType === 'text') {
-                                const texto = new TextDecoder().decode(record.data);
-                                allData += `Texto: ${texto}\n`;
-                            } else if (record.recordType === 'uri') {
-                                const uri = new TextDecoder().decode(record.data);
-                                allData += `URI: ${uri}\n`;
-                            } else {
-                                allData += `Raw Bytes: ${Array.from(new Uint8Array(record.data)).map(b => b.toString(16).padStart(2, '0')).join(' ')}\n`;
-                            }
-                        }
-
-                        if (recordCount === 0) {
-                            allData = '⚠️ Tarjeta detectada pero no contiene datos legibles.\n\nEsto puede deberse a:\n- La tarjeta está encriptada (como tu Tarjeta de Movilidad)\n- La tarjeta usa un protocolo propietario\n\n✅ ¡Buena noticia! Tu NFC funciona correctamente.\nCuando uses pulseras NFC simples, funcionará sin problema.';
-                        }
-
-                        document.getElementById('nfcRawData').textContent = allData || 'Sin datos detectados';
-                        document.getElementById('nfcTestResults').style.display = 'block';
-                        document.getElementById('nfcTestStatus').textContent = '✅ ¡Lectura completada!';
-                        document.getElementById('nfcTestStatus').style.color = '#86efac';
-                    } catch (e) {
-                        document.getElementById('nfcRawData').textContent = '⚠️ Error al procesar datos: ' + e.message + '\n\n✅ Tu NFC funciona, pero esta tarjeta tiene un formato especial.';
-                        document.getElementById('nfcTestResults').style.display = 'block';
-                        document.getElementById('nfcTestStatus').textContent = '⚠️ Lectura parcial';
-                        document.getElementById('nfcTestStatus').style.color = '#f59e0b';
-                    }
-                };
-
-                ndef.onreadingerror = () => {
-                    document.getElementById('nfcTestStatus').textContent = '⚠️ Tarjeta encriptada o formato especial';
-                    document.getElementById('nfcTestStatus').style.color = '#f59e0b';
-                    document.getElementById('nfcRawData').textContent = '✅ ¡Tu NFC funciona correctamente!\n\nLa tarjeta que intentaste leer está encriptada o usa un protocolo que no podemos leer desde la web.\n\nEsto es NORMAL y ESPERADO con tarjetas de gobierno como tu Tarjeta de Movilidad.\n\nCuando uses pulseras NFC estándar (sin encriptación), funcionará perfectamente.';
-                    document.getElementById('nfcTestResults').style.display = 'block';
-                };
-            }).catch(error => {
-                document.getElementById('nfcTestStatus').textContent = '❌ ' + error.message;
-                document.getElementById('nfcTestStatus').style.color = '#ef4444';
-            });
-        }
-
-        function loadMyTransactions() {
-            db.collection('transacciones')
-                .where('vendedorId', '==', currentUserId)
-                .orderBy('fecha', 'desc')
-                .limit(10)
-                .onSnapshot(snapshot => {
-                    let html = '';
-                    let count = 0;
-                    let total = 0;
-                    let articulosMap = {};
-
-                    snapshot.forEach(doc => {
-                        const trans = doc.data();
-                        count++;
-                        total += trans.monto;
-                        const hora = trans.fecha.toDate().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
-
-                        html += `
-                            <div class="transaction-card">
-                                <strong>${trans.pulsera}</strong><br>
-                                <small>${trans.articulo} - $${trans.monto.toFixed(2)}</small><br>
-                                <small style="color: #64748b; font-size: 11px;">${hora}</small>
-                            </div>
-                        `;
-
-                        // Contar ventas por artículo
-                        if (articulosMap[trans.articulo]) {
-                            articulosMap[trans.articulo].cantidad++;
-                            articulosMap[trans.articulo].total += trans.monto;
-                        } else {
-                            articulosMap[trans.articulo] = {
-                                cantidad: 1,
-                                total: trans.monto
-                            };
-                        }
-                    });
-
-                    document.getElementById('ventasCount').textContent = count;
-                    document.getElementById('totalVentas').textContent = total.toFixed(2);
-                    document.getElementById('transactionsList').innerHTML = html || '<p style="color: #94a3b8; font-size: 12px;">Sin ventas aún</p>';
-
-                    // Mostrar ventas por artículo
-                    let articulosHtml = '<table style="width: 100%; font-size: 12px; border-collapse: collapse;">';
-                    articulosHtml += '<thead><tr style="background: rgba(15, 23, 42, 0.8); border-bottom: 1px solid rgba(148, 163, 184, 0.2);"><th style="padding: 8px; text-align: left;">Artículo</th><th style="padding: 8px; text-align: right;">Cantidad</th><th style="padding: 8px; text-align: right;">Total</th></tr></thead><tbody>';
-
-                    Object.keys(articulosMap).forEach(articulo => {
-                        const data = articulosMap[articulo];
-                        articulosHtml += `
-                            <tr style="border-bottom: 1px solid rgba(148, 163, 184, 0.1);">
-                                <td style="padding: 8px;">${articulo}</td>
-                                <td style="padding: 8px; text-align: right;"><strong>${data.cantidad}</strong></td>
-                                <td style="padding: 8px; text-align: right;">$${data.total.toFixed(2)}</td>
-                            </tr>
-                        `;
-                    });
-
-                    articulosHtml += '</tbody></table>';
-                    document.getElementById('ventasPorArticulo').innerHTML = Object.keys(articulosMap).length > 0 ? articulosHtml : '<p style="color: #94a3b8; font-size: 12px;">Sin ventas aún</p>';
                 });
+            });
         }
     </script>
 </body>
