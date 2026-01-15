@@ -171,10 +171,19 @@
             }
 
             header {
-                height: auto;
-                padding: 15px 20px;
-                flex-direction: row;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                display: flex;
                 justify-content: space-between;
+                align-items: center;
+                padding: 10px 20px;
+                background: rgba(30, 41, 59, 0.95);
+                border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+                z-index: 1000;
+                flex-direction: row;
+                gap: 20px;
             }
 
             .logo-header {
@@ -182,35 +191,30 @@
                 height: 50px;
             }
 
-            .header-left {
-                gap: 15px;
-            }
-
-            .header-title {
+            .tabs {
                 display: flex !important;
-                flex-direction: column;
-                gap: 5px;
+                gap: 10px;
+                margin-bottom: 0;
+                border-bottom: none;
+                overflow-x: auto;
+                flex-wrap: wrap;
             }
 
-            .header-title h1 {
-                margin: 0;
-                font-size: 20px;
-            }
-
-            .user-info {
-                font-size: 11px;
+            .tab-btn {
+                padding: 10px 15px;
+                background: transparent;
+                border: none;
+                border-bottom: 3px solid transparent;
                 color: #94a3b8;
+                cursor: pointer;
+                font-weight: 600;
+                font-size: 13px;
+                white-space: nowrap;
             }
 
-            .header-right {
-                display: flex !important;
-                gap: 15px;
-                align-items: center;
-            }
-
-            .header-right button {
-                padding: 8px 12px;
-                font-size: 12px;
+            .tab-btn.active {
+                color: #f59e0b;
+                border-bottom-color: #f59e0b;
             }
 
             body {
