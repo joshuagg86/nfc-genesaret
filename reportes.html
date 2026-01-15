@@ -116,6 +116,84 @@
             box-shadow: 0 10px 25px rgba(245, 158, 11, 0.3);
         }
 
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #1e293b;
+            border: none;
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e1;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(226, 232, 240, 0.3);
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .modal-content {
+            background: rgba(30, 41, 59, 0.95);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 12px;
+            padding: 0;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: #e2e8f0;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-body p {
+            margin: 0 0 15px 0;
+            color: #94a3b8;
+            font-size: 13px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -264,8 +342,25 @@
                 </div>
             </div>
             <div style="margin-top: 15px; display: flex; gap: 10px;">
-                <button class="btn-primary" onclick="downloadHTMLReport()" style="flex: 1; font-size: 12px;">📄 Descargar PDF</button>
-                <button class="btn-primary" onclick="downloadExcelReport()" style="flex: 1; font-size: 12px;">📊 Descargar Excel</button>
+                <button class="btn-secondary" onclick="actualizarReportes()" style="flex: 1; font-size: 12px;">🔍 Filtrar</button>
+                <button class="btn-primary" onclick="openDownloadModal()" style="flex: 1; font-size: 12px;">📥 Descargar</button>
+            </div>
+        </div>
+
+        <!-- Modal de Descarga -->
+        <div id="downloadModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Descargar Reporte</h3>
+                    <button class="modal-close" onclick="closeDownloadModal()">✕</button>
+                </div>
+                <div class="modal-body">
+                    <p>Selecciona el formato en el que deseas descargar el reporte:</p>
+                    <div class="modal-buttons">
+                        <button class="btn-primary" onclick="downloadHTMLReport()" style="width: 100%; margin-bottom: 10px; font-size: 12px;">📄 Descargar como PDF</button>
+                        <button class="btn-primary" onclick="downloadExcelReport()" style="width: 100%; font-size: 12px;">📊 Descargar como Excel</button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -417,6 +512,11 @@
         }
 
         function loadTransacciones(transFiltered) {
+            if (!transFiltered || transFiltered.length === 0) {
+                document.getElementById('transacionesList').innerHTML = '<p style="color: #94a3b8; text-align: center; padding: 20px;">No hay transacciones para mostrar</p>';
+                return;
+            }
+
             let html = '<table class="table"><thead><tr><th>Fecha</th><th>Pulsera</th><th>Producto</th><th>Monto</th><th>Vendedor</th></tr></thead><tbody>';
             
             const sorted = [...transFiltered].sort((a, b) => {
@@ -572,15 +672,24 @@
 </html>
             `;
 
-            const blob = new Blob([html], { type: 'text/html' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Reporte-NFC-${new Date().toISOString().split('T')[0]}.html`;
-            a.click();
+        function openDownloadModal() {
+            document.getElementById('downloadModal').style.display = 'flex';
         }
 
-        function downloadExcelReport() {
+        function closeDownloadModal() {
+            document.getElementById('downloadModal').style.display = 'none';
+        }
+
+        // Cerrar modal al hacer click fuera
+        document.addEventListener('click', (e) => {
+            const modal = document.getElementById('downloadModal');
+            if (e.target === modal) {
+                closeDownloadModal();
+            }
+        });
+
+        function downloadHTMLReport() {
+            closeDownloadModal();
             const fechaDesde = document.getElementById('fechaDesde').value;
             const fechaHasta = document.getElementById('fechaHasta').value;
             const eventoFilter = document.getElementById('eventoFilter').value;
@@ -644,6 +753,7 @@
 
             // Descargar
             XLSX.writeFile(wb, `Reporte-NFC-${new Date().toISOString().split('T')[0]}.xlsx`);
+            closeDownloadModal();
         }
     </script>
 </body>
