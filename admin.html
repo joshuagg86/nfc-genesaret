@@ -343,7 +343,7 @@
             <div class="card">
                 <h3>📊 Reportes en Tiempo Real</h3>
                 <p style="color: #94a3b8;">Los reportes se actualizan automáticamente desde Firebase.</p>
-                <button class="btn-primary" onclick="window.location.href='reportes.html'" style="margin-top: 15px;">Ver Dashboard de Reportes →</button>
+                <button class="btn-primary" onclick="irAReportes()" style="margin-top: 15px; width: 100%;">Ver Dashboard de Reportes →</button>
             </div>
         </div>
     </div>
@@ -394,6 +394,10 @@
                 localStorage.clear();
                 window.location.href = 'index.html';
             }).catch(error => alert('Error: ' + error.message));
+        }
+
+        function irAReportes() {
+            window.location.href = './reportes.html';
         }
 
         function showSuccess(msg) {
