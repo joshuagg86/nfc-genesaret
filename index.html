@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFC Genesaret - Sistema de Cobro</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #003d7a 0%, #001a2e 50%, #0d47a1 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #e2e8f0;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 420px;
+            padding: 20px;
+        }
+
+        .card {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 16px;
+            padding: 40px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            display: block;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(245, 158, 11, 0.3);
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #f59e0b, #f97316);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #cbd5e1;
+            font-weight: 500;
+        }
+
+        input[type="email"],
+        input[type="password"],
+        input[type="text"],
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            border-radius: 8px;
+            color: #e2e8f0;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #f59e0b;
+            background: rgba(15, 23, 42, 0.8);
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+        }
+
+        select {
+            cursor: pointer;
+        }
+
+        option {
+            background: #1e293b;
+            color: #e2e8f0;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(245, 158, 11, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ef4444;
+            font-size: 13px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .success {
+            background: rgba(34, 197, 94, 0.1);
+            color: #86efac;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #22c55e;
+            font-size: 13px;
+            display: none;
+        }
+
+        .success.show {
+            display: block;
+        }
+
+        .toggle-form {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 13px;
+        }
+
+        .toggle-form a {
+            color: #f59e0b;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .toggle-form a:hover {
+            text-decoration: underline;
+        }
+
+        .form-section {
+            display: none;
+        }
+
+        .form-section.active {
+            display: block;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 13px;
+            margin-top: 15px;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(245, 158, 11, 0.3);
+            border-top-color: #f59e0b;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <img src="logo.png" alt="Logo NFC Genesaret" class="logo">
+                <h1>NFC Genesaret</h1>
+                <p class="subtitle">Sistema de Cobro para Eventos</p>
+            </div>
+
+            <div class="error" id="error"></div>
+            <div class="success" id="success"></div>
+
+            <!-- Formulario de Login -->
+            <div class="form-section active" id="loginForm">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" placeholder="tu@email.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="loginPassword">Contraseña</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="loginRole">Tipo de Usuario</label>
+                    <select id="loginRole">
+                        <option value="admin">Administrador</option>
+                        <option value="vendedor">Vendedor</option>
+                    </select>
+                </div>
+
+                <button class="btn-primary" onclick="login()">Iniciar Sesión</button>
+
+                <div class="toggle-form">
+                    ¿No tienes cuenta? <a onclick="toggleForms()">Regístrate aquí</a>
+                </div>
+            </div>
+
+            <!-- Formulario de Registro -->
+            <div class="form-section" id="registerForm">
+                <div class="form-group">
+                    <label for="registerName">Nombre Completo</label>
+                    <input type="text" id="registerName" placeholder="Tu nombre" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="registerEmail">Email</label>
+                    <input type="email" id="registerEmail" placeholder="tu@email.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="registerPassword">Contraseña</label>
+                    <input type="password" id="registerPassword" placeholder="••••••••" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="registerConfirm">Confirmar Contraseña</label>
+                    <input type="password" id="registerConfirm" placeholder="••••••••" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="registerRole">Tipo de Usuario</label>
+                    <select id="registerRole" disabled style="opacity: 0.7;">
+                        <option value="vendedor" selected>Vendedor</option>
+                    </select>
+                    <small style="color: #94a3b8; font-size: 11px; display: block; margin-top: 5px;">
+                        💡 Para crear cuentas de administrador, contacta a un admin existente.
+                    </small>
+                </div>
+
+                <button class="btn-primary" onclick="register()">Crear Cuenta</button>
+
+                <div class="toggle-form">
+                    ¿Ya tienes cuenta? <a onclick="toggleForms()">Inicia sesión aquí</a>
+                </div>
+            </div>
+
+            <div class="loading" id="loading">
+                <span class="spinner"></span>
+                <span>Procesando...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK Compat -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyC56h2z_HnfFH6h0QEqYjOFoUolNwDeJDQ",
+            authDomain: "nfc-genesaret.firebaseapp.com",
+            projectId: "nfc-genesaret",
+            storageBucket: "nfc-genesaret.firebasestorage.app",
+            messagingSenderId: "58470602922",
+            appId: "1:58470602922:web:661854ac1cc6f11f8c58d3"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+            setTimeout(() => {
+                errorDiv.classList.remove('show');
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('success');
+            successDiv.textContent = message;
+            successDiv.classList.add('show');
+            setTimeout(() => {
+                successDiv.classList.remove('show');
+            }, 5000);
+        }
+
+        function toggleForms() {
+            document.getElementById('loginForm').classList.toggle('active');
+            document.getElementById('registerForm').classList.toggle('active');
+            document.getElementById('error').classList.remove('show');
+            document.getElementById('success').classList.remove('show');
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').classList.toggle('show', show);
+        }
+
+        function login() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const role = document.getElementById('loginRole').value;
+
+            if (!email || !password) {
+                showError('Por favor completa todos los campos');
+                return;
+            }
+
+            showLoading(true);
+
+            auth.signInWithEmailAndPassword(email, password)
+                .then(userCredential => {
+                    // Verificar que el rol seleccionado coincida con el rol de la cuenta
+                    db.collection('usuarios').doc(userCredential.user.uid).get()
+                        .then(doc => {
+                            if (doc.exists) {
+                                const usuarioRole = doc.data().role;
+                                // Verificar que el rol coincida
+                                if (usuarioRole !== role) {
+                                    showLoading(false);
+                                    showError('El rol seleccionado no coincide con tu cuenta');
+                                    auth.signOut();
+                                    return;
+                                }
+                            }
+                            
+                            localStorage.setItem('userId', userCredential.user.uid);
+                            localStorage.setItem('userEmail', email);
+                            localStorage.setItem('userRole', role);
+                            localStorage.setItem('userName', email.split('@')[0]);
+                            
+                            showLoading(false);
+                            
+                            setTimeout(() => {
+                                if (role === 'admin') {
+                                    window.location.href = 'admin.html';
+                                } else {
+                                    window.location.href = 'vendedor.html';
+                                }
+                            }, 500);
+                        })
+                        .catch(error => {
+                            showLoading(false);
+                            showError('Error al verificar usuario: ' + error.message);
+                        });
+                })
+                .catch(error => {
+                    showLoading(false);
+                    if (error.code === 'auth/user-not-found') {
+                        showError('Usuario no encontrado. Regístrate primero');
+                    } else if (error.code === 'auth/wrong-password') {
+                        showError('Contraseña incorrecta');
+                    } else if (error.code === 'auth/invalid-email') {
+                        showError('Email inválido');
+                    } else {
+                        showError('Error: ' + error.message);
+                    }
+                });
+        }
+
+        function register() {
+            const name = document.getElementById('registerName').value.trim();
+            const email = document.getElementById('registerEmail').value.trim();
+            const password = document.getElementById('registerPassword').value;
+            const confirm = document.getElementById('registerConfirm').value;
+            const role = 'vendedor'; // Siempre vendedor desde registro público
+
+            if (!name || !email || !password || !confirm) {
+                showError('Por favor completa todos los campos');
+                return;
+            }
+
+            if (password !== confirm) {
+                showError('Las contraseñas no coinciden');
+                return;
+            }
+
+            if (password.length < 6) {
+                showError('La contraseña debe tener al menos 6 caracteres');
+                return;
+            }
+
+            showLoading(true);
+
+            auth.createUserWithEmailAndPassword(email, password)
+                .then(userCredential => {
+                    db.collection('usuarios').doc(userCredential.user.uid).set({
+                        name: name,
+                        email: email,
+                        role: role,
+                        createdAt: new Date(),
+                        activo: true
+                    }).catch(err => console.log('Error guardando:', err));
+                    
+                    showLoading(false);
+                    showSuccess('✅ Cuenta creada. Inicia sesión');
+                    
+                    setTimeout(() => {
+                        toggleForms();
+                        document.getElementById('loginEmail').value = email;
+                        document.getElementById('loginPassword').value = '';
+                    }, 1500);
+                })
+                .catch(error => {
+                    showLoading(false);
+                    if (error.code === 'auth/email-already-in-use') {
+                        showError('Este email ya está registrado');
+                    } else if (error.code === 'auth/weak-password') {
+                        showError('Contraseña muy débil');
+                    } else if (error.code === 'auth/invalid-email') {
+                        showError('Email inválido');
+                    } else {
+                        showError('Error: ' + error.message);
+                    }
+                });
+        }
+
+        document.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                if (document.getElementById('loginForm').classList.contains('active')) {
+                    login();
+                } else {
+                    register();
+                }
+            }
+        });
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                // Usuario está autenticado, redirigir según su rol
+                const role = localStorage.getItem('userRole');
+                if (role === 'admin') {
+                    window.location.replace('admin.html');
+                } else if (role === 'vendedor') {
+                    window.location.replace('vendedor.html');
+                }
+            }
+            // Si no está autenticado, mostrar login (es lo normal en index.html)
+        });
+    </script>
+</body>
+</html>
