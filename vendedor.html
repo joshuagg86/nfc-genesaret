@@ -435,7 +435,6 @@
 
             db.collection('articulos')
                 .where('eventId', '==', eventId)
-                .orderBy('createdAt', 'desc')
                 .onSnapshot(snapshot => {
                     let html = '<option value="">Selecciona un producto</option>';
                     snapshot.forEach(doc => {
