@@ -262,7 +262,11 @@
         const auth = firebase.auth();
 
         // Verificar autenticación
+        let authChecked = false;
         auth.onAuthStateChanged(user => {
+            if (authChecked) return; // Solo ejecutar una vez
+            authChecked = true;
+
             if (!user) {
                 window.location.href = 'index.html';
             }
