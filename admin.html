@@ -514,6 +514,79 @@
             color: #94a3b8;
         }
 
+        .cuentas-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+        }
+
+        .cuenta-card {
+            background: rgba(245, 158, 11, 0.05);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .cuenta-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .cuenta-header h4 {
+            margin: 0;
+            font-size: 14px;
+            color: #e2e8f0;
+        }
+
+        .rol-badge {
+            font-size: 11px;
+            padding: 4px 8px;
+            background: rgba(245, 158, 11, 0.2);
+            border-radius: 4px;
+            color: #f59e0b;
+        }
+
+        .cuenta-info {
+            margin-bottom: 12px;
+        }
+
+        .cuenta-info p {
+            margin: 6px 0;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .cuenta-info strong {
+            color: #e2e8f0;
+        }
+
+        .password-display {
+            color: #f59e0b;
+            font-family: monospace;
+            font-size: 11px;
+        }
+
+        .cuenta-acciones {
+            display: flex;
+            gap: 8px;
+        }
+
+        .cuenta-acciones button {
+            flex: 1;
+            padding: 6px 10px;
+            font-size: 11px;
+        }
+
+        @media (max-width: 768px) {
+            .cuentas-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
         .form-group {
             margin-bottom: 15px;
         }
@@ -1122,41 +1195,50 @@
         function cargarCuentas() {
             db.collection('usuarios')
                 .onSnapshot(snapshot => {
-                    let html = '<table class="table"><thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Fecha Creación</th><th>Contraseña</th><th>Acciones</th></tr></thead><tbody>';
+                    let html = '<div class="cuentas-grid">';
 
                     snapshot.forEach(doc => {
                         const usuario = doc.data();
                         const fecha = usuario.createdAt.toDate().toLocaleDateString('es-MX');
-                        const rolBadge = usuario.role === 'admin' ? '👨‍💼 Admin' : '🛍️ Vendedor';
+                        const rolActual = usuario.role === 'admin' ? 'admin' : 'vendedor';
+                        const rolBadge = rolActual === 'admin' ? '👨‍💼 Admin' : '🛍️ Vendedor';
+                        const otroRol = rolActual === 'admin' ? 'vendedor' : 'admin';
+                        const otroRolLabel = otroRol === 'admin' ? 'Admin' : 'Vendedor';
 
                         html += `
-                            <tr>
-                                <td>${usuario.name}</td>
-                                <td>${usuario.email}</td>
-                                <td>${rolBadge}</td>
-                                <td>${fecha}</td>
-                                <td><button class="btn-primary" onclick="mostrarContrasena('${usuario.email}')" style="padding: 4px 8px; font-size: 11px;">Ver</button></td>
-                                <td><button class="btn-danger" onclick="eliminarCuenta('${doc.id}', '${usuario.email}')" style="padding: 4px 8px; font-size: 11px;">Eliminar</button></td>
-                            </tr>
+                            <div class="cuenta-card">
+                                <div class="cuenta-header">
+                                    <h4>${usuario.name}</h4>
+                                    <span class="rol-badge">${rolBadge}</span>
+                                </div>
+                                <div class="cuenta-info">
+                                    <p><strong>Email:</strong> ${usuario.email}</p>
+                                    <p><strong>Creada:</strong> ${fecha}</p>
+                                    <p><strong>Contraseña:</strong> <span class="password-display" id="pass-${doc.id}">${usuario.password || 'N/A'}</span></p>
+                                </div>
+                                <div class="cuenta-acciones">
+                                    <button class="btn-primary" onclick="cambiarRol('${doc.id}', '${otroRol}')" style="padding: 6px 10px; font-size: 11px;">Cambiar a ${otroRolLabel}</button>
+                                    <button class="btn-danger" onclick="eliminarCuenta('${doc.id}', '${usuario.email}')" style="padding: 6px 10px; font-size: 11px;">Eliminar</button>
+                                </div>
+                            </div>
                         `;
                     });
 
-                    html += '</tbody></table>';
+                    html += '</div>';
                     document.getElementById('cuentasList').innerHTML = html || '<p style="color: #94a3b8;">No hay cuentas registradas</p>';
                 });
         }
 
-        function mostrarContrasena(email) {
-            const password = prompt('Ingresa la contraseña para esta cuenta para verificar:\n\nEmail: ' + email, '');
-            if (password) {
-                auth.signInWithEmailAndPassword(email, password)
-                    .then(() => {
-                        alert('✅ Contraseña correcta para: ' + email);
-                        auth.signOut();
-                    })
-                    .catch(error => {
-                        alert('❌ Contraseña incorrecta');
-                    });
+        function cambiarRol(usuarioId, nuevoRol) {
+            if (confirm('¿Cambiar el rol a ' + (nuevoRol === 'admin' ? 'Admin' : 'Vendedor') + '?')) {
+                db.collection('usuarios').doc(usuarioId).update({
+                    role: nuevoRol
+                }).then(() => {
+                    showSuccess('Rol actualizado correctamente');
+                    cargarCuentas();
+                }).catch(error => {
+                    showError('Error al cambiar rol: ' + error.message);
+                });
             }
         }
 
