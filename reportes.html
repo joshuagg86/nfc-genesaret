@@ -247,10 +247,27 @@
         </header>
 
         <div class="card" style="margin-bottom: 20px;">
-            <h3>Filtrar por Evento</h3>
-            <select id="eventoFilter" onchange="actualizarReportes()" style="width: 100%; padding: 10px; border-radius: 6px; background: rgba(15, 23, 42, 0.6); color: #e2e8f0; border: 1px solid rgba(148, 163, 184, 0.3);">
-                <option value="">Ver todos los eventos</option>
-            </select>
+            <h3>🔍 Filtros</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                <div>
+                    <label style="font-size: 12px;">Evento</label>
+                    <select id="eventoFilter" onchange="actualizarReportes()" style="width: 100%; padding: 8px; border-radius: 6px; background: rgba(15, 23, 42, 0.6); color: #e2e8f0; border: 1px solid rgba(148, 163, 184, 0.3); font-size: 12px;">
+                        <option value="">Ver todos</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size: 12px;">Desde</label>
+                    <input type="date" id="fechaDesde" onchange="actualizarReportes()" style="width: 100%; padding: 8px; border-radius: 6px; background: rgba(15, 23, 42, 0.6); color: #e2e8f0; border: 1px solid rgba(148, 163, 184, 0.3); font-size: 12px;">
+                </div>
+                <div>
+                    <label style="font-size: 12px;">Hasta</label>
+                    <input type="date" id="fechaHasta" onchange="actualizarReportes()" style="width: 100%; padding: 8px; border-radius: 6px; background: rgba(15, 23, 42, 0.6); color: #e2e8f0; border: 1px solid rgba(148, 163, 184, 0.3); font-size: 12px;">
+                </div>
+            </div>
+            <div style="margin-top: 15px; display: flex; gap: 10px;">
+                <button class="btn-primary" onclick="downloadHTMLReport()" style="flex: 1; font-size: 12px;">📄 Descargar PDF</button>
+                <button class="btn-primary" onclick="downloadExcelReport()" style="flex: 1; font-size: 12px;">📊 Descargar Excel</button>
+            </div>
         </div>
 
         <div class="grid">
@@ -287,6 +304,9 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+    
+    <!-- SheetJS para Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
 
     <script>
         const firebaseConfig = {
@@ -320,6 +340,11 @@
         let allPulseras = [];
         let selectedEventoFilter = '';
 
+        // Establecer fechas de hoy por defecto
+        const hoy = new Date().toISOString().split('T')[0];
+        document.getElementById('fechaDesde').value = hoy;
+        document.getElementById('fechaHasta').value = hoy;
+
         // Cargar eventos para el filtro
         db.collection('eventos').onSnapshot(snapshot => {
             let html = '<option value="">Ver todos los eventos</option>';
@@ -347,6 +372,8 @@
 
         function actualizarReportes() {
             selectedEventoFilter = document.getElementById('eventoFilter').value;
+            const fechaDesde = document.getElementById('fechaDesde').value;
+            const fechaHasta = document.getElementById('fechaHasta').value;
 
             // Filtrar pulseras por evento
             let pulserasFiltered = allPulseras;
@@ -359,10 +386,21 @@
                 pulserasIdsFiltered = allPulseras.map(p => p.id);
             }
 
-            // Filtrar transacciones por las pulseras del evento
+            // Filtrar transacciones por evento y fecha
             let transFiltered = allTransactions;
             if (selectedEventoFilter) {
                 transFiltered = allTransactions.filter(t => pulserasIdsFiltered.includes(t.pulseraId));
+            }
+
+            // Filtrar por fechas si se especifican
+            if (fechaDesde || fechaHasta) {
+                transFiltered = transFiltered.filter(t => {
+                    const tDate = t.fecha.toDate ? t.fecha.toDate() : new Date(t.fecha);
+                    const desde = fechaDesde ? new Date(fechaDesde) : new Date('1900-01-01');
+                    const hasta = fechaHasta ? new Date(fechaHasta) : new Date('2100-12-31');
+                    
+                    return tDate >= desde && tDate <= hasta;
+                });
             }
 
             // Calcular totales
@@ -541,6 +579,72 @@
             a.href = url;
             a.download = `Reporte-NFC-${new Date().toISOString().split('T')[0]}.html`;
             a.click();
+        }
+
+        function downloadExcelReport() {
+            const fechaDesde = document.getElementById('fechaDesde').value;
+            const fechaHasta = document.getElementById('fechaHasta').value;
+            const eventoFilter = document.getElementById('eventoFilter').value;
+
+            // Aplicar mismos filtros que en reportes
+            let pulserasFiltered = allPulseras;
+            let pulserasIdsFiltered = [];
+            
+            if (eventoFilter) {
+                pulserasFiltered = allPulseras.filter(p => p.eventId === eventoFilter);
+                pulserasIdsFiltered = pulserasFiltered.map(p => p.id);
+            } else {
+                pulserasIdsFiltered = allPulseras.map(p => p.id);
+            }
+
+            let transFiltered = allTransactions;
+            if (eventoFilter) {
+                transFiltered = allTransactions.filter(t => pulserasIdsFiltered.includes(t.pulseraId));
+            }
+
+            if (fechaDesde || fechaHasta) {
+                transFiltered = transFiltered.filter(t => {
+                    const tDate = t.fecha.toDate ? t.fecha.toDate() : new Date(t.fecha);
+                    const desde = fechaDesde ? new Date(fechaDesde) : new Date('1900-01-01');
+                    const hasta = fechaHasta ? new Date(fechaHasta) : new Date('2100-12-31');
+                    
+                    return tDate >= desde && tDate <= hasta;
+                });
+            }
+
+            // Preparar datos de transacciones
+            const transData = transFiltered.map(t => ({
+                'Fecha': t.fecha.toDate ? t.fecha.toDate().toLocaleString('es-MX') : new Date(t.fecha).toLocaleString('es-MX'),
+                'Pulsera': t.pulsera,
+                'Artículo': t.articulo,
+                'Monto': '$' + t.monto.toFixed(2),
+                'Vendedor': t.vendedor,
+                'Saldo Anterior': '$' + t.saldoAnterior.toFixed(2),
+                'Saldo Nuevo': '$' + t.saldoNuevo.toFixed(2)
+            }));
+
+            // Preparar datos de pulseras
+            const pulseraData = pulserasFiltered.map(p => ({
+                'ID': p.id,
+                'Nombre': p.nombre,
+                'Saldo Inicial': '$' + p.saldoInicial.toFixed(2),
+                'Saldo Actual': '$' + p.saldoActual.toFixed(2),
+                'Gastado': '$' + (p.saldoInicial - p.saldoActual).toFixed(2)
+            }));
+
+            // Crear workbook
+            const wb = XLSX.utils.book_new();
+            
+            // Agregar hoja de transacciones
+            const ws1 = XLSX.utils.json_to_sheet(transData);
+            XLSX.utils.book_append_sheet(wb, ws1, "Transacciones");
+
+            // Agregar hoja de pulseras
+            const ws2 = XLSX.utils.json_to_sheet(pulseraData);
+            XLSX.utils.book_append_sheet(wb, ws2, "Pulseras");
+
+            // Descargar
+            XLSX.writeFile(wb, `Reporte-NFC-${new Date().toISOString().split('T')[0]}.xlsx`);
         }
     </script>
 </body>
