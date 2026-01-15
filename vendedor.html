@@ -331,10 +331,41 @@
                     <strong>Saldo Disponible:</strong> $<span id="saldoActual"></span>
                 </div>
 
+                <div class="form-group" style="background: rgba(34, 197, 94, 0.1); padding: 12px; border-radius: 6px; border-left: 3px solid #22c55e; margin: 15px 0;">
+                    <label style="color: #86efac; font-size: 12px;">📌 MODO SIMULACIÓN (sin NFC real)</label>
+                    <select id="simulatedPulsera" onchange="selectSimulatedPulsera()" style="margin-top: 8px;">
+                        <option value="">Selecciona una pulsera para simular...</option>
+                    </select>
+                </div>
+
                 <div class="button-group">
                     <button class="btn-success" onclick="procesarPago()" id="btnPagar" style="display: none;">✓ Cobrar</button>
                     <button class="btn-danger" onclick="resetScan()">Limpiar</button>
                 </div>
+            </div>
+
+            <div class="card">
+                <h2>🔍 Consultar Saldo</h2>
+
+                <div class="nfc-reader" id="nfcReaderConsulta">
+                    <div class="nfc-icon">📱</div>
+                    <div class="nfc-status">Escanea la pulsera para ver el saldo</div>
+                    <button class="btn-primary" onclick="startNFCReadConsulta()">Leer Pulsera NFC</button>
+                </div>
+
+                <div class="saldo-info" id="saldoInfoConsulta" style="display: none; background: rgba(34, 197, 94, 0.1); border-left: 4px solid #22c55e;">
+                    <strong>Titular:</strong> <span id="consultaNombre"></span><br>
+                    <strong style="color: #86efac; font-size: 18px; display: block; margin-top: 10px;">Saldo: $<span id="consultaSaldo"></span></strong>
+                </div>
+
+                <div class="form-group" style="background: rgba(34, 197, 94, 0.1); padding: 12px; border-radius: 6px; border-left: 3px solid #22c55e; margin: 15px 0;">
+                    <label style="color: #86efac; font-size: 12px;">📌 MODO SIMULACIÓN (sin NFC real)</label>
+                    <select id="simulatedPulseraConsulta" onchange="consultarSaldoSimulado()" style="margin-top: 8px;">
+                        <option value="">Selecciona una pulsera para consultar...</option>
+                    </select>
+                </div>
+
+                <button class="btn-danger" onclick="resetConsulta()" style="width: 100%;">Limpiar</button>
             </div>
 
             <div class="card">
@@ -387,6 +418,7 @@
             } else {
                 document.getElementById('userName').textContent = localStorage.getItem('userName') || 'Vendedor';
                 loadProducts();
+                cargarPulseras();
                 loadMyTransactions();
             }
         });
@@ -574,6 +606,143 @@
                 <button class="btn-primary" onclick="startNFCRead()">Leer Pulsera NFC</button>
             `;
             document.getElementById('saldoInfo').classList.remove('show');
+        }
+
+        function cargarPulseras() {
+            db.collection('pulseras')
+                .onSnapshot(snapshot => {
+                    let html = '<option value="">Selecciona una pulsera para simular...</option>';
+                    snapshot.forEach(doc => {
+                        const pulsera = doc.data();
+                        html += `<option value="${doc.id}|${pulsera.nombre}|${pulsera.saldoActual}">
+                            ${pulsera.nombre} - $${pulsera.saldoActual.toFixed(2)}
+                        </option>`;
+                    });
+                    document.getElementById('simulatedPulsera').innerHTML = html;
+                    
+                    // También cargar para consulta
+                    let htmlConsulta = '<option value="">Selecciona una pulsera para consultar...</option>';
+                    snapshot.forEach(doc => {
+                        const pulsera = doc.data();
+                        htmlConsulta += `<option value="${doc.id}|${pulsera.nombre}|${pulsera.saldoActual}">
+                            ${pulsera.nombre} - $${pulsera.saldoActual.toFixed(2)}
+                        </option>`;
+                    });
+                    document.getElementById('simulatedPulseraConsulta').innerHTML = htmlConsulta;
+                });
+        }
+
+        function selectSimulatedPulsera() {
+            const select = document.getElementById('simulatedPulsera');
+            const value = select.value;
+
+            if (!value) {
+                resetScan();
+                return;
+            }
+
+            const [docId, nombre, saldo] = value.split('|');
+            scannedPulsera = {
+                id: docId,
+                nombre: nombre,
+                saldo: parseFloat(saldo)
+            };
+
+            document.getElementById('saldoInfo').classList.add('show');
+            document.getElementById('saldoActual').textContent = saldo;
+
+            const nfcReader = document.getElementById('nfcReader');
+            nfcReader.classList.add('active');
+            nfcReader.innerHTML = `
+                <div class="nfc-icon">✅</div>
+                <div class="nfc-status"><strong>${nombre}</strong></div>
+                <div style="font-size: 12px; color: #94a3b8; margin-top: 5px;">Saldo: $${saldo}</div>
+            `;
+        }
+
+        function startNFCReadConsulta() {
+            if ('NDEFReader' in window) {
+                const ndef = new NDEFReader();
+                ndef.scan().then(() => {
+                    ndef.onreading = event => {
+                        let nfcId = '';
+                        for (const record of event.message.records) {
+                            if (record.recordType === 'text') {
+                                nfcId = new TextDecoder().decode(record.data);
+                            }
+                        }
+                        leerPulseraConsulta(nfcId || 'NFC-' + Date.now());
+                    };
+                }).catch(error => {
+                    showError('Error al leer NFC: ' + error);
+                });
+            } else {
+                showError('Tu navegador no soporta NFC.');
+            }
+        }
+
+        function leerPulseraConsulta(pulseraId) {
+            db.collection('pulseras')
+                .where('id', '==', pulseraId)
+                .get()
+                .then(snapshot => {
+                    if (snapshot.empty) {
+                        showError('Pulsera no encontrada');
+                        return;
+                    }
+
+                    snapshot.forEach(doc => {
+                        const pulsera = doc.data();
+                        
+                        document.getElementById('consultaNombre').textContent = pulsera.nombre;
+                        document.getElementById('consultaSaldo').textContent = pulsera.saldoActual.toFixed(2);
+                        document.getElementById('saldoInfoConsulta').style.display = 'block';
+
+                        const nfcReader = document.getElementById('nfcReaderConsulta');
+                        nfcReader.classList.add('active');
+                        nfcReader.innerHTML = `
+                            <div class="nfc-icon">✅</div>
+                            <div class="nfc-status"><strong>${pulsera.nombre}</strong></div>
+                            <div style="font-size: 12px; color: #94a3b8; margin-top: 5px;">Saldo: $${pulsera.saldoActual.toFixed(2)}</div>
+                        `;
+                    });
+                })
+                .catch(error => showError('Error: ' + error.message));
+        }
+
+        function consultarSaldoSimulado() {
+            const select = document.getElementById('simulatedPulseraConsulta');
+            const value = select.value;
+
+            if (!value) {
+                resetConsulta();
+                return;
+            }
+
+            const [docId, nombre, saldo] = value.split('|');
+
+            document.getElementById('consultaNombre').textContent = nombre;
+            document.getElementById('consultaSaldo').textContent = saldo;
+            document.getElementById('saldoInfoConsulta').style.display = 'block';
+
+            const nfcReader = document.getElementById('nfcReaderConsulta');
+            nfcReader.classList.add('active');
+            nfcReader.innerHTML = `
+                <div class="nfc-icon">✅</div>
+                <div class="nfc-status"><strong>${nombre}</strong></div>
+                <div style="font-size: 12px; color: #94a3b8; margin-top: 5px;">Saldo: $${saldo}</div>
+            `;
+        }
+
+        function resetConsulta() {
+            document.getElementById('nfcReaderConsulta').classList.remove('active');
+            document.getElementById('nfcReaderConsulta').innerHTML = `
+                <div class="nfc-icon">📱</div>
+                <div class="nfc-status">Escanea la pulsera para ver el saldo</div>
+                <button class="btn-primary" onclick="startNFCReadConsulta()">Leer Pulsera NFC</button>
+            `;
+            document.getElementById('saldoInfoConsulta').style.display = 'none';
+            document.getElementById('simulatedPulseraConsulta').value = '';
         }
 
         function loadMyTransactions() {
