@@ -459,17 +459,31 @@
         let selectedProduct = null;
         let selectedPrice = null;
         let scannedPulsera = null;
+        let authChecked = false;
 
         // Verificar autenticación
         auth.onAuthStateChanged(user => {
-            if (!user || localStorage.getItem('userRole') !== 'vendedor') {
+            if (authChecked) return; // Solo ejecutar una vez
+            authChecked = true;
+
+            if (!user) {
                 window.location.href = 'index.html';
-            } else {
-                document.getElementById('userName').textContent = localStorage.getItem('userName') || 'Vendedor';
-                loadProducts();
-                cargarPulseras();
-                loadMyTransactions();
+                return;
             }
+
+            // Verificar el rol desde Firestore
+            db.collection('usuarios').doc(user.uid).get().then(doc => {
+                if (doc.exists && doc.data().role === 'vendedor') {
+                    document.getElementById('userName').textContent = localStorage.getItem('userName') || 'Vendedor';
+                    loadProducts();
+                    cargarPulseras();
+                    loadMyTransactions();
+                } else {
+                    window.location.href = 'index.html';
+                }
+            }).catch(() => {
+                window.location.href = 'index.html';
+            });
         });
 
         function logout() {
