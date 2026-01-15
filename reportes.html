@@ -762,6 +762,73 @@
             XLSX.writeFile(wb, `Reporte-NFC-${new Date().toISOString().split('T')[0]}.xlsx`);
             closeDownloadModal();
         }
+
+        function downloadExcelReport() {
+            closeDownloadModal();
+            const fechaDesde = document.getElementById('fechaDesde').value;
+            const fechaHasta = document.getElementById('fechaHasta').value;
+            const eventoFilter = document.getElementById('eventoFilter').value;
+
+            // Aplicar mismos filtros que en reportes
+            let pulserasFiltered = allPulseras;
+            let pulserasIdsFiltered = [];
+            
+            if (eventoFilter) {
+                pulserasFiltered = allPulseras.filter(p => p.eventId === eventoFilter);
+                pulserasIdsFiltered = pulserasFiltered.map(p => p.id);
+            } else {
+                pulserasIdsFiltered = allPulseras.map(p => p.id);
+            }
+
+            let transFiltered = allTransactions;
+            if (eventoFilter) {
+                transFiltered = allTransactions.filter(t => pulserasIdsFiltered.includes(t.pulseraId));
+            }
+
+            if (fechaDesde || fechaHasta) {
+                transFiltered = transFiltered.filter(t => {
+                    const tDate = t.fecha.toDate ? t.fecha.toDate() : new Date(t.fecha);
+                    const desde = fechaDesde ? new Date(fechaDesde) : new Date('1900-01-01');
+                    const hasta = fechaHasta ? new Date(fechaHasta) : new Date('2100-12-31');
+                    
+                    return tDate >= desde && tDate <= hasta;
+                });
+            }
+
+            // Preparar datos de transacciones
+            const transData = transFiltered.map(t => ({
+                'Fecha': t.fecha.toDate ? t.fecha.toDate().toLocaleString('es-MX') : new Date(t.fecha).toLocaleString('es-MX'),
+                'Pulsera': t.pulsera,
+                'Artículo': t.articulo,
+                'Monto': '$' + t.monto.toFixed(2),
+                'Vendedor': t.vendedor,
+                'Saldo Anterior': '$' + t.saldoAnterior.toFixed(2),
+                'Saldo Nuevo': '$' + t.saldoNuevo.toFixed(2)
+            }));
+
+            // Preparar datos de pulseras
+            const pulseraData = pulserasFiltered.map(p => ({
+                'ID': p.id,
+                'Nombre': p.nombre,
+                'Saldo Inicial': '$' + p.saldoInicial.toFixed(2),
+                'Saldo Actual': '$' + p.saldoActual.toFixed(2),
+                'Gastado': '$' + (p.saldoInicial - p.saldoActual).toFixed(2)
+            }));
+
+            // Crear workbook
+            const wb = XLSX.utils.book_new();
+            
+            // Agregar hoja de transacciones
+            const ws1 = XLSX.utils.json_to_sheet(transData);
+            XLSX.utils.book_append_sheet(wb, ws1, "Transacciones");
+
+            // Agregar hoja de pulseras
+            const ws2 = XLSX.utils.json_to_sheet(pulseraData);
+            XLSX.utils.book_append_sheet(wb, ws2, "Pulseras");
+
+            // Descargar
+            XLSX.writeFile(wb, `Reporte-NFC-${new Date().toISOString().split('T')[0]}.xlsx`);
+        }
     </script>
 </body>
 </html>
