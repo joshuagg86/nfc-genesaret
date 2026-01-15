@@ -259,6 +259,12 @@
                 <div class="card">
                     <h3>📱 Registrar Pulsera</h3>
                     <div class="form-group">
+                        <label>Selecciona Evento</label>
+                        <select id="pulseraEvento">
+                            <option value="">Cargando eventos...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label>ID de Pulsera (NFC)</label>
                         <input type="text" id="pulseraId" placeholder="ej: NFC-001">
                     </div>
@@ -398,16 +404,18 @@
         }
 
         function registrarPulsera() {
+            const eventId = document.getElementById('pulseraEvento').value;
             const id = document.getElementById('pulseraId').value.trim();
             const nombre = document.getElementById('pulseraNombre').value.trim();
             const saldo = parseFloat(document.getElementById('pulseraSaldo').value);
 
-            if (!id || !nombre || isNaN(saldo)) {
+            if (!eventId || !id || !nombre || isNaN(saldo)) {
                 alert('Completa los campos requeridos');
                 return;
             }
 
             db.collection('pulseras').add({
+                eventId: eventId,
                 id: id,
                 nombre: nombre,
                 saldoInicial: saldo,
@@ -416,6 +424,7 @@
                 activo: true
             }).then(() => {
                 showSuccess('✅ Pulsera registrada');
+                document.getElementById('pulseraEvento').value = '';
                 document.getElementById('pulseraId').value = '';
                 document.getElementById('pulseraNombre').value = '';
                 document.getElementById('pulseraSaldo').value = '';
@@ -433,16 +442,29 @@
         }
 
         function cargarPulseras() {
+            // Primero cargar eventos en el selector
+            db.collection('eventos').onSnapshot(snapshot => {
+                let html = '<option value="">Selecciona un evento</option>';
+                snapshot.forEach(doc => {
+                    html += `<option value="${doc.id}">${doc.data().nombre}</option>`;
+                });
+                document.getElementById('pulseraEvento').innerHTML = html;
+            });
+
+            // Luego cargar pulseras
             db.collection('pulseras')
                 .onSnapshot(snapshot => {
-                    let html = '<table class="table"><thead><tr><th>ID</th><th>Nombre</th><th>Saldo Inicial</th><th>Saldo Actual</th><th>Acciones</th></tr></thead><tbody>';
+                    let html = '<table class="table"><thead><tr><th>ID</th><th>Nombre</th><th>Evento</th><th>Saldo Inicial</th><th>Saldo Actual</th><th>Acciones</th></tr></thead><tbody>';
 
                     snapshot.forEach(doc => {
                         const pulsera = doc.data();
+                        const eventId = pulsera.eventId || 'N/A';
+                        
                         html += `
                             <tr>
                                 <td>${pulsera.id}</td>
                                 <td>${pulsera.nombre}</td>
+                                <td>${eventId === 'N/A' ? 'N/A' : eventId}</td>
                                 <td>$${pulsera.saldoInicial.toFixed(2)}</td>
                                 <td>$${pulsera.saldoActual.toFixed(2)}</td>
                                 <td>
