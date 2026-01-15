@@ -429,6 +429,9 @@
 
                 <h3 style="margin-top: 20px; font-size: 14px; margin-bottom: 10px;">Últimas Transacciones</h3>
                 <div id="transactionsList" style="max-height: 300px; overflow-y: auto;"></div>
+
+                <h3 style="margin-top: 20px; font-size: 14px; margin-bottom: 10px;">📊 Ventas por Artículo</h3>
+                <div id="ventasPorArticulo" style="max-height: 300px; overflow-y: auto;"></div>
             </div>
         </div>
     </div>
@@ -802,6 +805,7 @@
                     let html = '';
                     let count = 0;
                     let total = 0;
+                    let articulosMap = {};
 
                     snapshot.forEach(doc => {
                         const trans = doc.data();
@@ -816,11 +820,40 @@
                                 <small style="color: #64748b; font-size: 11px;">${hora}</small>
                             </div>
                         `;
+
+                        // Contar ventas por artículo
+                        if (articulosMap[trans.articulo]) {
+                            articulosMap[trans.articulo].cantidad++;
+                            articulosMap[trans.articulo].total += trans.monto;
+                        } else {
+                            articulosMap[trans.articulo] = {
+                                cantidad: 1,
+                                total: trans.monto
+                            };
+                        }
                     });
 
                     document.getElementById('ventasCount').textContent = count;
                     document.getElementById('totalVentas').textContent = total.toFixed(2);
                     document.getElementById('transactionsList').innerHTML = html || '<p style="color: #94a3b8; font-size: 12px;">Sin ventas aún</p>';
+
+                    // Mostrar ventas por artículo
+                    let articulosHtml = '<table style="width: 100%; font-size: 12px; border-collapse: collapse;">';
+                    articulosHtml += '<thead><tr style="background: rgba(15, 23, 42, 0.8); border-bottom: 1px solid rgba(148, 163, 184, 0.2);"><th style="padding: 8px; text-align: left;">Artículo</th><th style="padding: 8px; text-align: right;">Cantidad</th><th style="padding: 8px; text-align: right;">Total</th></tr></thead><tbody>';
+
+                    Object.keys(articulosMap).forEach(articulo => {
+                        const data = articulosMap[articulo];
+                        articulosHtml += `
+                            <tr style="border-bottom: 1px solid rgba(148, 163, 184, 0.1);">
+                                <td style="padding: 8px;">${articulo}</td>
+                                <td style="padding: 8px; text-align: right;"><strong>${data.cantidad}</strong></td>
+                                <td style="padding: 8px; text-align: right;">$${data.total.toFixed(2)}</td>
+                            </tr>
+                        `;
+                    });
+
+                    articulosHtml += '</tbody></table>';
+                    document.getElementById('ventasPorArticulo').innerHTML = Object.keys(articulosMap).length > 0 ? articulosHtml : '<p style="color: #94a3b8; font-size: 12px;">Sin ventas aún</p>';
                 });
         }
     </script>
