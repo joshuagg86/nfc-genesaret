@@ -575,11 +575,13 @@
             }
 
             const nuevoSaldo = scannedPulsera.saldo - selectedPrice;
+            const eventId = document.getElementById('eventSelect').value;
 
             db.collection('pulseras').doc(scannedPulsera.id).update({
                 saldoActual: nuevoSaldo
             }).then(() => {
                 db.collection('transacciones').add({
+                    eventId: eventId,
                     pulseraId: scannedPulsera.id,
                     pulsera: scannedPulsera.nombre,
                     articulo: selectedProduct,
