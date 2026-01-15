@@ -167,22 +167,29 @@
             </div>
         </header>
 
+        <div class="card" style="margin-bottom: 20px;">
+            <h3>Filtrar por Evento</h3>
+            <select id="eventoFilter" onchange="actualizarReportes()" style="width: 100%; padding: 10px; border-radius: 6px; background: rgba(15, 23, 42, 0.6); color: #e2e8f0; border: 1px solid rgba(148, 163, 184, 0.3);">
+                <option value="">Ver todos los eventos</option>
+            </select>
+        </div>
+
         <div class="grid">
             <div class="stat-card">
-                <div class="stat-label">Ingresos Totales</div>
-                <div class="stat-value">$<span id="totalIncome">0.00</span></div>
+                <div class="stat-label">Saldo Total Asignado</div>
+                <div class="stat-value">$<span id="totalAsignado">0.00</span></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Saldo Gastado</div>
+                <div class="stat-value">$<span id="totalGastado">0.00</span></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Saldo Restante</div>
+                <div class="stat-value">$<span id="totalRestante">0.00</span></div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">Transacciones</div>
                 <div class="stat-value"><span id="totalTrans">0</span></div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Pulseras Registradas</div>
-                <div class="stat-value"><span id="totalPulseras">0</span></div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Saldo Total Distribuido</div>
-                <div class="stat-value">$<span id="totalSaldo">0.00</span></div>
             </div>
         </div>
 
@@ -217,46 +224,69 @@
 
         let allTransactions = [];
         let allPulseras = [];
+        let selectedEventoFilter = '';
+
+        // Cargar eventos para el filtro
+        db.collection('eventos').onSnapshot(snapshot => {
+            let html = '<option value="">Ver todos los eventos</option>';
+            snapshot.forEach(doc => {
+                html += `<option value="${doc.id}">${doc.data().nombre}</option>`;
+            });
+            document.getElementById('eventoFilter').innerHTML = html;
+        });
 
         db.collection('transacciones').onSnapshot(snapshot => {
             allTransactions = [];
             snapshot.forEach(doc => {
                 allTransactions.push(doc.data());
             });
-            updateReports();
+            actualizarReportes();
         });
 
         db.collection('pulseras').onSnapshot(snapshot => {
             allPulseras = [];
             snapshot.forEach(doc => {
-                allPulseras.push(doc.data());
+                allPulseras.push({id: doc.id, ...doc.data()});
             });
-            loadPulseras();
+            actualizarReportes();
         });
 
-        function updateReports() {
-            let totalIncome = 0;
-            allTransactions.forEach(trans => {
-                totalIncome += trans.monto;
-            });
-            document.getElementById('totalIncome').textContent = totalIncome.toFixed(2);
-            document.getElementById('totalTrans').textContent = allTransactions.length;
+        function actualizarReportes() {
+            selectedEventoFilter = document.getElementById('eventoFilter').value;
 
-            document.getElementById('totalPulseras').textContent = allPulseras.length;
+            // Filtrar pulseras por evento
+            let pulserasFiltered = allPulseras;
+            if (selectedEventoFilter) {
+                pulserasFiltered = allPulseras.filter(p => p.eventId === selectedEventoFilter);
+            }
 
-            let totalSaldo = 0;
-            allPulseras.forEach(pulsera => {
-                totalSaldo += pulsera.saldoInicial;
-            });
-            document.getElementById('totalSaldo').textContent = totalSaldo.toFixed(2);
+            // Filtrar transacciones por evento
+            let transFiltered = allTransactions;
+            if (selectedEventoFilter) {
+                transFiltered = allTransactions.filter(t => {
+                    const pulsera = allPulseras.find(p => p.id === t.pulseraId);
+                    return pulsera && pulsera.eventId === selectedEventoFilter;
+                });
+            }
 
-            loadTransacciones();
+            // Calcular totales
+            const totalAsignado = pulserasFiltered.reduce((a, b) => a + (b.saldoInicial || 0), 0);
+            const totalGastado = transFiltered.reduce((a, b) => a + (b.monto || 0), 0);
+            const totalRestante = totalAsignado - totalGastado;
+
+            document.getElementById('totalAsignado').textContent = totalAsignado.toFixed(2);
+            document.getElementById('totalGastado').textContent = totalGastado.toFixed(2);
+            document.getElementById('totalRestante').textContent = totalRestante.toFixed(2);
+            document.getElementById('totalTrans').textContent = transFiltered.length;
+
+            loadTransacciones(transFiltered);
+            loadPulseras(pulserasFiltered);
         }
 
-        function loadTransacciones() {
+        function loadTransacciones(transFiltered) {
             let html = '<table class="table"><thead><tr><th>Fecha</th><th>Pulsera</th><th>Producto</th><th>Monto</th><th>Vendedor</th></tr></thead><tbody>';
             
-            const sorted = [...allTransactions].sort((a, b) => {
+            const sorted = [...transFiltered].sort((a, b) => {
                 const aTime = a.fecha.toDate ? a.fecha.toDate() : new Date(a.fecha);
                 const bTime = b.fecha.toDate ? b.fecha.toDate() : new Date(b.fecha);
                 return bTime - aTime;
@@ -279,10 +309,10 @@
             document.getElementById('transacionesList').innerHTML = html;
         }
 
-        function loadPulseras() {
+        function loadPulseras(pulserasFiltered) {
             let html = '<table class="table"><thead><tr><th>ID</th><th>Nombre</th><th>Saldo Inicial</th><th>Saldo Actual</th><th>Usado</th></tr></thead><tbody>';
             
-            allPulseras.forEach(pulsera => {
+            pulserasFiltered.forEach(pulsera => {
                 const usado = (pulsera.saldoInicial - pulsera.saldoActual).toFixed(2);
                 html += `
                     <tr>
