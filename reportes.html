@@ -677,11 +677,6 @@
 
     <div class="generated">
         Reporte confidencial - NFC Genesaret ${new Date().getFullYear()}
-    </div>
-</body>
-</html>
-            `;
-
         function openDownloadModal() {
             document.getElementById('downloadModal').style.display = 'flex';
         }
@@ -704,6 +699,8 @@
             const fechaHasta = document.getElementById('fechaHasta').value;
             const eventoFilter = document.getElementById('eventoFilter').value;
 
+        function downloadHTMLReport() {
+            closeDownloadModal();
             // Aplicar mismos filtros que en reportes
             let pulserasFiltered = allPulseras;
             let pulserasIdsFiltered = [];
