@@ -210,7 +210,7 @@
         <header>
             <div class="header-title">
                 <img src="logo.png" alt="Logo" class="logo-header">
-                <h1>💳 Admin Panel</h1>
+                <h1>Admin</h1>
             </div>
             <div class="header-right">
                 <div class="user-info">
@@ -226,6 +226,7 @@
             <button class="tab-btn active" onclick="switchTab('eventos')">Eventos</button>
             <button class="tab-btn" onclick="switchTab('pulseras')">Pulseras</button>
             <button class="tab-btn" onclick="switchTab('articulos')">Artículos</button>
+            <button class="tab-btn" onclick="switchTab('cuentas')">Cuentas</button>
             <button class="tab-btn" onclick="switchTab('reportes')">Reportes</button>
         </div>
 
@@ -323,6 +324,14 @@
             </div>
         </div>
 
+        <!-- TAB: CUENTAS -->
+        <div class="tab-content" id="cuentas">
+            <div class="card">
+                <h3>👥 Cuentas del Sistema</h3>
+                <div id="cuentasList"></div>
+            </div>
+        </div>
+
         <!-- TAB: REPORTES -->
         <div class="tab-content" id="reportes">
             <div class="card">
@@ -362,6 +371,7 @@
                 document.getElementById('userName').textContent = localStorage.getItem('userName') || 'Admin';
                 cargarEventos();
                 cargarPulseras();
+                cargarCuentas();
                 loadSimPulseras();
             }
         });
@@ -567,6 +577,46 @@
                     html += '</tbody></table>';
                     document.getElementById('articulosList').innerHTML = html;
                 });
+        }
+
+        function cargarCuentas() {
+            db.collection('usuarios')
+                .onSnapshot(snapshot => {
+                    let html = '<table class="table"><thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Fecha Creación</th><th>Contraseña</th></tr></thead><tbody>';
+
+                    snapshot.forEach(doc => {
+                        const usuario = doc.data();
+                        const fecha = usuario.createdAt.toDate().toLocaleDateString('es-MX');
+                        const rolBadge = usuario.role === 'admin' ? '👨‍💼 Admin' : '🛍️ Vendedor';
+
+                        html += `
+                            <tr>
+                                <td>${usuario.name}</td>
+                                <td>${usuario.email}</td>
+                                <td>${rolBadge}</td>
+                                <td>${fecha}</td>
+                                <td><button class="btn-primary" onclick="mostrarContrasena('${usuario.email}')" style="padding: 4px 8px; font-size: 11px;">Ver</button></td>
+                            </tr>
+                        `;
+                    });
+
+                    html += '</tbody></table>';
+                    document.getElementById('cuentasList').innerHTML = html || '<p style="color: #94a3b8;">No hay cuentas registradas</p>';
+                });
+        }
+
+        function mostrarContrasena(email) {
+            const password = prompt('Ingresa la contraseña para esta cuenta para verificar:\n\nEmail: ' + email, '');
+            if (password) {
+                auth.signInWithEmailAndPassword(email, password)
+                    .then(() => {
+                        alert('✅ Contraseña correcta para: ' + email);
+                        auth.signOut();
+                    })
+                    .catch(error => {
+                        alert('❌ Contraseña incorrecta');
+                    });
+            }
         }
 
         function loadSimPulseras() {
