@@ -26,24 +26,81 @@
 
         header {
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
+            justify-content: center;
             align-items: center;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             padding: 20px;
             background: rgba(30, 41, 59, 0.8);
             border: 1px solid rgba(148, 163, 184, 0.2);
             border-radius: 12px;
+            text-align: center;
+            gap: 15px;
         }
 
         .logo-header {
-            width: 50px;
-            height: 50px;
-            margin-right: 15px;
+            width: 80px;
+            height: 80px;
+            margin: 0;
         }
 
         .header-title {
             display: flex;
+            flex-direction: column;
             align-items: center;
+            gap: 10px;
+        }
+
+        .header-title h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .header-right {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+        }
+
+        .user-info {
+            font-size: 12px;
+        }
+
+        .header-right button {
+            padding: 8px 12px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 768px) {
+            header {
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+
+            .logo-header {
+                width: 70px;
+                height: 70px;
+            }
+
+            .header-title h1 {
+                font-size: 22px;
+            }
+
+            .header-right {
+                gap: 10px;
+            }
+
+            .user-info {
+                font-size: 11px;
+            }
+
+            .header-right button {
+                padding: 6px 10px;
+                font-size: 10px;
+            }
         }
 
         h1 {
@@ -329,8 +386,8 @@
 <body>
     <div class="container">
         <header>
+            <img src="logo.png" alt="Logo" class="logo-header">
             <div class="header-title">
-                <img src="logo.png" alt="Logo" class="logo-header">
                 <h1>Venta</h1>
             </div>
             <div class="header-right">
