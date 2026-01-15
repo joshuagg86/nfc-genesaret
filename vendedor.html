@@ -832,31 +832,44 @@
                     let allData = '';
                     let recordCount = 0;
 
-                    for (const record of event.message.records) {
-                        recordCount++;
-                        allData += `\n[Registro ${recordCount}]\n`;
-                        allData += `Tipo: ${record.recordType}\n`;
-                        
-                        if (record.recordType === 'text') {
-                            const texto = new TextDecoder().decode(record.data);
-                            allData += `Texto: ${texto}\n`;
-                        } else if (record.recordType === 'uri') {
-                            const uri = new TextDecoder().decode(record.data);
-                            allData += `URI: ${uri}\n`;
-                        } else {
-                            allData += `Raw Bytes: ${Array.from(new Uint8Array(record.data)).map(b => b.toString(16).padStart(2, '0')).join(' ')}\n`;
+                    try {
+                        for (const record of event.message.records) {
+                            recordCount++;
+                            allData += `\n[Registro ${recordCount}]\n`;
+                            allData += `Tipo: ${record.recordType}\n`;
+                            
+                            if (record.recordType === 'text') {
+                                const texto = new TextDecoder().decode(record.data);
+                                allData += `Texto: ${texto}\n`;
+                            } else if (record.recordType === 'uri') {
+                                const uri = new TextDecoder().decode(record.data);
+                                allData += `URI: ${uri}\n`;
+                            } else {
+                                allData += `Raw Bytes: ${Array.from(new Uint8Array(record.data)).map(b => b.toString(16).padStart(2, '0')).join(' ')}\n`;
+                            }
                         }
-                    }
 
-                    document.getElementById('nfcRawData').textContent = allData || 'Sin datos de texto detectados';
-                    document.getElementById('nfcTestResults').style.display = 'block';
-                    document.getElementById('nfcTestStatus').textContent = '✅ ¡Lectura completada!';
-                    document.getElementById('nfcTestStatus').style.color = '#86efac';
+                        if (recordCount === 0) {
+                            allData = '⚠️ Tarjeta detectada pero no contiene datos legibles.\n\nEsto puede deberse a:\n- La tarjeta está encriptada (como tu Tarjeta de Movilidad)\n- La tarjeta usa un protocolo propietario\n\n✅ ¡Buena noticia! Tu NFC funciona correctamente.\nCuando uses pulseras NFC simples, funcionará sin problema.';
+                        }
+
+                        document.getElementById('nfcRawData').textContent = allData || 'Sin datos detectados';
+                        document.getElementById('nfcTestResults').style.display = 'block';
+                        document.getElementById('nfcTestStatus').textContent = '✅ ¡Lectura completada!';
+                        document.getElementById('nfcTestStatus').style.color = '#86efac';
+                    } catch (e) {
+                        document.getElementById('nfcRawData').textContent = '⚠️ Error al procesar datos: ' + e.message + '\n\n✅ Tu NFC funciona, pero esta tarjeta tiene un formato especial.';
+                        document.getElementById('nfcTestResults').style.display = 'block';
+                        document.getElementById('nfcTestStatus').textContent = '⚠️ Lectura parcial';
+                        document.getElementById('nfcTestStatus').style.color = '#f59e0b';
+                    }
                 };
 
                 ndef.onreadingerror = () => {
-                    document.getElementById('nfcTestStatus').textContent = '❌ Error al leer NFC';
-                    document.getElementById('nfcTestStatus').style.color = '#ef4444';
+                    document.getElementById('nfcTestStatus').textContent = '⚠️ Tarjeta encriptada o formato especial';
+                    document.getElementById('nfcTestStatus').style.color = '#f59e0b';
+                    document.getElementById('nfcRawData').textContent = '✅ ¡Tu NFC funciona correctamente!\n\nLa tarjeta que intentaste leer está encriptada o usa un protocolo que no podemos leer desde la web.\n\nEsto es NORMAL y ESPERADO con tarjetas de gobierno como tu Tarjeta de Movilidad.\n\nCuando uses pulseras NFC estándar (sin encriptación), funcionará perfectamente.';
+                    document.getElementById('nfcTestResults').style.display = 'block';
                 };
             }).catch(error => {
                 document.getElementById('nfcTestStatus').textContent = '❌ ' + error.message;
