@@ -27,33 +27,27 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px 15px;
+            padding: 10px 20px;
             background: rgba(30, 41, 59, 0.95);
             border-bottom: 1px solid rgba(148, 163, 184, 0.2);
             z-index: 1000;
             backdrop-filter: blur(10px);
-            height: 60px;
+            height: 70px;
             width: 100%;
         }
 
         .header-left {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 0;
+            margin-right: auto;
         }
 
         .logo-header {
             width: 50px;
             height: 50px;
             display: block;
-        }
-
-        .header-title {
-            display: none !important;
-        }
-
-        .header-right {
-            display: none !important;
+            flex-shrink: 0;
         }
 
         .hamburger {
@@ -66,6 +60,19 @@
             display: block;
             flex-shrink: 0;
             margin-left: auto;
+            height: 50px;
+            width: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-title {
+            display: none !important;
+        }
+
+        .header-right {
+            display: none !important;
         }
 
         .mobile-menu {
@@ -160,12 +167,12 @@
 
         @media (max-width: 768px) {
             body {
-                padding-top: 60px;
+                padding-top: 70px;
             }
 
             header {
-                height: 60px;
-                padding: 10px 15px;
+                height: 70px;
+                padding: 10px 20px;
             }
 
             .hamburger {
@@ -201,7 +208,7 @@
             }
 
             .header-title {
-                display: flex;
+                display: flex !important;
                 flex-direction: column;
                 gap: 5px;
             }
@@ -217,7 +224,7 @@
             }
 
             .header-right {
-                display: flex;
+                display: flex !important;
                 gap: 15px;
                 align-items: center;
             }
@@ -536,13 +543,6 @@
         <header>
             <div class="header-left">
                 <img src="logo.png" alt="Logo" class="logo-header">
-                <div class="header-title">
-                    <h1>Admin</h1>
-                    <div class="user-info">Hola, <strong id="userName">Admin</strong></div>
-                </div>
-            </div>
-            <div class="header-right">
-                <button class="btn-danger" onclick="logout()">Cerrar Sesión</button>
             </div>
             <button class="hamburger" id="hamburger" onclick="toggleMenu()">☰</button>
         </header>
