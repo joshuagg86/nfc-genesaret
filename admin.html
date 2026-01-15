@@ -16,6 +16,140 @@
             background: linear-gradient(135deg, #003d7a 0%, #001a2e 50%, #0d47a1 100%);
             color: #e2e8f0;
             min-height: 100vh;
+            padding-top: 80px;
+        }
+
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: rgba(30, 41, 59, 0.95);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-header {
+            width: 60px;
+            height: 60px;
+        }
+
+        .header-title {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .header-title h1 {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        .user-info {
+            font-size: 11px;
+            color: #94a3b8;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-right button {
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+
+        .hamburger {
+            display: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 24px;
+            color: #e2e8f0;
+        }
+
+        .hamburger.active {
+            display: block;
+        }
+
+        .mobile-menu {
+            display: none;
+            position: fixed;
+            top: 80px;
+            left: 0;
+            right: 0;
+            background: rgba(30, 41, 59, 0.95);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            padding: 15px;
+            z-index: 999;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .mobile-menu.active {
+            display: flex;
+        }
+
+        .mobile-menu-item {
+            padding: 12px;
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            text-align: left;
+            font-size: 14px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        .mobile-menu-item:hover,
+        .mobile-menu-item.active {
+            color: #f59e0b;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding-top: 80px;
+            }
+
+            .header-right {
+                display: none;
+            }
+
+            .hamburger {
+                display: block;
+            }
+
+            .logo-header {
+                width: 50px;
+                height: 50px;
+            }
+
+            .header-title h1 {
+                font-size: 18px;
+            }
+
+            .user-info {
+                display: none;
+            }
         }
 
         .container {
@@ -314,17 +448,27 @@
 <body>
     <div class="container">
         <header>
-            <img src="logo.png" alt="Logo" class="logo-header">
-            <div class="header-title">
-                <h1>Admin</h1>
+            <div class="header-left">
+                <img src="logo.png" alt="Logo" class="logo-header">
+                <div class="header-title">
+                    <h1>Admin</h1>
+                    <div class="user-info">Hola, <strong id="userName">Admin</strong></div>
+                </div>
             </div>
             <div class="header-right">
-                <div class="user-info">
-                    <div>Hola, <strong id="userName">Admin</strong></div>
-                </div>
                 <button class="btn-danger" onclick="logout()">Cerrar Sesión</button>
             </div>
+            <button class="hamburger" id="hamburger" onclick="toggleMenu()">☰</button>
         </header>
+
+        <nav class="mobile-menu" id="mobileMenu">
+            <button class="mobile-menu-item" onclick="switchTabMobile('eventos')">Eventos</button>
+            <button class="mobile-menu-item" onclick="switchTabMobile('pulseras')">Pulseras</button>
+            <button class="mobile-menu-item" onclick="switchTabMobile('articulos')">Artículos</button>
+            <button class="mobile-menu-item" onclick="switchTabMobile('cuentas')">Cuentas</button>
+            <button class="mobile-menu-item" onclick="switchTabMobile('reportes')">Reportes</button>
+            <button class="mobile-menu-item btn-danger" onclick="logout()" style="margin-top: 10px;">Cerrar Sesión</button>
+        </nav>
 
         <div class="alert alert-success" id="successAlert"></div>
 
@@ -510,6 +654,15 @@
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
             document.getElementById(tab).classList.add('active');
             event.target.classList.add('active');
+        }
+
+        function toggleMenu() {
+            document.getElementById('mobileMenu').classList.toggle('active');
+        }
+
+        function switchTabMobile(tab) {
+            switchTab(tab);
+            toggleMenu();
         }
 
         function logout() {
