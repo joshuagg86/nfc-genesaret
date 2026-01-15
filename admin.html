@@ -224,6 +224,7 @@
 
         <div class="tabs">
             <button class="tab-btn active" onclick="switchTab('eventos')">Eventos</button>
+            <button class="tab-btn" onclick="switchTab('pulseras')">Pulseras</button>
             <button class="tab-btn" onclick="switchTab('articulos')">Artículos</button>
             <button class="tab-btn" onclick="switchTab('reportes')">Reportes</button>
         </div>
@@ -247,6 +248,50 @@
                 <div class="card">
                     <h3>📊 Eventos Registrados</h3>
                     <div id="eventsList"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: PULSERAS -->
+        <div class="tab-content" id="pulseras">
+            <div class="grid">
+                <div class="card">
+                    <h3>📱 Registrar Pulsera</h3>
+                    <div class="form-group">
+                        <label>ID de Pulsera (NFC)</label>
+                        <input type="text" id="pulseraId" placeholder="ej: NFC-001">
+                    </div>
+                    <div class="form-group">
+                        <label>Nombre del Portador</label>
+                        <input type="text" id="pulseraNombre" placeholder="ej: Juan García">
+                    </div>
+                    <div class="form-group">
+                        <label>Saldo Inicial ($)</label>
+                        <input type="number" id="pulseraSaldo" placeholder="0.00" min="0" step="0.01">
+                    </div>
+                    <button class="btn-primary" onclick="registrarPulsera()" style="width: 100%;">Registrar Pulsera</button>
+                </div>
+
+                <div class="card">
+                    <h3>🏷️ Pulseras Registradas</h3>
+                    <div id="pulserasList"></div>
+                </div>
+
+                <div class="card">
+                    <h3>🧪 Simular Transacción (Testing)</h3>
+                    <div class="form-group">
+                        <label>Selecciona Pulsera</label>
+                        <select id="simPulsera" onchange="loadSimArticulos()">
+                            <option value="">Cargando pulseras...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Selecciona Artículo</label>
+                        <select id="simArticulo">
+                            <option value="">Selecciona una pulsera primero</option>
+                        </select>
+                    </div>
+                    <button class="btn-primary" onclick="simularTransaccion()" style="width: 100%; margin-top: 10px;">Simular Cobro</button>
                 </div>
             </div>
         </div>
@@ -316,6 +361,8 @@
             } else {
                 document.getElementById('userName').textContent = localStorage.getItem('userName') || 'Admin';
                 cargarEventos();
+                cargarPulseras();
+                loadSimPulseras();
             }
         });
 
@@ -338,6 +385,66 @@
             alert.textContent = msg;
             alert.classList.add('show');
             setTimeout(() => alert.classList.remove('show'), 3000);
+        }
+
+        function registrarPulsera() {
+            const id = document.getElementById('pulseraId').value.trim();
+            const nombre = document.getElementById('pulseraNombre').value.trim();
+            const saldo = parseFloat(document.getElementById('pulseraSaldo').value);
+
+            if (!id || !nombre || isNaN(saldo)) {
+                alert('Completa los campos requeridos');
+                return;
+            }
+
+            db.collection('pulseras').add({
+                id: id,
+                nombre: nombre,
+                saldoInicial: saldo,
+                saldoActual: saldo,
+                createdAt: new Date(),
+                activo: true
+            }).then(() => {
+                showSuccess('✅ Pulsera registrada');
+                document.getElementById('pulseraId').value = '';
+                document.getElementById('pulseraNombre').value = '';
+                document.getElementById('pulseraSaldo').value = '';
+                cargarPulseras();
+            }).catch(error => alert('Error: ' + error.message));
+        }
+
+        function eliminarPulsera(pulseraId) {
+            if (confirm('¿Estás seguro?')) {
+                db.collection('pulseras').doc(pulseraId).delete().then(() => {
+                    showSuccess('Pulsera eliminada');
+                    cargarPulseras();
+                });
+            }
+        }
+
+        function cargarPulseras() {
+            db.collection('pulseras')
+                .onSnapshot(snapshot => {
+                    let html = '<table class="table"><thead><tr><th>ID</th><th>Nombre</th><th>Saldo Inicial</th><th>Saldo Actual</th><th>Acciones</th></tr></thead><tbody>';
+
+                    snapshot.forEach(doc => {
+                        const pulsera = doc.data();
+                        html += `
+                            <tr>
+                                <td>${pulsera.id}</td>
+                                <td>${pulsera.nombre}</td>
+                                <td>$${pulsera.saldoInicial.toFixed(2)}</td>
+                                <td>$${pulsera.saldoActual.toFixed(2)}</td>
+                                <td>
+                                    <button class="btn-danger" onclick="eliminarPulsera('${doc.id}')" style="padding: 4px 8px; font-size: 11px;">Eliminar</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+
+                    html += '</tbody></table>';
+                    document.getElementById('pulserasList').innerHTML = html || '<p style="color: #94a3b8;">No hay pulseras registradas</p>';
+                });
         }
 
         function crearEvento() {
@@ -460,6 +567,89 @@
                     html += '</tbody></table>';
                     document.getElementById('articulosList').innerHTML = html;
                 });
+        }
+
+        function loadSimPulseras() {
+            db.collection('pulseras')
+                .onSnapshot(snapshot => {
+                    let html = '<option value="">Selecciona una pulsera</option>';
+                    snapshot.forEach(doc => {
+                        const pulsera = doc.data();
+                        html += `<option value="${doc.id}|${pulsera.nombre}|${pulsera.saldoActual}">
+                            ${pulsera.nombre} - $${pulsera.saldoActual.toFixed(2)}
+                        </option>`;
+                    });
+                    document.getElementById('simPulsera').innerHTML = html;
+                });
+        }
+
+        function loadSimArticulos() {
+            const select = document.getElementById('simPulsera');
+            const value = select.value;
+
+            if (!value) {
+                document.getElementById('simArticulo').innerHTML = '<option value="">Selecciona una pulsera primero</option>';
+                return;
+            }
+
+            db.collection('articulos')
+                .onSnapshot(snapshot => {
+                    let html = '<option value="">Selecciona un artículo</option>';
+                    snapshot.forEach(doc => {
+                        const art = doc.data();
+                        html += `<option value="${doc.id}|${art.nombre}|${art.precio}">
+                            ${art.nombre} - $${art.precio.toFixed(2)}
+                        </option>`;
+                    });
+                    document.getElementById('simArticulo').innerHTML = html;
+                });
+        }
+
+        function simularTransaccion() {
+            const pulseraValue = document.getElementById('simPulsera').value;
+            const articuloValue = document.getElementById('simArticulo').value;
+
+            if (!pulseraValue || !articuloValue) {
+                alert('Selecciona una pulsera y un artículo');
+                return;
+            }
+
+            const [pulseraId, pulseraNombre, saldoActual] = pulseraValue.split('|');
+            const [articuloId, articuloNombre, precio] = articuloValue.split('|');
+
+            const precioNum = parseFloat(precio);
+            const saldoNum = parseFloat(saldoActual);
+
+            if (saldoNum < precioNum) {
+                alert('Saldo insuficiente');
+                return;
+            }
+
+            const nuevoSaldo = saldoNum - precioNum;
+
+            // Actualizar saldo de la pulsera
+            db.collection('pulseras').doc(pulseraId).update({
+                saldoActual: nuevoSaldo
+            }).then(() => {
+                // Registrar transacción
+                db.collection('transacciones').add({
+                    pulseraId: pulseraId,
+                    pulsera: pulseraNombre,
+                    articulo: articuloNombre,
+                    monto: precioNum,
+                    saldoAnterior: saldoNum,
+                    saldoNuevo: nuevoSaldo,
+                    vendedor: 'Simulación Admin',
+                    vendedorId: currentUserId,
+                    fecha: new Date()
+                }).then(() => {
+                    showSuccess('✅ Transacción simulada correctamente');
+                    document.getElementById('simPulsera').value = '';
+                    document.getElementById('simArticulo').value = '';
+                    cargarPulseras();
+                    loadSimPulseras();
+                });
+            });
         }
     </script>
 </body>
