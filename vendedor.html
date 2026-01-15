@@ -459,31 +459,34 @@
         let selectedProduct = null;
         let selectedPrice = null;
         let scannedPulsera = null;
-        let authChecked = false;
+        let authInitialized = false;
 
-        // Verificar autenticación
-        auth.onAuthStateChanged(user => {
-            if (authChecked) return; // Solo ejecutar una vez
-            authChecked = true;
+        // Verificar autenticación una sola vez
+        const unsubscribe = auth.onAuthStateChanged(user => {
+            if (authInitialized) return;
+            authInitialized = true;
 
             if (!user) {
-                window.location.href = 'index.html';
+                localStorage.clear();
+                window.location.replace('index.html');
                 return;
             }
 
-            // Verificar el rol desde Firestore
-            db.collection('usuarios').doc(user.uid).get().then(doc => {
-                if (doc.exists && doc.data().role === 'vendedor') {
-                    document.getElementById('userName').textContent = localStorage.getItem('userName') || 'Vendedor';
-                    loadProducts();
-                    cargarPulseras();
-                    loadMyTransactions();
-                } else {
-                    window.location.href = 'index.html';
-                }
-            }).catch(() => {
-                window.location.href = 'index.html';
-            });
+            const userRole = localStorage.getItem('userRole');
+            if (userRole !== 'vendedor') {
+                localStorage.clear();
+                window.location.replace('index.html');
+                return;
+            }
+
+            // Si llegamos aquí, el usuario es vendedor válido
+            document.getElementById('userName').textContent = localStorage.getItem('userName') || 'Vendedor';
+            loadProducts();
+            cargarPulseras();
+            loadMyTransactions();
+
+            // Desuscribirse del listener
+            unsubscribe();
         });
 
         function logout() {
