@@ -159,7 +159,7 @@
         <header>
             <div class="header-title">
                 <img src="logo.png" alt="Logo" class="logo-header">
-                <h1>📊 Reportes en Tiempo Real</h1>
+                <h1>Reportes</h1>
             </div>
             <div class="header-actions">
                 <button class="btn-primary" onclick="downloadHTMLReport()">📥 Descargar Reporte HTML</button>
@@ -264,17 +264,19 @@
 
             // Filtrar pulseras por evento
             let pulserasFiltered = allPulseras;
+            let pulserasIdsFiltered = [];
+            
             if (selectedEventoFilter) {
                 pulserasFiltered = allPulseras.filter(p => p.eventId === selectedEventoFilter);
+                pulserasIdsFiltered = pulserasFiltered.map(p => p.id);
+            } else {
+                pulserasIdsFiltered = allPulseras.map(p => p.id);
             }
 
-            // Filtrar transacciones por evento
+            // Filtrar transacciones por las pulseras del evento
             let transFiltered = allTransactions;
             if (selectedEventoFilter) {
-                transFiltered = allTransactions.filter(t => {
-                    const pulsera = allPulseras.find(p => p.id === t.pulseraId);
-                    return pulsera && pulsera.eventId === selectedEventoFilter;
-                });
+                transFiltered = allTransactions.filter(t => pulserasIdsFiltered.includes(t.pulseraId));
             }
 
             // Calcular totales
