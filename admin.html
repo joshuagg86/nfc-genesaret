@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Genesaret</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #003d7a 0%, #001a2e 50%, #0d47a1 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding-top: 60px;
+        }
+
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 80px;
+            background: rgba(30, 41, 59, 0.95);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .logo-header {
+            width: 50px;
+            height: 50px;
+        }
+
+        .hamburger {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 28px;
+            color: #e2e8f0;
+            padding: 0;
+        }
+
+        .header-user {
+            display: none;
+            flex-direction: row;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-user-info {
+            text-align: right;
+        }
+
+        .header-user-info h4 {
+            margin: 0;
+            font-size: 14px;
+            color: #e2e8f0;
+        }
+
+        .header-user-info p {
+            margin: 0;
+            font-size: 11px;
+            color: #94a3b8;
+        }
+
+        .header-title {
+            display: none !important;
+        }
+
+        .header-right {
+            display: none !important;
+        }
+
+        .mobile-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 1000;
+        }
+
+        .mobile-menu.active {
+            display: block;
+        }
+
+        .mobile-menu-content {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(30, 41, 59, 0.98);
+            padding: 20px;
+            z-index: 1001;
+            max-width: 100%;
+            max-height: 100vh;
+            overflow-y: auto;
+        }
+
+        .mobile-menu-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #e2e8f0;
+            font-size: 28px;
+            cursor: pointer;
+        }
+
+        .mobile-menu-header {
+            padding-top: 30px;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .mobile-menu-header h2 {
+            font-size: 18px;
+            margin: 0;
+        }
+
+        .mobile-menu-header .user-info {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 5px;
+        }
+
+        .mobile-menu-items {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .mobile-menu-item {
+            padding: 15px;
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            text-align: left;
+            font-size: 14px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        .mobile-menu-item:hover {
+            color: #f59e0b;
+            background: rgba(245, 158, 11, 0.05);
+        }
+
+        .mobile-menu-item.logout {
+            margin-top: 15px;
+            border-top: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            min-height: calc(100vh - 160px);
+            justify-content: flex-start;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding-top: 70px;
+            }
+
+            .hamburger {
+                display: block !important;
+            }
+
+            .tabs {
+                display: none !important;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .hamburger {
+                display: none;
+            }
+
+            .mobile-menu {
+                display: none !important;
+            }
+
+            header {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 10px 20px;
+                background: rgba(30, 41, 59, 0.95);
+                border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+                z-index: 1000;
+                flex-direction: row;
+                gap: 20px;
+            }
+
+            .logo-header {
+                width: 50px;
+                height: 50px;
+            }
+
+            .tabs {
+                display: flex !important;
+                gap: 10px;
+                margin-bottom: 0;
+                border-bottom: none;
+                overflow-x: auto;
+                flex-wrap: wrap;
+            }
+
+            .tab-btn {
+                padding: 10px 15px;
+                background: transparent;
+                border: none;
+                color: #94a3b8;
+                cursor: pointer;
+                font-weight: 600;
+                font-size: 13px;
+                white-space: nowrap;
+            }
+
+            .tab-btn.active {
+                color: #f59e0b;
+            }
+
+            .header-user {
+                display: flex !important;
+            }
+
+            body {
+                padding-top: 80px;
+            }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .logo-header {
+            width: 50px;
+            height: 50px;
+        }
+
+        .header-title {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-title h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .header-right {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+        }
+
+        .user-info {
+            font-size: 12px;
+        }
+
+        .header-right button {
+            padding: 8px 12px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 768px) {
+            header {
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+
+            .logo-header {
+                width: 70px;
+                height: 70px;
+            }
+
+            .header-title h1 {
+                font-size: 22px;
+            }
+
+            .header-right {
+                gap: 10px;
+            }
+
+            .user-info {
+                font-size: 11px;
+            }
+
+            .header-right button {
+                padding: 6px 10px;
+                font-size: 10px;
+            }
+        }
+
+        h1 {
+            font-size: 24px;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .user-info {
+            text-align: right;
+            font-size: 13px;
+            color: #94a3b8;
+        }
+
+        button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 13px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(245, 158, 11, 0.3);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: none;
+            overflow-x: auto;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 768px) {
+            .tabs {
+                display: none !important;
+            }
+        }
+
+        .tab-btn {
+            padding: 10px 12px;
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            white-space: nowrap;
+            flex: 1;
+            min-width: auto;
+        }
+
+        .tab-btn.active {
+            color: #f59e0b;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(30, 41, 59, 0.95);
+            border-top: 1px solid rgba(148, 163, 184, 0.2);
+            padding: 15px 20px;
+            text-align: center;
+            font-size: 12px;
+            z-index: 999;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .footer-content p {
+            margin: 0;
+            color: #94a3b8;
+        }
+
+        .footer-content strong {
+            color: #f59e0b;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 12px;
+        }
+
+        .footer-links a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: transparent;
+            border-radius: 50%;
+            text-decoration: none;
+            color: #e2e8f0;
+            font-size: 18px;
+            transition: all 0.3s ease;
+            border: 2px solid #e2e8f0;
+        }
+
+        .footer-links a:hover {
+            background: #e2e8f0;
+            color: #003d7a;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(226, 232, 240, 0.2);
+        }
+
+        .footer-links a i {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        body {
+            padding-bottom: 80px;
+        }
+
+        .card {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card h3 {
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-box {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #f59e0b;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .cuentas-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+        }
+
+        .cuenta-card {
+            background: rgba(245, 158, 11, 0.05);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .cuenta-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .cuenta-header h4 {
+            margin: 0;
+            font-size: 14px;
+            color: #e2e8f0;
+        }
+
+        .rol-badge {
+            font-size: 11px;
+            padding: 4px 8px;
+            background: rgba(245, 158, 11, 0.2);
+            border-radius: 4px;
+            color: #f59e0b;
+        }
+
+        .cuenta-info {
+            margin-bottom: 12px;
+        }
+
+        .cuenta-info p {
+            margin: 6px 0;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .cuenta-info strong {
+            color: #e2e8f0;
+        }
+
+        .password-display {
+            color: #f59e0b;
+            font-family: monospace;
+            font-size: 11px;
+        }
+
+        .cuenta-acciones {
+            display: flex;
+            gap: 8px;
+        }
+
+        .cuenta-acciones button {
+            flex: 1;
+            padding: 6px 10px;
+            font-size: 11px;
+        }
+
+        @media (max-width: 768px) {
+            .cuentas-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            color: #cbd5e1;
+            font-weight: 500;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            border-radius: 6px;
+            color: #e2e8f0;
+            font-size: 13px;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #f59e0b;
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .table th {
+            background: rgba(15, 23, 42, 0.8);
+            padding: 12px;
+            text-align: left;
+            font-size: 12px;
+            color: #cbd5e1;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .table td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+            font-size: 13px;
+        }
+
+        .alert {
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 13px;
+        }
+
+        .alert-success {
+            background: rgba(34, 197, 94, 0.1);
+            color: #86efac;
+            border-left: 3px solid #22c55e;
+            display: none;
+        }
+
+        .alert-success.show {
+            display: block;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .card {
+                padding: 15px;
+            }
+
+            .card h3 {
+                font-size: 14px;
+            }
+
+            input, select {
+                padding: 10px;
+                font-size: 14px;
+            }
+
+            button {
+                padding: 10px;
+                font-size: 12px;
+            }
+
+            .table th {
+                padding: 8px;
+                font-size: 10px;
+            }
+
+            .table td {
+                padding: 8px;
+                font-size: 10px;
+            }
+
+            .form-group {
+                margin-bottom: 12px;
+            }
+
+            label {
+                margin-bottom: 5px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <img src="logo.png" alt="Logo" class="logo-header">
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('eventos')">Eventos</button>
+                <button class="tab-btn" onclick="switchTab('pulseras')">Pulseras</button>
+                <button class="tab-btn" onclick="switchTab('articulos')">Artículos</button>
+                <button class="tab-btn" onclick="switchTab('cuentas')">Cuentas</button>
+                <button class="tab-btn" onclick="switchTab('reportes')">Reportes</button>
+            </div>
+            <div class="header-user">
+                <div class="header-user-info">
+                    <h4>Admin</h4>
+                    <p>Hola, <span id="userName">Admin</span></p>
+                </div>
+                <button class="btn-danger" onclick="logout()" style="padding: 8px 12px; font-size: 12px;">Cerrar Sesión</button>
+            </div>
+            <button class="hamburger" id="hamburger" onclick="toggleMenu()">☰</button>
+        </header>
+
+        <div class="mobile-menu" id="mobileMenu" onclick="toggleMenu()">
+            <div class="mobile-menu-content" onclick="event.stopPropagation()">
+                <button class="mobile-menu-close" onclick="toggleMenu()">✕</button>
+                <div class="mobile-menu-header">
+                    <h2>Admin</h2>
+                    <div class="user-info">Hola, <strong id="userNameMobile">Admin</strong></div>
+                </div>
+
+                <div class="mobile-menu-items">
+                    <button class="mobile-menu-item" onclick="switchTabMobile('eventos')">Eventos</button>
+                    <button class="mobile-menu-item" onclick="switchTabMobile('pulseras')">Pulseras</button>
+                    <button class="mobile-menu-item" onclick="switchTabMobile('articulos')">Artículos</button>
+                    <button class="mobile-menu-item" onclick="switchTabMobile('cuentas')">Cuentas</button>
+                    <button class="mobile-menu-item" onclick="switchTabMobile('reportes')">Reportes</button>
+                    <button class="mobile-menu-item logout" onclick="logout()">Cerrar Sesión</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert alert-success" id="successAlert"></div>
+
+        <!-- TAB: EVENTOS -->
+        <div class="tab-content active" id="eventos">
+            <div class="grid">
+                <div class="card">
+                    <h3>📅 Crear Evento</h3>
+                    <div class="form-group">
+                        <label>Nombre del Evento</label>
+                        <input type="text" id="eventName" placeholder="ej: Kermés 2026">
+                    </div>
+                    <div class="form-group">
+                        <label>Descripción</label>
+                        <input type="text" id="eventDesc" placeholder="ej: Evento benéfico">
+                    </div>
+                    <button class="btn-primary" onclick="crearEvento()" style="width: 100%;">Crear Evento</button>
+                </div>
+
+                <div class="card">
+                    <h3>📊 Eventos Registrados</h3>
+                    <div id="eventsList"></div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 20px;">
+                <h3>📈 Estadísticas Generales</h3>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-value" id="totalEventos">0</div>
+                        <div class="stat-label">Eventos Activos</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="totalPulseras">0</div>
+                        <div class="stat-label">Pulseras Registradas</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="totalTransacciones">0</div>
+                        <div class="stat-label">Transacciones</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="totalArticulos">0</div>
+                        <div class="stat-label">Artículos</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: PULSERAS -->
+        <div class="tab-content" id="pulseras">
+            <div class="grid">
+                <div class="card">
+                    <h3>📱 Registrar Pulsera</h3>
+                    <div class="form-group">
+                        <label>Selecciona Evento</label>
+                        <select id="pulseraEvento">
+                            <option value="">Cargando eventos...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>ID de Pulsera (NFC)</label>
+                        <input type="text" id="pulseraId" placeholder="ej: NFC-001">
+                    </div>
+                    <div class="form-group">
+                        <label>Nombre del Portador</label>
+                        <input type="text" id="pulseraNombre" placeholder="ej: Juan García">
+                    </div>
+                    <div class="form-group">
+                        <label>Saldo Inicial ($)</label>
+                        <input type="number" id="pulseraSaldo" placeholder="0.00" min="0" step="0.01">
+                    </div>
+                    <button class="btn-primary" onclick="registrarPulsera()" style="width: 100%;">Registrar Pulsera</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🏷️ Pulseras Registradas</h3>
+                <div id="pulserasList"></div>
+            </div>
+
+            <div class="card">
+                <h3>🧪 Simular Transacción (Testing)</h3>
+                <div class="form-group">
+                    <label>Selecciona Pulsera</label>
+                    <select id="simPulsera" onchange="loadSimArticulos()">
+                        <option value="">Cargando pulseras...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Selecciona Artículo</label>
+                    <select id="simArticulo">
+                        <option value="">Selecciona una pulsera primero</option>
+                    </select>
+                </div>
+                <button class="btn-primary" onclick="simularTransaccion()" style="width: 100%; margin-top: 10px;">Simular Cobro</button>
+            </div>
+        </div>
+
+        <!-- TAB: ARTÍCULOS -->
+        <div class="tab-content" id="articulos">
+            <div class="grid">
+                <div class="card">
+                    <h3>➕ Agregar Artículo</h3>
+                    <div class="form-group">
+                        <label>Evento</label>
+                        <select id="articuloEvento" onchange="cargarArticulos()"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Nombre del Artículo</label>
+                        <input type="text" id="articuloName" placeholder="ej: Tamales">
+                    </div>
+                    <div class="form-group">
+                        <label>Precio ($)</label>
+                        <input type="number" id="articuloPrice" placeholder="0.00" min="0" step="0.01">
+                    </div>
+                    <button class="btn-primary" onclick="agregarArticulo()" style="width: 100%;">Agregar Artículo</button>
+                </div>
+
+                <div class="card">
+                    <h3>🛒 Artículos por Evento</h3>
+                    <div id="articulosList"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: CUENTAS -->
+        <div class="tab-content" id="cuentas">
+            <div class="card">
+                <h3>👥 Cuentas del Sistema</h3>
+                <div id="cuentasList"></div>
+            </div>
+        </div>
+
+        <!-- TAB: REPORTES -->
+        <div class="tab-content" id="reportes">
+            <div class="card">
+                <h3>📊 Reportes en Tiempo Real</h3>
+                <p style="color: #94a3b8;">Los reportes se actualizan automáticamente desde Firebase.</p>
+                <button class="btn-primary" onclick="irAReportes()" style="margin-top: 15px; width: 100%;">Ver Dashboard de Reportes →</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <p>Hecho por <strong>Digital Thinking</strong></p>
+            <div class="footer-links">
+                <a href="https://dthinkng.com" target="_blank" title="Sitio Web">
+                    <i class="fas fa-globe"></i>
+                </a>
+                <a href="https://www.facebook.com/d.thinkng" target="_blank" title="Facebook">
+                    <i class="fab fa-facebook"></i>
+                </a>
+                <a href="https://www.instagram.com/d.thinkng/" target="_blank" title="Instagram">
+                    <i class="fab fa-instagram"></i>
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Firebase SDK Compat -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyC56h2z_HnfFH6h0QEqYjOFoUolNwDeJDQ",
+            authDomain: "nfc-genesaret.firebaseapp.com",
+            projectId: "nfc-genesaret",
+            storageBucket: "nfc-genesaret.firebasestorage.app",
+            messagingSenderId: "58470602922",
+            appId: "1:58470602922:web:661854ac1cc6f11f8c58d3"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        let currentUserId = localStorage.getItem('userId');
+        let authInitialized = false;
+
+        // Verificar autenticación una sola vez
+        const unsubscribe = auth.onAuthStateChanged(user => {
+            if (authInitialized) return;
+            authInitialized = true;
+
+            if (!user) {
+                localStorage.clear();
+                window.location.replace('index.html');
+                return;
+            }
+
+            const userRole = localStorage.getItem('userRole');
+            if (userRole !== 'admin') {
+                localStorage.clear();
+                window.location.replace('index.html');
+                return;
+            }
+
+            // Si llegamos aquí, el usuario es admin válido
+            document.getElementById('userName').textContent = localStorage.getItem('userName') || 'Admin';
+            document.getElementById('userNameMobile').textContent = localStorage.getItem('userName') || 'Admin';
+            cargarEventos();
+            cargarPulseras();
+            cargarCuentas();
+            loadSimPulseras();
+            actualizarEstadisticas();
+
+            // Desuscribirse del listener
+            unsubscribe();
+        });
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tab).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function toggleMenu() {
+            document.getElementById('mobileMenu').classList.toggle('active');
+        }
+
+        function switchTabMobile(tab) {
+            switchTab(tab);
+            toggleMenu();
+        }
+
+        function logout() {
+            auth.signOut().then(() => {
+                localStorage.clear();
+                window.location.href = 'index.html';
+            }).catch(error => alert('Error: ' + error.message));
+        }
+
+        function irAReportes() {
+            window.location.href = './reportes.html';
+        }
+
+        function showSuccess(msg) {
+            const alert = document.getElementById('successAlert');
+            alert.textContent = msg;
+            alert.classList.add('show');
+            setTimeout(() => alert.classList.remove('show'), 3000);
+        }
+
+        function registrarPulsera() {
+            const eventId = document.getElementById('pulseraEvento').value;
+            const id = document.getElementById('pulseraId').value.trim();
+            const nombre = document.getElementById('pulseraNombre').value.trim();
+            const saldo = parseFloat(document.getElementById('pulseraSaldo').value);
+
+            if (!eventId || !id || !nombre || isNaN(saldo)) {
+                alert('Completa los campos requeridos');
+                return;
+            }
+
+            db.collection('pulseras').add({
+                eventId: eventId,
+                id: id,
+                nombre: nombre,
+                saldoInicial: saldo,
+                saldoActual: saldo,
+                createdAt: new Date(),
+                activo: true
+            }).then(() => {
+                showSuccess('✅ Pulsera registrada');
+                document.getElementById('pulseraEvento').value = '';
+                document.getElementById('pulseraId').value = '';
+                document.getElementById('pulseraNombre').value = '';
+                document.getElementById('pulseraSaldo').value = '';
+                cargarPulseras();
+            }).catch(error => alert('Error: ' + error.message));
+        }
+
+        function eliminarPulsera(pulseraId) {
+            if (confirm('¿Estás seguro? Esto eliminará también todas las transacciones de esta pulsera.')) {
+                // Eliminar transacciones de la pulsera
+                db.collection('transacciones').where('pulseraId', '==', pulseraId).get()
+                    .then(snapshot => {
+                        const batch = db.batch();
+                        snapshot.forEach(doc => batch.delete(doc.ref));
+                        return batch.commit();
+                    })
+                    .then(() => {
+                        // Eliminar la pulsera
+                        return db.collection('pulseras').doc(pulseraId).delete();
+                    })
+                    .then(() => {
+                        showSuccess('✅ Pulsera y sus transacciones eliminadas');
+                        cargarPulseras();
+                        actualizarEstadisticas();
+                    })
+                    .catch(error => {
+                        showError('Error al eliminar: ' + error.message);
+                    });
+            }
+        }
+
+        function cargarPulseras() {
+            // Primero cargar eventos en el selector
+            db.collection('eventos').onSnapshot(snapshot => {
+                let html = '<option value="">Selecciona un evento</option>';
+                let eventosMap = {};
+                snapshot.forEach(doc => {
+                    html += `<option value="${doc.id}">${doc.data().nombre}</option>`;
+                    eventosMap[doc.id] = doc.data().nombre;
+                });
+                document.getElementById('pulseraEvento').innerHTML = html;
+                window.eventosMap = eventosMap; // Guardar mapa global
+            });
+
+            // Luego cargar pulseras
+            db.collection('pulseras')
+                .onSnapshot(snapshot => {
+                    let html = '<table class="table"><thead><tr><th>ID</th><th>Nombre</th><th>Evento</th><th>Saldo Inicial</th><th>Saldo Actual</th><th>Acciones</th></tr></thead><tbody>';
+
+                    snapshot.forEach(doc => {
+                        const pulsera = doc.data();
+                        const eventId = pulsera.eventId || 'N/A';
+                        const eventNombre = window.eventosMap && window.eventosMap[eventId] ? window.eventosMap[eventId] : eventId;
+                        
+                        html += `
+                            <tr>
+                                <td>${pulsera.id}</td>
+                                <td>${pulsera.nombre}</td>
+                                <td>${eventNombre}</td>
+                                <td>$${pulsera.saldoInicial.toFixed(2)}</td>
+                                <td>$${pulsera.saldoActual.toFixed(2)}</td>
+                                <td>
+                                    <button class="btn-danger" onclick="eliminarPulsera('${doc.id}')" style="padding: 4px 8px; font-size: 11px;">Eliminar</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+
+                    html += '</tbody></table>';
+                    document.getElementById('pulserasList').innerHTML = html || '<p style="color: #94a3b8;">No hay pulseras registradas</p>';
+                });
+        }
+
+        function crearEvento() {
+            const name = document.getElementById('eventName').value.trim();
+            const desc = document.getElementById('eventDesc').value.trim();
+
+            if (!name) {
+                alert('Completa los campos requeridos');
+                return;
+            }
+
+            db.collection('eventos').add({
+                nombre: name,
+                descripcion: desc,
+                fecha: new Date(),
+                adminId: currentUserId,
+                createdAt: new Date(),
+                activo: true
+            }).then(() => {
+                showSuccess('✅ Evento creado');
+                document.getElementById('eventName').value = '';
+                document.getElementById('eventDesc').value = '';
+                cargarEventos();
+            }).catch(error => alert('Error: ' + error.message));
+        }
+
+        function eliminarEvento(eventId) {
+            if (confirm('¿Estás seguro? Esto eliminará también todos los artículos, pulseras y transacciones asociadas a este evento.')) {
+                // Mostrar indicador de carga
+                showSuccess('⏳ Eliminando evento y datos asociados...');
+                
+                // Eliminar artículos del evento
+                db.collection('articulos').where('eventId', '==', eventId).get()
+                    .then(snapshot => {
+                        const batch1 = db.batch();
+                        snapshot.forEach(doc => batch1.delete(doc.ref));
+                        return batch1.commit();
+                    })
+                    .then(() => {
+                        // Eliminar transacciones del evento
+                        return db.collection('transacciones').where('eventId', '==', eventId).get();
+                    })
+                    .then(snapshot => {
+                        const batch2 = db.batch();
+                        snapshot.forEach(doc => batch2.delete(doc.ref));
+                        return batch2.commit();
+                    })
+                    .then(() => {
+                        // Eliminar pulseras del evento
+                        return db.collection('pulseras').where('eventId', '==', eventId).get();
+                    })
+                    .then(snapshot => {
+                        const batch3 = db.batch();
+                        snapshot.forEach(doc => batch3.delete(doc.ref));
+                        return batch3.commit();
+                    })
+                    .then(() => {
+                        // Finalmente eliminar el evento
+                        return db.collection('eventos').doc(eventId).delete();
+                    })
+                    .then(() => {
+                        showSuccess('✅ Evento y todos sus datos eliminados correctamente');
+                        cargarEventos();
+                        actualizarEstadisticas();
+                    })
+                    .catch(error => {
+                        showError('Error al eliminar: ' + error.message);
+                    });
+            }
+        }
+
+        function cargarEventos() {
+            db.collection('eventos')
+                .orderBy('createdAt', 'desc')
+                .onSnapshot(snapshot => {
+                    let html = '<table class="table"><thead><tr><th>Nombre</th><th>Fecha</th><th>Acciones</th></tr></thead><tbody>';
+                    let selectHTML = '<option value="">Selecciona un evento</option>';
+
+                    snapshot.forEach(doc => {
+                        const evento = doc.data();
+                        const fecha = evento.fecha.toDate().toLocaleDateString('es-MX');
+
+                        html += `
+                            <tr>
+                                <td>${evento.nombre}</td>
+                                <td>${fecha}</td>
+                                <td>
+                                    <button class="btn-danger" onclick="eliminarEvento('${doc.id}')" style="padding: 4px 8px; font-size: 11px;">Eliminar</button>
+                                </td>
+                            </tr>
+                        `;
+                        selectHTML += `<option value="${doc.id}">${evento.nombre}</option>`;
+                    });
+
+                    html += '</tbody></table>';
+                    document.getElementById('eventsList').innerHTML = html || '<p style="color: #94a3b8;">No hay eventos</p>';
+                    document.getElementById('articuloEvento').innerHTML = selectHTML;
+                });
+        }
+
+        function agregarArticulo() {
+            const eventId = document.getElementById('articuloEvento').value;
+            const name = document.getElementById('articuloName').value.trim();
+            const price = parseFloat(document.getElementById('articuloPrice').value);
+
+            if (!eventId || !name || isNaN(price)) {
+                alert('Completa los campos requeridos');
+                return;
+            }
+
+            db.collection('articulos').add({
+                eventId: eventId,
+                nombre: name,
+                precio: price,
+                createdAt: new Date()
+            }).then(() => {
+                showSuccess('✅ Artículo agregado');
+                document.getElementById('articuloName').value = '';
+                document.getElementById('articuloPrice').value = '';
+                cargarArticulos();
+            }).catch(error => alert('Error: ' + error.message));
+        }
+
+        function eliminarArticulo(articuloId) {
+            if (confirm('¿Eliminar?')) {
+                db.collection('articulos').doc(articuloId).delete();
+            }
+        }
+
+        function cargarArticulos() {
+            const eventId = document.getElementById('articuloEvento').value;
+            if (!eventId) {
+                document.getElementById('articulosList').innerHTML = '<p style="color: #94a3b8; font-size: 13px;">Selecciona un evento</p>';
+                return;
+            }
+
+            db.collection('articulos')
+                .where('eventId', '==', eventId)
+                .onSnapshot(snapshot => {
+                    let html = '<table class="table"><thead><tr><th>Artículo</th><th>Precio</th><th>Acciones</th></tr></thead><tbody>';
+
+                    snapshot.forEach(doc => {
+                        const art = doc.data();
+                        html += `
+                            <tr>
+                                <td>${art.nombre}</td>
+                                <td>$${art.precio.toFixed(2)}</td>
+                                <td>
+                                    <button class="btn-danger" onclick="eliminarArticulo('${doc.id}')" style="padding: 4px 8px; font-size: 11px;">Eliminar</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+
+                    html += '</tbody></table>';
+                    document.getElementById('articulosList').innerHTML = html;
+                });
+        }
+
+        function cargarCuentas() {
+            db.collection('usuarios')
+                .onSnapshot(snapshot => {
+                    let html = '<div class="cuentas-grid">';
+
+                    snapshot.forEach(doc => {
+                        const usuario = doc.data();
+                        const fecha = usuario.createdAt.toDate().toLocaleDateString('es-MX');
+                        const rolActual = usuario.role === 'admin' ? 'admin' : 'vendedor';
+                        const rolBadge = rolActual === 'admin' ? '👨‍💼 Admin' : '🛍️ Vendedor';
+                        const otroRol = rolActual === 'admin' ? 'vendedor' : 'admin';
+                        const otroRolLabel = otroRol === 'admin' ? 'Admin' : 'Vendedor';
+
+                        html += `
+                            <div class="cuenta-card">
+                                <div class="cuenta-header">
+                                    <h4>${usuario.name}</h4>
+                                    <span class="rol-badge">${rolBadge}</span>
+                                </div>
+                                <div class="cuenta-info">
+                                    <p><strong>Email:</strong> ${usuario.email}</p>
+                                    <p><strong>Creada:</strong> ${fecha}</p>
+                                    <p><strong>Contraseña:</strong> <span class="password-display" id="pass-${doc.id}">${usuario.password || 'N/A'}</span></p>
+                                </div>
+                                <div class="cuenta-acciones">
+                                    <button class="btn-primary" onclick="cambiarRol('${doc.id}', '${otroRol}')" style="padding: 6px 10px; font-size: 11px;">Cambiar a ${otroRolLabel}</button>
+                                    <button class="btn-danger" onclick="eliminarCuenta('${doc.id}', '${usuario.email}')" style="padding: 6px 10px; font-size: 11px;">Eliminar</button>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    html += '</div>';
+                    document.getElementById('cuentasList').innerHTML = html || '<p style="color: #94a3b8;">No hay cuentas registradas</p>';
+                });
+        }
+
+        function cambiarRol(usuarioId, nuevoRol) {
+            if (confirm('¿Cambiar el rol a ' + (nuevoRol === 'admin' ? 'Admin' : 'Vendedor') + '?')) {
+                db.collection('usuarios').doc(usuarioId).update({
+                    role: nuevoRol
+                }).then(() => {
+                    showSuccess('Rol actualizado correctamente');
+                    cargarCuentas();
+                }).catch(error => {
+                    showError('Error al cambiar rol: ' + error.message);
+                });
+            }
+        }
+
+        function eliminarCuenta(usuarioId, email) {
+            if (confirm('¿Estás seguro de que deseas eliminar la cuenta de ' + email + '?\n\nEsta acción no se puede deshacer.')) {
+                // Eliminar documento del usuario de Firestore
+                db.collection('usuarios').doc(usuarioId).delete().then(() => {
+                    showSuccess('Cuenta eliminada correctamente');
+                    cargarCuentas();
+                }).catch(error => {
+                    showError('Error al eliminar: ' + error.message);
+                });
+            }
+        }
+
+        function loadSimPulseras() {
+            db.collection('pulseras')
+                .onSnapshot(snapshot => {
+                    let html = '<option value="">Selecciona una pulsera</option>';
+                    snapshot.forEach(doc => {
+                        const pulsera = doc.data();
+                        html += `<option value="${doc.id}|${pulsera.nombre}|${pulsera.saldoActual}">
+                            ${pulsera.nombre} - $${pulsera.saldoActual.toFixed(2)}
+                        </option>`;
+                    });
+                    document.getElementById('simPulsera').innerHTML = html;
+                });
+        }
+
+        function loadSimArticulos() {
+            const select = document.getElementById('simPulsera');
+            const value = select.value;
+
+            if (!value) {
+                document.getElementById('simArticulo').innerHTML = '<option value="">Selecciona una pulsera primero</option>';
+                return;
+            }
+
+            db.collection('articulos')
+                .onSnapshot(snapshot => {
+                    let html = '<option value="">Selecciona un artículo</option>';
+                    snapshot.forEach(doc => {
+                        const art = doc.data();
+                        html += `<option value="${doc.id}|${art.nombre}|${art.precio}">
+                            ${art.nombre} - $${art.precio.toFixed(2)}
+                        </option>`;
+                    });
+                    document.getElementById('simArticulo').innerHTML = html;
+                });
+        }
+
+        function simularTransaccion() {
+            const pulseraValue = document.getElementById('simPulsera').value;
+            const articuloValue = document.getElementById('simArticulo').value;
+
+            if (!pulseraValue || !articuloValue) {
+                alert('Selecciona una pulsera y un artículo');
+                return;
+            }
+
+            const [pulseraId, pulseraNombre, saldoActual] = pulseraValue.split('|');
+            const [articuloId, articuloNombre, precio] = articuloValue.split('|');
+
+            const precioNum = parseFloat(precio);
+            const saldoNum = parseFloat(saldoActual);
+
+            if (saldoNum < precioNum) {
+                alert('Saldo insuficiente');
+                return;
+            }
+
+            const nuevoSaldo = saldoNum - precioNum;
+
+            // Obtener el eventId de la pulsera
+            db.collection('pulseras').doc(pulseraId).get().then(doc => {
+                const eventId = doc.data().eventId || '';
+
+                // Actualizar saldo de la pulsera
+                db.collection('pulseras').doc(pulseraId).update({
+                    saldoActual: nuevoSaldo
+                }).then(() => {
+                    // Registrar transacción
+                    db.collection('transacciones').add({
+                        eventId: eventId,
+                        pulseraId: pulseraId,
+                        pulsera: pulseraNombre,
+                        articulo: articuloNombre,
+                        monto: precioNum,
+                        saldoAnterior: saldoNum,
+                        saldoNuevo: nuevoSaldo,
+                        vendedor: 'Simulación Admin',
+                        vendedorId: currentUserId,
+                        fecha: new Date()
+                    }).then(() => {
+                        showSuccess('✅ Transacción simulada correctamente');
+                        document.getElementById('simPulsera').value = '';
+                        document.getElementById('simArticulo').value = '';
+                        cargarPulseras();
+                        loadSimPulseras();
+                    });
+                });
+            });
+        }
+        function actualizarEstadisticas() {
+            // Obtener eventos
+            db.collection('eventos')
+                .onSnapshot(snapshot => {
+                    document.getElementById('totalEventos').textContent = snapshot.size;
+                });
+
+            // Obtener pulseras
+            db.collection('pulseras')
+                .onSnapshot(snapshot => {
+                    document.getElementById('totalPulseras').textContent = snapshot.size;
+                });
+
+            // Obtener transacciones
+            db.collection('transacciones')
+                .onSnapshot(snapshot => {
+                    document.getElementById('totalTransacciones').textContent = snapshot.size;
+                });
+
+            // Obtener artículos
+            db.collection('articulos')
+                .onSnapshot(snapshot => {
+                    document.getElementById('totalArticulos').textContent = snapshot.size;
+                });
+        }
+
+    </script>
+</body>
+</html>
