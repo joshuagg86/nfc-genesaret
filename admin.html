@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - NFC Genesaret v2</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -28,12 +29,11 @@
             flex-direction: row;
             justify-content: space-between;
             align-items: center;
-            padding: 40px 80px;
+            padding: 10px 80px;
             background: rgba(30, 41, 59, 0.95);
             border-bottom: 1px solid rgba(148, 163, 184, 0.2);
             z-index: 1000;
             backdrop-filter: blur(10px);
-            min-height: 140px;
         }
 
         .logo-header {
@@ -150,7 +150,7 @@
 
         @media (max-width: 768px) {
             body {
-                padding-top: 140px;
+                padding-top: 70px;
             }
 
             .hamburger {
@@ -217,7 +217,7 @@
             }
 
             body {
-                padding-top: 140px;
+                padding-top: 80px;
             }
         }
 
@@ -371,6 +371,76 @@
 
         .tab-content.active {
             display: block;
+        }
+
+        footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(30, 41, 59, 0.95);
+            border-top: 1px solid rgba(148, 163, 184, 0.2);
+            padding: 15px 20px;
+            text-align: center;
+            font-size: 12px;
+            z-index: 999;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .footer-content p {
+            margin: 0;
+            color: #94a3b8;
+        }
+
+        .footer-content strong {
+            color: #f59e0b;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 12px;
+        }
+
+        .footer-links a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: transparent;
+            border-radius: 50%;
+            text-decoration: none;
+            color: #e2e8f0;
+            font-size: 18px;
+            transition: all 0.3s ease;
+            border: 2px solid #e2e8f0;
+        }
+
+        .footer-links a:hover {
+            background: #e2e8f0;
+            color: #003d7a;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(226, 232, 240, 0.2);
+        }
+
+        .footer-links a i {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        body {
+            padding-bottom: 80px;
         }
 
         .card {
@@ -655,6 +725,23 @@
             </div>
         </div>
     </div>
+
+    <footer>
+        <div class="footer-content">
+            <p>Hecho por <strong>Digital Thinking</strong></p>
+            <div class="footer-links">
+                <a href="https://dthinkng.com" target="_blank" title="Sitio Web">
+                    <i class="fas fa-globe"></i>
+                </a>
+                <a href="https://www.facebook.com/d.thinkng" target="_blank" title="Facebook">
+                    <i class="fab fa-facebook"></i>
+                </a>
+                <a href="https://www.instagram.com/d.thinkng/" target="_blank" title="Instagram">
+                    <i class="fab fa-instagram"></i>
+                </a>
+            </div>
+        </div>
+    </footer>
 
     <!-- Firebase SDK Compat -->
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
