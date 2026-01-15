@@ -439,13 +439,23 @@
         document.getElementById('fechaDesde').value = hoy;
         document.getElementById('fechaHasta').value = hoy;
 
-        // Cargar eventos para el filtro
+        // Cargar eventos para el filtro (sin filtrar por admin para ver todos)
         db.collection('eventos').onSnapshot(snapshot => {
             let html = '<option value="">Ver todos los eventos</option>';
-            snapshot.forEach(doc => {
-                html += `<option value="${doc.id}">${doc.data().nombre}</option>`;
-            });
+            
+            if (snapshot.empty) {
+                html = '<option value="">No hay eventos disponibles</option>';
+            } else {
+                snapshot.forEach(doc => {
+                    const evento = doc.data();
+                    html += `<option value="${doc.id}">${evento.nombre}</option>`;
+                });
+            }
+            
             document.getElementById('eventoFilter').innerHTML = html;
+        }, error => {
+            console.error('Error cargando eventos:', error);
+            document.getElementById('eventoFilter').innerHTML = '<option value="">Error al cargar eventos</option>';
         });
 
         db.collection('transacciones').onSnapshot(snapshot => {
