@@ -261,15 +261,18 @@
         const db = firebase.firestore();
         const auth = firebase.auth();
 
-        // Verificar autenticación
-        let authChecked = false;
-        auth.onAuthStateChanged(user => {
-            if (authChecked) return; // Solo ejecutar una vez
-            authChecked = true;
+        // Verificar autenticación una sola vez
+        let authInitialized = false;
+        const unsubscribe = auth.onAuthStateChanged(user => {
+            if (authInitialized) return;
+            authInitialized = true;
 
             if (!user) {
-                window.location.href = 'index.html';
+                localStorage.clear();
+                window.location.replace('index.html');
             }
+            // Si llegamos aquí, el usuario está autenticado
+            unsubscribe();
         });
 
         let allTransactions = [];
