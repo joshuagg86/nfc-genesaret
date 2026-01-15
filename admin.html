@@ -26,24 +26,81 @@
 
         header {
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
+            justify-content: center;
             align-items: center;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             padding: 20px;
             background: rgba(30, 41, 59, 0.8);
             border: 1px solid rgba(148, 163, 184, 0.2);
             border-radius: 12px;
+            text-align: center;
+            gap: 15px;
         }
 
         .logo-header {
-            width: 50px;
-            height: 50px;
-            margin-right: 15px;
+            width: 80px;
+            height: 80px;
+            margin: 0;
         }
 
         .header-title {
             display: flex;
+            flex-direction: column;
             align-items: center;
+            gap: 10px;
+        }
+
+        .header-title h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .header-right {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+        }
+
+        .user-info {
+            font-size: 12px;
+        }
+
+        .header-right button {
+            padding: 8px 12px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 768px) {
+            header {
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+
+            .logo-header {
+                width: 70px;
+                height: 70px;
+            }
+
+            .header-title h1 {
+                font-size: 22px;
+            }
+
+            .header-right {
+                gap: 10px;
+            }
+
+            .user-info {
+                font-size: 11px;
+            }
+
+            .header-right button {
+                padding: 6px 10px;
+                font-size: 10px;
+            }
         }
 
         h1 {
@@ -251,8 +308,8 @@
 <body>
     <div class="container">
         <header>
+            <img src="logo.png" alt="Logo" class="logo-header">
             <div class="header-title">
-                <img src="logo.png" alt="Logo" class="logo-header">
                 <h1>Admin</h1>
             </div>
             <div class="header-right">
@@ -307,16 +364,9 @@
                             <option value="">Cargando eventos...</option>
                         </select>
                     </div>
-
-                    <div style="background: rgba(245, 158, 11, 0.1); border: 2px dashed #f59e0b; border-radius: 8px; padding: 15px; margin: 15px 0; text-align: center;">
-                        <div style="font-size: 30px; margin-bottom: 10px;">📱</div>
-                        <div id="nfcStatusAdmin" style="color: #f59e0b; margin-bottom: 10px; font-size: 12px;">Listo para leer NFC</div>
-                        <button class="btn-primary" onclick="iniciarLecturaNFCAdmin()" style="width: 100%; margin-bottom: 10px;">Leer ID de Pulsera NFC</button>
-                    </div>
-
                     <div class="form-group">
                         <label>ID de Pulsera (NFC)</label>
-                        <input type="text" id="pulseraId" placeholder="Se rellenará automáticamente al leer NFC">
+                        <input type="text" id="pulseraId" placeholder="ej: NFC-001">
                     </div>
                     <div class="form-group">
                         <label>Nombre del Portador</label>
@@ -472,52 +522,6 @@
             alert.textContent = msg;
             alert.classList.add('show');
             setTimeout(() => alert.classList.remove('show'), 3000);
-        }
-
-        function iniciarLecturaNFCAdmin() {
-            if (!('NDEFReader' in window)) {
-                alert('❌ Tu navegador no soporta NFC');
-                return;
-            }
-
-            document.getElementById('nfcStatusAdmin').textContent = '⏳ Acerca la pulsera...';
-            document.getElementById('nfcStatusAdmin').style.color = '#f59e0b';
-
-            const ndef = new NDEFReader();
-            ndef.scan().then(() => {
-                ndef.onreading = event => {
-                    let pulseraId = '';
-
-                    try {
-                        for (const record of event.message.records) {
-                            if (record.recordType === 'text') {
-                                pulseraId = new TextDecoder().decode(record.data);
-                                break;
-                            }
-                        }
-
-                        if (pulseraId) {
-                            document.getElementById('pulseraId').value = pulseraId;
-                            document.getElementById('nfcStatusAdmin').textContent = '✅ ID leído: ' + pulseraId;
-                            document.getElementById('nfcStatusAdmin').style.color = '#86efac';
-                        } else {
-                            document.getElementById('nfcStatusAdmin').textContent = '⚠️ Sin ID de texto encontrado';
-                            document.getElementById('nfcStatusAdmin').style.color = '#f59e0b';
-                        }
-                    } catch (error) {
-                        document.getElementById('nfcStatusAdmin').textContent = '❌ Error: ' + error.message;
-                        document.getElementById('nfcStatusAdmin').style.color = '#ef4444';
-                    }
-                };
-
-                ndef.onreadingerror = () => {
-                    document.getElementById('nfcStatusAdmin').textContent = '❌ Error al leer NFC';
-                    document.getElementById('nfcStatusAdmin').style.color = '#ef4444';
-                };
-            }).catch(error => {
-                document.getElementById('nfcStatusAdmin').textContent = '❌ ' + error.message;
-                document.getElementById('nfcStatusAdmin').style.color = '#ef4444';
-            });
         }
 
         function registrarPulsera() {
