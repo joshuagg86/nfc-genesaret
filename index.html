@@ -367,20 +367,39 @@
 
             auth.signInWithEmailAndPassword(email, password)
                 .then(userCredential => {
-                    localStorage.setItem('userId', userCredential.user.uid);
-                    localStorage.setItem('userEmail', email);
-                    localStorage.setItem('userRole', role);
-                    localStorage.setItem('userName', email.split('@')[0]);
-                    
-                    showLoading(false);
-                    
-                    setTimeout(() => {
-                        if (role === 'admin') {
-                            window.location.href = 'admin.html';
-                        } else {
-                            window.location.href = 'vendedor.html';
-                        }
-                    }, 500);
+                    // Verificar que el rol seleccionado coincida con el rol de la cuenta
+                    db.collection('usuarios').doc(userCredential.user.uid).get()
+                        .then(doc => {
+                            if (doc.exists) {
+                                const usuarioRole = doc.data().role;
+                                // Verificar que el rol coincida
+                                if (usuarioRole !== role) {
+                                    showLoading(false);
+                                    showError('El rol seleccionado no coincide con tu cuenta');
+                                    auth.signOut();
+                                    return;
+                                }
+                            }
+                            
+                            localStorage.setItem('userId', userCredential.user.uid);
+                            localStorage.setItem('userEmail', email);
+                            localStorage.setItem('userRole', role);
+                            localStorage.setItem('userName', email.split('@')[0]);
+                            
+                            showLoading(false);
+                            
+                            setTimeout(() => {
+                                if (role === 'admin') {
+                                    window.location.href = 'admin.html';
+                                } else {
+                                    window.location.href = 'vendedor.html';
+                                }
+                            }, 500);
+                        })
+                        .catch(error => {
+                            showLoading(false);
+                            showError('Error al verificar usuario: ' + error.message);
+                        });
                 })
                 .catch(error => {
                     showLoading(false);
@@ -465,13 +484,15 @@
 
         auth.onAuthStateChanged(user => {
             if (user) {
+                // Usuario está autenticado, redirigir según su rol
                 const role = localStorage.getItem('userRole');
                 if (role === 'admin') {
-                    window.location.href = 'admin.html';
+                    window.location.replace('admin.html');
                 } else if (role === 'vendedor') {
-                    window.location.href = 'vendedor.html';
+                    window.location.replace('vendedor.html');
                 }
             }
+            // Si no está autenticado, mostrar login (es lo normal en index.html)
         });
     </script>
 </body>
