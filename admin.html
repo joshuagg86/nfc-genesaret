@@ -203,6 +203,49 @@
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 20px;
         }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .card {
+                padding: 15px;
+            }
+
+            .card h3 {
+                font-size: 14px;
+            }
+
+            input, select {
+                padding: 10px;
+                font-size: 14px;
+            }
+
+            button {
+                padding: 10px;
+                font-size: 12px;
+            }
+
+            .table th {
+                padding: 8px;
+                font-size: 10px;
+            }
+
+            .table td {
+                padding: 8px;
+                font-size: 10px;
+            }
+
+            .form-group {
+                margin-bottom: 12px;
+            }
+
+            label {
+                margin-bottom: 5px;
+                font-size: 12px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -703,27 +746,33 @@
 
             const nuevoSaldo = saldoNum - precioNum;
 
-            // Actualizar saldo de la pulsera
-            db.collection('pulseras').doc(pulseraId).update({
-                saldoActual: nuevoSaldo
-            }).then(() => {
-                // Registrar transacción
-                db.collection('transacciones').add({
-                    pulseraId: pulseraId,
-                    pulsera: pulseraNombre,
-                    articulo: articuloNombre,
-                    monto: precioNum,
-                    saldoAnterior: saldoNum,
-                    saldoNuevo: nuevoSaldo,
-                    vendedor: 'Simulación Admin',
-                    vendedorId: currentUserId,
-                    fecha: new Date()
+            // Obtener el eventId de la pulsera
+            db.collection('pulseras').doc(pulseraId).get().then(doc => {
+                const eventId = doc.data().eventId || '';
+
+                // Actualizar saldo de la pulsera
+                db.collection('pulseras').doc(pulseraId).update({
+                    saldoActual: nuevoSaldo
                 }).then(() => {
-                    showSuccess('✅ Transacción simulada correctamente');
-                    document.getElementById('simPulsera').value = '';
-                    document.getElementById('simArticulo').value = '';
-                    cargarPulseras();
-                    loadSimPulseras();
+                    // Registrar transacción
+                    db.collection('transacciones').add({
+                        eventId: eventId,
+                        pulseraId: pulseraId,
+                        pulsera: pulseraNombre,
+                        articulo: articuloNombre,
+                        monto: precioNum,
+                        saldoAnterior: saldoNum,
+                        saldoNuevo: nuevoSaldo,
+                        vendedor: 'Simulación Admin',
+                        vendedorId: currentUserId,
+                        fecha: new Date()
+                    }).then(() => {
+                        showSuccess('✅ Transacción simulada correctamente');
+                        document.getElementById('simPulsera').value = '';
+                        document.getElementById('simArticulo').value = '';
+                        cargarPulseras();
+                        loadSimPulseras();
+                    });
                 });
             });
         }
