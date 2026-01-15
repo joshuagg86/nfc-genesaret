@@ -479,6 +479,13 @@
             const fechaDesde = document.getElementById('fechaDesde').value;
             const fechaHasta = document.getElementById('fechaHasta').value;
 
+            // DEBUG: Ver datos
+            console.log('=== DEBUG FILTROS ===');
+            console.log('Evento seleccionado:', selectedEventoFilter);
+            console.log('Total transacciones:', allTransactions.length);
+            console.log('Primera transacción:', allTransactions[0]);
+            console.log('Total pulseras:', allPulseras.length);
+
             // Filtrar pulseras por evento
             let pulserasFiltered = allPulseras;
             let pulserasIdsFiltered = [];
@@ -486,6 +493,8 @@
             if (selectedEventoFilter) {
                 pulserasFiltered = allPulseras.filter(p => p.eventId === selectedEventoFilter);
                 pulserasIdsFiltered = pulserasFiltered.map(p => p.id);
+                console.log('Pulseras del evento:', pulserasFiltered.length);
+                console.log('IDs de pulseras:', pulserasIdsFiltered);
             } else {
                 pulserasIdsFiltered = allPulseras.map(p => p.id);
             }
@@ -493,7 +502,15 @@
             // Filtrar transacciones por evento y fecha
             let transFiltered = allTransactions;
             if (selectedEventoFilter) {
-                transFiltered = allTransactions.filter(t => pulserasIdsFiltered.includes(t.pulseraId));
+                // Filtrar por eventId directo
+                transFiltered = allTransactions.filter(t => t.eventId === selectedEventoFilter);
+                console.log('Transacciones filtradas por eventId:', transFiltered.length);
+                
+                // Si no hay resultados, mostrar qué eventIds tienen las transacciones
+                if (transFiltered.length === 0) {
+                    const eventIds = [...new Set(allTransactions.map(t => t.eventId))];
+                    console.log('EventIds encontrados en transacciones:', eventIds);
+                }
             }
 
             // Filtrar por fechas si se especifican
