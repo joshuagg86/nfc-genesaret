@@ -1057,117 +1057,68 @@
         }
 
         /* ==================== ESTILOS RESPONSIVE MÓVIL ==================== */
-        @media (max-width: 768px) {
-    /* 1. CONTROL DEL BODY Y CONTENEDOR PRINCIPAL */
+       @media (max-width: 768px) {
+    /* 1. CONTENEDOR PRINCIPAL */
     body {
-        overflow-x: hidden; /* Evita que toda la página haga scroll horizontal */
-        padding-top: 70px;
+        overflow-x: hidden; /* Evita el scroll horizontal en toda la página */
     }
-
+    
     .container {
-        padding: 10px; /* Reducimos padding para ganar espacio útil */
+        padding: 10px;
         width: 100%;
-        max-width: 100vw; /* Asegura que no sea más ancho que la pantalla */
+        max-width: 100vw; /* Asegura que el contenedor respete el ancho del móvil */
         overflow-x: hidden;
     }
 
-    /* 2. HEADER Y NAVEGACIÓN */
-    header {
-        padding: 10px 15px;
-        justify-content: space-between; /* Separa logo y hamburguesa a los extremos */
-    }
-
-    header > .btn-danger {
-        display: none !important; /* Ocultamos botón salir en header */
-    }
-
-    /* 3. TARJETAS (CARDS) */
-    .card {
-        padding: 15px;
-        margin-bottom: 15px;
-        width: 100%; /* Asegura ajuste al contenedor */
-    }
-
+    /* 2. ROMPER LA GRID PARA QUE UNA TARJETA NO ESTIRE A LA OTRA */
+    /* Al usar block, cada tarjeta es independiente. Si la de abajo es ancha, la de arriba no se entera */
     .grid {
-        grid-template-columns: 1fr; /* Una sola columna para todo el layout */
-        gap: 15px;
+        display: block; 
+        width: 100%;
     }
 
-    /* 4. TABLAS CON SCROLL SEGURO */
-    /* El contenedor hace scroll, la tabla mantiene su ancho legible */
+    .card {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box; /* El padding queda dentro del ancho */
+        margin-bottom: 15px;
+        padding: 15px;
+        overflow: hidden; /* Corta cualquier cosa que intente salirse */
+    }
+
+    /* 3. INPUTS AJUSTADOS */
+    /* Aseguramos que los campos de texto nunca excedan el ancho de la tarjeta */
+    .form-group {
+        width: 100%;
+    }
+    
+    input, select {
+        width: 100% !important;
+        max-width: 100% !important;
+        font-size: 16px; /* Evita zoom en iPhone */
+    }
+
+    /* 4. SOLUCIÓN A LA TABLA QUE EMPUJA TODO */
     .table-container {
         width: 100%;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch; /* Scroll suave en iOS */
-        margin-bottom: 10px;
-        border: 1px solid rgba(148, 163, 184, 0.1);
-        border-radius: 6px;
+        display: block;
+        overflow-x: auto; /* Aquí aparece el scroll SOLO para la tabla */
+        -webkit-overflow-scrolling: touch;
     }
 
     .table {
         width: 100%;
-        min-width: 600px; /* Fuerza el ancho para que aparezca el scroll interno */
+        min-width: 600px; /* Mantiene la tabla legible, pero dentro de su caja con scroll */
     }
 
-    /* Ajuste de celdas para móvil */
-    .table th, .table td {
-        padding: 10px 8px;
-        font-size: 12px;
-    }
+    /* 5. AJUSTES VARIOS */
+    header > .btn-danger { display: none !important; }
     
-    /* Botones dentro de tablas más compactos */
-    .table td button {
-        padding: 4px 8px !important;
-        margin: 2px 0 !important;
-    }
-
-    /* 5. ESTADÍSTICAS Y GRIDS INTERNOS */
-    /* Ajustamos para que quepan 2 por fila en vez de amontonarse o hacerse gigantes */
+    /* Estadísticas en 2 columnas */
     .stats-grid, .dashboard-stats {
         display: grid;
-        grid-template-columns: repeat(2, 1fr); /* 2 columnas */
+        grid-template-columns: 1fr 1fr;
         gap: 10px;
-    }
-    
-    .dash-stat, .stat-box {
-        min-width: 0; /* Evita desbordamiento en grid */
-        padding: 10px;
-    }
-
-    .stat-value, .dash-stat-value {
-        font-size: 18px;
-    }
-    
-    .stat-label, .dash-stat-label {
-        font-size: 10px;
-    }
-
-    /* 6. MODALES AJUSTADOS */
-    .modal-box {
-        width: 90%; /* 90% del ancho de pantalla */
-        margin: 0 auto;
-        padding: 20px;
-        max-height: 85vh;
-    }
-
-    /* 7. FORMULARIOS */
-    .form-group {
-        margin-bottom: 12px;
-    }
-    
-    input, select {
-        font-size: 16px; /* Evita zoom automático en iPhone al escribir */
-    }
-}
-
-/* AJUSTE EXTRA PARA PANTALLAS MUY PEQUEÑAS (iPhone SE, etc) */
-@media (max-width: 380px) {
-    .stats-grid, .dashboard-stats {
-        grid-template-columns: 1fr; /* 1 sola columna en pantallas mini */
-    }
-    
-    .welcome-content h2 {
-        font-size: 18px;
     }
 }
 
