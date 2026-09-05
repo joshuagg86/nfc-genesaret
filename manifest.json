@@ -1,0 +1,21 @@
+{
+  "name": "NFC Genesaret",
+  "short_name": "Genesaret",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color":"#001a2e",
+  "theme_color": "#003d7a",
+  "description": "Sistema de Cobro NFC para Genesaret",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

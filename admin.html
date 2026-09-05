@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Genesaret</title>
+    <link rel="manifest" href="manifest.json">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta name="theme-color" content="#003d7a">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+</head>
+<body>
+    <div id="loadingOverlay">
+        <h1 class="loading-text">¡Hola, <span id="loadingUserName" class="loading-name">...</span>! 👋</h1>
+        <img src="logo.png" alt="Logo" class="loading-logo-img">
+    </div>
+    <script>
+        // Control de Versión para forzar recarga si hay cambios
+        (function() {
+            const APP_VERSION = '5.0.FULL'; 
+            const savedVersion = localStorage.getItem('app_version');
+            if (savedVersion !== APP_VERSION) {
+                localStorage.setItem('app_version', APP_VERSION);
+                if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(r => r.forEach(reg => reg.unregister()));
+            }
+        })();
+    </script>
+
+    <div class="container">
+        <header style="
+        position: fixed;        /* 1. SE PEGA AL TECHO */
+        top: 0;
+        left: 0;
+        width: 100%;            /* 2. OCUPA TODO EL ANCHO */
+        height: 70px;
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+        padding: 0 30px;        /* Espacio a los lados */
+        background: var(--bg-header); 
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        z-index: 1000;          /* Siempre encima del contenido */
+        box-sizing: border-box; /* Evita que el padding rompa el ancho */
+        backdrop-filter: blur(10px); /* Efecto vidrio si el fondo es semi-transparente */
+    ">
+    
+        <div style="display: flex; align-items: center; gap: 15px; z-index: 20; position: relative;">
+            <img src="logo.png" alt="Logo" class="logo-header" style="height: 40px; width: 40px; object-fit: contain;">
+        </div>
+
+        <nav class="desktop-nav" style="
+            position: absolute; 
+            left: 50%; 
+            top: 50%;
+            transform: translate(-50%, -50%); 
+            z-index: 10;
+        ">
+            <button onclick="switchTab('eventos')" class="nav-link active" id="nav-eventos">Eventos</button>
+            <button onclick="switchTab('pulseras')" class="nav-link" id="nav-pulseras">Pulseras</button>
+            <button onclick="switchTab('articulos')" class="nav-link" id="nav-articulos">Artículos</button>
+            <button onclick="switchTab('cuentas')" class="nav-link" id="nav-cuentas">Cuentas</button>
+            <button onclick="switchTab('reportes')" class="nav-link" id="nav-reportes">Reportes</button>
+        </nav>
+
+        <div class="header-right" style="display: flex; align-items: center; gap: 15px; z-index: 20; position: relative;">
+            
+            <div id="avatarContainer"></div>
+
+            <div class="user-text-info">
+                <div class="role-label">ADMINISTRADOR</div>
+                <div class="name-label">Hola, <span id="adminName">...</span></div>
+            </div>
+
+            <div class="actions-pill">
+                <button onclick="toggleTheme()" title="Cambiar Tema" class="icon-action">
+                    <i class="fas fa-sun" id="themeIcon"></i>
+                </button>
+                <div class="pill-separator"></div>
+                <button onclick="logout()" title="Cerrar Sesión" class="icon-action logout-icon">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+
+            <button class="hamburger" onclick="toggleMenu()" style="color: white; background: none; border: none; font-size: 24px; cursor: pointer;">
+    <i class="fas fa-bars"></i>
+</button>
+        </div>
+
+    </header>
+
+        <div class="welcome-section">
+            <div class="welcome-content">
+                <h2>Panel de Administración</h2>
+                <p class="welcome-greeting" id="welcomeGreeting">¡Buenos días!</p>
+                <p class="welcome-user">Hola, <span id="userName">Admin</span> 👋</p>
+            </div>
+        </div>
+
+        <div class="mobile-menu" id="mobileMenu" onclick="toggleMenu()">
+            <div class="mobile-menu-content" onclick="event.stopPropagation()">
+                <button class="mobile-menu-close" onclick="toggleMenu()">✕</button>
+                <div class="mobile-menu-header" style="display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: flex-start !important; gap: 15px; text-align: left;">
+                
+                    <div id="mobileAvatarContainer" style="flex-shrink: 0;"></div>
+                    
+                    <div style="display: flex; flex-direction: column; align-items: flex-start;">
+                        <h2 style="margin: 0; font-size: 18px; line-height: 1.2; color: #f59e0b;">ADMIN</h2>
+                        <div class="user-info" style="font-size: 13px; color: #cbd5e1;">
+                            Hola, <strong id="userNameMobile" style="color: #fff;">...</strong>
+                        </div>
+                    </div>
+                </div>
+                <div class="mobile-menu-items">
+                    <button class="mobile-menu-item" onclick="switchTabMobile('eventos')">
+                        <i class="fas fa-calendar-alt"></i> Eventos
+                    </button>
+                    <button class="mobile-menu-item" onclick="switchTabMobile('pulseras')">
+                        <i class="fas fa-ring"></i> Pulseras
+                    </button>
+                    <button class="mobile-menu-item" onclick="switchTabMobile('articulos')">
+                        <i class="fas fa-box-open"></i> Artículos
+                    </button>
+                    <button class="mobile-menu-item" onclick="switchTabMobile('cuentas')">
+                        <i class="fas fa-users"></i> Cuentas
+                    </button>
+                    <button class="mobile-menu-item" onclick="switchTabMobile('reportes')">
+                        <i class="fas fa-chart-line"></i> Reportes
+                    </button>
+
+                    <div class="mobile-divider"></div>
+
+                    <button class="mobile-menu-item" onclick="toggleThemeMobile()">
+                        <i class="fas fa-moon" id="mobileThemeIcon"></i> <span id="mobileThemeText">Tema Oscuro</span>
+                    </button>
+
+                    <button class="mobile-menu-item mobile-logout" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert alert-success" id="successAlert"></div>
+        <div class="alert alert-error" id="errorAlert"></div>
+
+        <div class="tab-content active" id="eventos">
+            <div class="grid">
+                <div class="card">
+                    <h3>📅 Crear Evento</h3>
+                    <div class="form-group"><label>Nombre del Evento</label><input type="text" id="eventName" placeholder="ej: Kermés 2026"></div>
+                    <div class="form-group"><label>Descripción</label><input type="text" id="eventDesc" placeholder="ej: Recaudación fondos"></div>
+                    <button class="btn-primary" onclick="crearEvento()" style="width: 100%;">Crear Evento</button>
+                </div>
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3>📊 Lista de Eventos</h3>
+                        <button class="btn-secondary" id="btnPapelera" onclick="togglePapelera()" style="font-size: 12px; padding: 6px 12px;">🗑️ Ver Papelera</button>
+                    </div>
+                    <div class="table-container"><div id="eventsList"></div></div>
+                </div>
+                
+                <button onclick="abrirPOSAdmin()" style="
+                    position: fixed; bottom: 80px; right: 20px; 
+                    width: 60px; height: 60px; border-radius: 50%; 
+                    background: #f59e0b; color: white; font-size: 24px; 
+                    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.5); 
+                    border: none; z-index: 990; cursor: pointer; display: flex; align-items: center; justify-content: center;
+                    transition: transform 0.2s;"
+                    onmouseover="this.style.transform='scale(1.1)'" 
+                    onmouseout="this.style.transform='scale(1)'"
+                    title="Venta Rápida">
+                    <i class="fas fa-cash-register"></i>
+                </button>
+
+                <div class="modal-overlay" id="modalPOSAdmin">
+    <div class="modal-box" style="max-width: 1100px; width: 95%; height: 90vh; display: flex; flex-direction: column; padding: 0; overflow: hidden; background: var(--bg-body);">
+        
+        <div class="modal-header" style="padding: 15px; border-bottom: 1px solid var(--border-color); background: var(--bg-header); display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <h3 style="margin:0; color: #f59e0b;">⚡ Admin POS</h3>
+                
+                <div class="sub-nav-container" style="margin: 0; padding: 3px; background: rgba(255,255,255,0.05);">
+                    <button class="sub-tab-btn active" onclick="switchPOSTab('venta', this)">🛒 Venta</button>
+                    <button class="sub-tab-btn" onclick="switchPOSTab('pendientes', this)">⏳ Pendientes</button>
+                    <button class="sub-tab-btn" onclick="switchPOSTab('corte', this)">📊 Mi Corte</button>
+                </div>
+            </div>
+            <button class="modal-close" onclick="cerrarPOSAdmin()" style="font-size: 24px;">×</button>
+        </div>
+
+        <div class="modal-body" style="flex: 1; display: flex; overflow: hidden; padding: 0;">
+            
+            <div style="flex: 2; overflow-y: auto; padding: 15px; border-right: 1px solid var(--border-color); position: relative;">
+                
+                <div id="pos-tab-venta" style="display: block;">
+                    <input type="text" id="posSearch" placeholder="🔍 Buscar producto..." onkeyup="filtrarPOS()" style="margin-bottom: 15px; padding: 12px; width: 100%;">
+                    <div id="posGrid" class="productos-grid"></div>
+                </div>
+
+                <div id="pos-tab-pendientes" style="display: none;">
+                    <h4 class="text-pendiente-dynamic">Cuentas por cobrar (Admin)</h4>
+                    <div id="posListaPendientes"></div>
+                </div>
+
+                <div id="pos-tab-corte" style="display: none;">
+                    <h4>Resumen de Ventas (Sesión Actual)</h4>
+                    <div class="stats-grid" style="grid-template-columns: repeat(2, 1fr); margin-bottom: 20px;">
+                        <div class="stat-box">
+                            <div class="stat-value" id="adminPosTotal">$0.00</div>
+                            <div class="stat-label">Total Cobrado</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="adminPosCount">0</div>
+                            <div class="stat-label">Ventas</div>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <div id="adminPosHistoryList"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pos-right" style="flex: 1; min-width: 320px; max-width: 380px; display: flex; flex-direction: column; background: var(--bg-card); border-left: 1px solid var(--border-color);">
+                
+                <div class="carrito-header">
+                    <h4><i class="fas fa-shopping-cart" style="color:#f59e0b;"></i> Carrito</h4>
+                    <div style="display: flex; align-items: center;">
+                        <span id="posAdminTotalBadge" class="total-badge" style="font-size: 18px;">$0.00</span>
+                        <button onclick="limpiarCarritoPOS()" class="btn-vaciar"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+
+                <div id="posCarritoList" class="carrito-items" style="flex: 1; overflow-y: auto;">
+                    <div class="carrito-vacio"><i class="fas fa-cash-register"></i><p>Carrito vacío</p></div>
+                </div>
+
+                <div class="payment-section">
+                    <label style="font-size: 11px; color: var(--text-muted);">Método de Cobro:</label>
+                    <div class="payment-methods" style="margin-bottom: 10px;">
+                        <button class="pm-btn active" onclick="cambiarMetodoPOS('efectivo')" id="pm-admin-efectivo">
+                            <i class="fas fa-money-bill-wave"></i> Efec.
+                        </button>
+                        <button class="pm-btn" onclick="cambiarMetodoPOS('nfc')" id="pm-admin-nfc">
+                            <i class="fas fa-wifi"></i> NFC
+                        </button>
+                        <button class="pm-btn" onclick="cambiarMetodoPOS('transferencia')" id="pm-admin-transferencia">
+                            <i class="fas fa-university"></i> Transf.
+                        </button>
+                    </div>
+
+                    <div id="adminPagoDirecto">
+                        <div id="adminInputsTransf" style="display: none; margin-bottom: 10px;">
+                            <input type="text" id="adminClienteTransf" placeholder="Nombre cliente..." style="font-size: 12px; margin-bottom: 5px; width: 100%;">
+                            <div class="transfer-status-group">
+                                <button class="status-btn active-pagado" id="btnAdminPagado" onclick="setAdminTransfStatus('pagado')">Pagado</button>
+                                <button class="status-btn" id="btnAdminPendiente" onclick="setAdminTransfStatus('pendiente')">Fiar</button>
+                            </div>
+                        </div>
+                        <button class="btn-success" onclick="procesarCobroAdmin()" style="width: 100%; padding: 12px; font-size: 14px;">
+                            ✓ COBRAR
+                        </button>
+                    </div>
+
+                    <div id="adminPagoNFC" style="display: none;">
+                        <div class="nfc-reader" id="adminNfcReader" style="padding: 15px; margin-bottom: 10px;">
+                            <div class="nfc-icon" style="font-size: 24px;">📱</div>
+                            <div class="nfc-status">Escanear Pulsera</div>
+                            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px; width: 100%;">
+                                <button class="btn-primary" onclick="startAdminNFCScan()" style="font-size: 11px; flex: 1; min-width: 0; padding: 10px 5px;">
+                                    📡 Leer NFC
+                                </button>
+                                <button class="btn-secondary" onclick="iniciarEscanerQR('admin_cobro')" style="font-size: 11px; flex: 1; min-width: 0; padding: 10px 5px;">
+                                    📸 Leer QR
+                                </button>
+                            </div>
+                            <button onclick="simularNFCAdmin()" style="margin-top:10px; background:transparent; border:1px dashed #64748b; color:#94a3b8; font-size:10px; width:100%;">
+                                🧪 Simular (Sin Pulsera)
+                            </button>
+                        </div>
+                        <div id="adminSaldoInfo" style="display: none; background: rgba(245,158,11,0.1); padding: 8px; border-radius: 6px; margin-bottom: 10px;">
+                            <small>Cliente:</small> <strong id="adminClienteNFC">-</strong><br>
+                            <small>Saldo:</small> <strong id="adminSaldoNFC" style="color: #f59e0b;">$0.00</strong>
+                        </div>
+                        <button class="btn-success" onclick="procesarCobroAdmin()" id="btnAdminCobrarNFC" disabled style="width: 100%;">
+                            ✓ CONFIRMAR PAGO NFC
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="pago-confirmado-overlay" id="adminPagoOverlay" onclick="cerrarConfirmacionAdmin()">
+    <div class="pago-confirmado-content" onclick="event.stopPropagation()">
+        <div class="pago-check">✅</div>
+        <h1 class="pago-titulo">¡Venta Registrada!</h1>
+        <div class="pago-monto" id="adminConfMonto">$0.00</div>
+        <button class="pago-cerrar-btn" onclick="cerrarConfirmacionAdmin()">Continuar</button>
+    </div>
+</div>
+            </div>
+            <div id="widgetStockAlerta" style="display: none; margin-bottom: 20px;">
+                    <div class="card" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3);">
+                        <h3 style="color: #ef4444; margin: 0 0 10px 0; display: flex; align-items: center; gap: 10px;">
+                            ⚠️ Alerta de Stock Bajo
+                        </h3>
+                        <div id="listaStockBajo" style="display: flex; flex-direction: column; gap: 8px;">
+                            </div>
+                    </div>
+                </div>
+            <div class="card" style="margin-top: 20px;">
+                <h3>📈 Estadísticas Rápidas</h3>
+                <div class="stats-grid">
+                    <div class="stat-box"><div class="stat-value" id="totalPulseras">0</div><div class="stat-label">Pulseras</div></div>
+                    <div class="stat-box"><div class="stat-value" id="totalTransacciones">0</div><div class="stat-label">Ventas</div></div>
+                    <div class="stat-box"><div class="stat-value" id="totalArticulos">0</div><div class="stat-label">Artículos</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="pulseras">
+            <div class="sub-nav-container">
+                <button class="sub-tab-btn active" onclick="filtroPulseras('registrar', this)">➕ Registrar</button>
+                <button class="sub-tab-btn" onclick="filtroPulseras('recargar', this)">💳 Recargar</button>
+                <button class="sub-tab-btn" onclick="filtroPulseras('lista', this)">📋 Lista</button>
+                <button class="sub-tab-btn" onclick="filtroPulseras('historial', this)">📜 Historial</button>
+            </div>
+
+            <div class="puls-section active" id="puls-registrar">
+                <div class="card">
+                    <h3>📱 Registrar Pulsera</h3>
+                    <div class="nfc-reader" id="nfcReaderAdmin">
+                        <div class="nfc-icon">📱</div>
+                        <div class="nfc-status">Selecciona método de lectura</div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+                            <button class="btn-primary" onclick="startNFCReadAdmin()">📡 NFC</button>
+                            <button class="btn-secondary" onclick="iniciarEscanerQR('registro')">📸 QR</button>
+                        </div>
+                    </div>
+                    <div class="form-group"><label>Evento</label><select id="pulseraEvento"><option value="">Cargando...</option></select></div>
+                    <div class="form-group"><label>ID Pulsera</label><input type="text" id="pulseraId" placeholder="Escanea o escribe ID"></div>
+                    <div class="form-group"><label>Nombre Portador</label><input type="text" id="pulseraNombre" placeholder="Nombre completo"></div>
+                    <div class="form-group"><label>Saldo Inicial ($)</label><input type="number" id="pulseraSaldo" placeholder="0.00"></div>
+                    <button class="btn-primary" onclick="registrarPulsera()" style="width: 100%;">Registrar Pulsera</button>
+                </div>
+            </div>
+
+            <div class="puls-section" id="puls-recargar" style="display: none;">
+                <div class="card">
+                    <h3>💰 Recargar Saldo</h3>
+                    <div class="nfc-reader" id="nfcReaderRecarga">
+                        <div class="nfc-icon">💰</div>
+                        <div class="nfc-status">Escanea para buscar usuario</div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+                            <button class="btn-primary" onclick="startNFCRecarga()">📡 NFC</button>
+                            <button class="btn-secondary" onclick="iniciarEscanerQR('recarga')">📸 QR</button>
+                        </div>
+                    </div>
+                    <div class="form-group"><label>Pulsera</label><select id="recargaPulsera" onchange="mostrarSaldoActual()"></select></div>
+                    <div id="infoSaldoActual" style="display:none; padding:10px; background:rgba(245,158,11,0.1); border-left:3px solid #f59e0b; margin-bottom:10px;">Saldo Actual: $<span id="saldoActualRecarga">0.00</span></div>
+                    <div class="form-group"><label>Monto a Recargar ($)</label><input type="number" id="montoRecarga" placeholder="0.00"></div>
+                    <div class="form-group"><label>Motivo</label><input type="text" id="motivoRecarga" placeholder="Opcional"></div>
+                    <button class="btn-primary" onclick="recargarSaldo()" style="width: 100%;">Aplicar Recarga</button>
+                </div>
+            </div>
+
+            <div class="puls-section" id="puls-lista" style="display: none;">
+                
+                <div class="card" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                    <h3 style="margin: 0;">🏷️ Inventario de Pulseras</h3>
+                    
+                    <div style="display: flex; gap: 10px; flex: 1; justify-content: flex-end;">
+                        <div class="search-wrapper" style="max-width: 250px;">
+                            <input type="text" id="buscarPulseraInput" onkeyup="filtrarPulserasTabla()" placeholder="Buscar por Nombre o ID..." style="margin: 0;">
+                        </div>
+                        <button class="btn-primary" onclick="document.querySelector(`button[onclick*='registrar']`).click()">
+                            <i class="fas fa-plus"></i> Registrar Nueva
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card" style="padding: 0;">
+                    <div class="table-container">
+                        <table class="table" id="tablaPulseras">
+                            <thead>
+                                <tr>
+                                    <th>Evento</th>  <th>ID (NFC)</th>
+                                    <th>Nombre Portador</th>
+                                    <th>Saldo</th>
+                                    <th>Estado</th>
+                                    <th style="text-align: right;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pulserasListBody">
+                                </tbody>
+                        </table>
+                    </div>
+
+                    <div class="pagination-controls" style="padding: 15px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color);">
+                        <span style="font-size: 12px; color: var(--text-muted);" id="infoPaginacionPulseras">Mostrando 0-0 de 0</span>
+                        <div style="display: flex; gap: 5px;">
+                            <button class="btn-secondary" onclick="cambiarPaginaPulseras(-1)" id="btnPrevPulseras" disabled>Anterior</button>
+                            <button class="btn-secondary" onclick="cambiarPaginaPulseras(1)" id="btnNextPulseras" disabled>Siguiente</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="puls-section" id="puls-historial" style="display: none;">
+                <div class="card">
+                    <h3>📜 Historial de Movimientos</h3>
+                    <div class="table-container"><div id="historialRecargas"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="articulos">
+            <div class="sub-nav-container">
+                <button class="sub-tab-btn active" onclick="filtroArticulos('agregar', this)">➕ Agregar</button>
+                <button class="sub-tab-btn" onclick="filtroArticulos('lista', this)">🛒 Lista</button>
+                <button class="sub-tab-btn" onclick="filtroArticulos('categorias', this)">🏷️ Categorías</button>
+                <button class="sub-tab-btn" onclick="filtroArticulos('bitacora', this)">📜 Bitácora</button>
+            </div>
+
+            <div class="card art-section active" id="sec-agregar">
+                <h3>➕ Nuevo Artículo</h3>
+                <div class="form-group"><label>Evento</label><select id="articuloEvento" onchange="sincronizarEventos(this.value); cargarArticulos();"></select></div>
+                <div class="form-group"><label>Categoría</label><input type="hidden" id="articuloCategoria"><div id="gridCategorias" class="category-selector-grid"></div></div>
+                <div class="form-group"><label>Nombre</label><input type="text" id="articuloName"></div>
+                <div class="form-group"><label>Precio</label><input type="number" id="artPrecio" onblur="formatearMonedaInput(this)"></div>
+                <div class="form-group" style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;">
+                    <div style="display:flex; justify-content:space-between;"><label>Stock Infinito</label><label class="switch"><input type="checkbox" id="newArtInfinito" onchange="toggleNewStockInput()"><span class="slider"></span></label></div>
+                    <div style="margin-top:10px;"><label>Cantidad Inicial</label><input type="number" id="newArtStock"></div>
+                </div>
+                <button class="btn-primary" onclick="guardarNuevoArticulo()" style="width: 100%;">Guardar Artículo</button>
+            </div>
+
+            <div class="card art-section" id="sec-lista" style="display: none;">
+                
+                <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                        <h3 style="margin: 0;">🛒 Inventario de Artículos</h3>
+                        
+                        <div class="search-wrapper" style="max-width: 250px; width: 100%;">
+                            <input type="text" id="buscarArticuloInput" onkeyup="filtrarArticulosTabla()" placeholder="Buscar producto..." style="margin: 0;">
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <select id="filtroEventoLista" onchange="cargarArticulosTabla()" style="flex: 1; min-width: 150px;">
+                            <option value="">Cargando eventos...</option>
+                        </select>
+                        <select id="filtroCategoriaLista" onchange="renderizarTablaArticulos()" style="flex: 1; min-width: 150px;">
+                            <option value="Todas">Todas las Categorías</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="table" id="tablaArticulos">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Categoría</th>
+                                <th>Precio</th>
+                                <th>Stock</th>
+                                <th style="text-align: right;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="articulosListBody">
+                            </tbody>
+                    </table>
+                </div>
+
+                <div class="pagination-controls" style="padding: 15px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color);">
+                    <span style="font-size: 12px; color: var(--text-muted);" id="infoPaginacionArticulos">Mostrando 0-0 de 0</span>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="btn-secondary" onclick="cambiarPaginaArticulos(-1)" id="btnPrevArticulos" disabled>Anterior</button>
+                        <button class="btn-secondary" onclick="cambiarPaginaArticulos(1)" id="btnNextArticulos" disabled>Siguiente</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card art-section" id="sec-categorias" style="display: none;">
+                <h3>🏷️ Gestión de Categorías</h3>
+                <input type="hidden" id="nuevaCategoriaEmoji">
+                <div class="emoji-picker-container">
+                    <button class="emoji-trigger-btn" onclick="toggleEmojiPicker()" id="btnEmojiTrigger"><span id="emojiDisplay">❓</span> Seleccionar Icono</button>
+                    <div class="emoji-grid-panel" id="emojiGridPanel"></div>
+                </div>
+                <div class="form-group" style="margin-top:10px;"><input type="text" id="nuevaCategoriaNombre" placeholder="Nombre Categoría"></div>
+                <button class="btn-primary" onclick="agregarCategoria()" style="width: 100%;">Agregar Categoría</button>
+                <div id="listaCategorias" style="margin-top:20px;"></div>
+            </div>
+            <div class="card art-section" id="sec-bitacora" style="display: none;">
+                <h3>📜 Historial de Movimientos de Stock</h3>
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Producto</th>
+                                <th>Movimiento</th>
+                                <th>Usuario</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listaBitacora">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="cuentas">
+            <div class="card" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                <h3 style="margin: 0;">👥 Usuarios</h3>
+                
+                <div style="display: flex; gap: 10px; flex: 1; justify-content: flex-end;">
+                    <div class="search-wrapper" style="max-width: 250px;">
+                        <input type="text" id="buscarCuenta" onkeyup="filtrarCuentas()" placeholder="Buscar usuario..." style="margin: 0;">
+                    </div>
+                    <button class="btn-primary" onclick="abrirModalCrearUsuario()">
+                        <i class="fas fa-user-plus"></i> Nuevo Usuario
+                    </button>
+                </div>
+            </div>
+
+            <div class="card" style="padding: 0;">
+                <div class="table-container">
+                    <table class="table" id="tablaCuentas">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Email</th>
+                                <th>Rol</th>
+                                <th>Estado</th>
+                                <th style="text-align: right;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cuentasListBody">
+                            </tbody>
+                    </table>
+                </div>
+
+                <div class="pagination-controls" style="padding: 15px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color);">
+                    <span style="font-size: 12px; color: var(--text-muted);" id="infoPaginacion">Mostrando 0-0 de 0</span>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="btn-secondary" onclick="cambiarPaginaCuentas(-1)" id="btnPrevCuentas" disabled>Anterior</button>
+                        <button class="btn-secondary" onclick="cambiarPaginaCuentas(1)" id="btnNextCuentas" disabled>Siguiente</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="reportes">
+            <div class="card" style="text-align: center; padding: 40px; margin-top: 20px;">
+                <p style="color: var(--text-muted); margin-bottom: 20px; font-size: 14px;">
+                    ¿Necesitas ver inventarios, gráficas detalladas o reportes por rango de fechas?
+                </p>
+                <button class="btn-primary" onclick="irAReportes()" style="font-size: 15px; padding: 12px 30px; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);">
+                    🔎 Ir a Reportes Avanzados
+                </button>
+            </div>
+            
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
+                    <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                        📊 Resumen Mensual
+                    </h3>
+                    
+                    <div style="display: flex; align-items: center; background: var(--bg-input); padding: 5px 10px; border-radius: 50px; border: 1px solid var(--border-color); gap: 10px;">
+                        
+                        <input type="month" id="filtroMesReporte" style="border: none; background: transparent; color: var(--text-main); font-family: inherit; font-size: 13px; cursor: pointer; outline: none;" onchange="cargarReporteMensual()">
+                        
+                        <div style="width: 1px; height: 20px; background: var(--border-color);"></div>
+                        
+                        <button onclick="descargarExcelMensual()" title="Descargar Excel" style="background: transparent; border: none; padding: 5px; cursor: pointer; color: #10b981; transition: transform 0.2s;">
+                            <i class="fas fa-file-excel" style="font-size: 18px;"></i>
+                        </button>
+                        
+                        <button onclick="descargarPDFMensual()" title="Descargar PDF" style="background: transparent; border: none; padding: 5px; cursor: pointer; color: #ef4444; transition: transform 0.2s;">
+                            <i class="fas fa-file-pdf" style="font-size: 18px;"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-value" id="repMesTotal">$0.00</div>
+                        <div class="stat-label">Ventas Totales</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="repMesNFC" style="color: #f59e0b;">$0.00</div>
+                        <div class="stat-label">Ventas NFC</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="repMesEfectivo" style="color: #22c55e;">$0.00</div>
+                        <div class="stat-label">Ventas Efectivo</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="repMesTransf" style="color: #3b82f6;">$0.00</div>
+                        <div class="stat-label">Transferencias</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card" style="margin-top: 20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h3>📈 Ventas de la Semana</h3>
+                    <select id="rangoGrafica" onchange="cargarGraficaVentas()" style="width:auto; padding:5px; font-size:12px;">
+                        <option value="7">Últimos 7 días</option>
+                        <option value="15">Últimos 15 días</option>
+                        <option value="30">Últimos 30 días</option>
+                    </select>
+                </div>
+                <div style="position: relative; height: 300px; width: 100%;">
+                    <canvas id="ventasChart"></canvas>
+                </div>
+            </div>
+            <div class="card" style="margin-top: 20px;">
+                <h3>🏆 Top 5 Productos Más Vendidos</h3>
+                <div style="position: relative; height: 300px; width: 100%;">
+                    <canvas id="topProductosChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer>
+        <div class="footer-content">
+            <p>Hecho por <strong>Digital Thinking</strong></p>
+            <div class="footer-links">
+                <a href="https://dthinkng.com" target="_blank" title="Sitio Web"><i class="fas fa-globe"></i></a>
+                <a href="https://www.facebook.com/d.thinkng" target="_blank" title="Facebook"><i class="fab fa-facebook"></i></a>
+                <a href="https://www.instagram.com/d.thinkng/" target="_blank" title="Instagram"><i class="fab fa-instagram"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <div class="modal-overlay" id="modalQR" onclick="cerrarScannerQR()">
+        <div class="modal-box" onclick="event.stopPropagation()" style="max-width: 500px;">
+            <div class="modal-header"><h3>📸 Escanear QR</h3><button class="modal-close" onclick="cerrarScannerQR()">×</button></div>
+            <div class="modal-body" style="text-align: center;"><div id="qr-reader" style="width: 100%;"></div></div>
+            <div class="modal-footer"><button class="btn-secondary" onclick="cerrarScannerQR()">Cerrar</button></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalEditarEvento" onclick="cerrarModalEvento()">
+        <div class="modal-box" onclick="event.stopPropagation()">
+            <div class="modal-header"><h3>✏️ Editar Evento</h3><button class="modal-close" onclick="cerrarModalEvento()">×</button></div>
+            <div class="modal-body"><input type="hidden" id="editEventoId"><div class="form-group"><label>Nombre</label><input type="text" id="editEventoNombre"></div><div class="form-group"><label>Descripción</label><input type="text" id="editEventoDesc"></div></div>
+            <div class="modal-footer"><button class="btn-primary" onclick="guardarEvento()">Guardar</button></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalEditarPulsera" onclick="cerrarModalPulsera()">
+        <div class="modal-box" onclick="event.stopPropagation()">
+            <div class="modal-header"><h3>✏️ Editar Pulsera</h3><button class="modal-close" onclick="cerrarModalPulsera()">×</button></div>
+            <div class="modal-body"><input type="hidden" id="editPulseraId"><div class="form-group"><label>ID</label><input type="text" id="editPulseraIdNfc"></div><div class="form-group"><label>Nombre</label><input type="text" id="editPulseraNombre"></div><div class="form-group"><label>Evento</label><select id="editPulseraEvento"></select></div></div>
+            <div class="modal-footer"><button class="btn-primary" onclick="guardarPulsera()">Guardar</button></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalArticulo" onclick="cerrarModalArticulo()">
+        <div class="modal-box" onclick="event.stopPropagation()">
+            <div class="modal-header"><h3 id="tituloModalArticulo">📦 Artículo</h3><button class="modal-close" onclick="cerrarModalArticulo()">×</button></div>
+            <div class="modal-body">
+                <input type="hidden" id="editArticuloId">
+                <div class="form-group"><label>Nombre</label><input type="text" id="artNombre"></div>
+                <div class="form-group"><label>Precio</label><input type="number" id="articuloPrice" onblur="formatearMonedaInput(this)"></div>
+                <div class="form-group"><label>Categoría</label><select id="editArticuloCategoria"><option>Comida</option></select></div>
+                <div class="form-group" style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px;">
+                    
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <label>¿Es Infinito?</label>
+                        <input type="checkbox" id="artInfinito" onchange="toggleStockInput()">
+                    </div>
+
+                    <div style="display: flex; gap: 10px;">
+                        <div style="flex: 1;">
+                            <label style="font-size:11px; color:#94a3b8;">Stock Actual</label>
+                            <input type="number" id="artStockActual" disabled style="background: rgba(0,0,0,0.2); color:#cbd5e1; font-weight:bold;">
+                        </div>
+
+                        <div style="flex: 1;">
+                            <label style="font-size:11px; color:#f59e0b;">+ Sumar / - Restar</label>
+                            <input type="number" id="artStockSumar" placeholder="Ej: -5 para restar" style="border-color: #f59e0b;">
+                        </div>
+                    </div>
+                    
+                    <input type="hidden" id="artStock"> 
+                </div>
+            </div>
+            <div class="modal-footer"><button class="btn-primary" onclick="guardarArticuloFinal()">Guardar</button></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalHistorialPulsera" onclick="cerrarModalHistorial()">
+        <div class="modal-box" onclick="event.stopPropagation()" style="max-width: 600px;">
+            <div class="modal-header"><h3>📜 Historial Compras</h3><button class="modal-close" onclick="cerrarModalHistorial()">×</button></div>
+            <div class="modal-body">
+                <h4 id="historialPulseraNombre" style="color:#f59e0b; margin-bottom:10px;"></h4>
+                <div class="table-container"><div id="historialPulseraLista"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalEditarCategoria" onclick="cerrarModalEditarCategoria()">
+        <div class="modal-box" onclick="event.stopPropagation()">
+            <div class="modal-header"><h3>✏️ Categoría</h3><button class="modal-close" onclick="cerrarModalEditarCategoria()">×</button></div>
+            <div class="modal-body">
+                <input type="hidden" id="editCategoriaId"><input type="hidden" id="editCategoriaEmoji">
+                <div class="emoji-picker-container"><button class="emoji-trigger-btn" onclick="toggleEmojiPickerEdit()" id="btnEmojiTriggerEdit"><span id="emojiDisplayEdit">❓</span></button><div class="emoji-grid-panel" id="emojiGridPanelEdit"></div></div>
+                <div class="form-group" style="margin-top:10px;"><label>Nombre</label><input type="text" id="editCategoriaNombre"></div>
+            </div>
+            <div class="modal-footer"><button class="btn-primary" onclick="guardarCategoriaEditada()">Guardar</button></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalCrearUsuario" onclick="cerrarModalCrearUsuario()">
+        <div class="modal-box" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3>➕ Nuevo Usuario</h3>
+                <button class="modal-close" onclick="cerrarModalCrearUsuario()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Nombre Completo</label>
+                    <input type="text" id="newUserName" placeholder="Ej: Juan Pérez">
+                </div>
+                <div class="form-group">
+                    <label>Correo Electrónico</label>
+                    <input type="email" id="newUserEmail" placeholder="usuario@genesaret.com">
+                </div>
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <input type="password" id="newUserPassword" placeholder="Mínimo 6 caracteres">
+                </div>
+                <div class="form-group">
+                    <label>Rol</label>
+                    <select id="newUserRole">
+                        <option value="vendedor">Vendedor</option>
+                        <option value="admin">Administrador</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="cerrarModalCrearUsuario()">Cancelar</button>
+                <button class="btn-primary" onclick="crearCuenta()">Crear Cuenta</button>
+            </div>
+        </div>
+    </div>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+    <script src="config.js?v=1.4"></script>
+    
+    <script src="admin.js"></script> 
+</body>
+</html>

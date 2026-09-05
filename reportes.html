@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes - NFC Genesaret</title>
+    <link rel="manifest" href="manifest.json">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta name="theme-color" content="#003d7a">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+</head>
+<body>
+    <script>
+        (function() {
+            const APP_VERSION = '2.1'; 
+            const savedVersion = localStorage.getItem('app_version');
+            if (savedVersion !== APP_VERSION) {
+                localStorage.setItem('app_version', APP_VERSION);
+                if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(r => r.forEach(reg => reg.unregister()));
+                window.location.reload(true);
+            }
+        })();
+    </script>
+
+    <div class="container">
+        <header>
+            <div class="header-left">
+                <img src="logo.png" alt="Logo" class="logo-header">
+            </div>
+            
+            <h1 class="header-center-title">Reportes</h1>
+
+            <div class="header-nav">
+                <button class="theme-toggle-btn" onclick="toggleTheme()" title="Cambiar Modo">
+                    <i class="fas fa-sun" id="themeIcon"></i>
+                </button>
+                
+                <button class="btn-secondary" onclick="window.location.href='admin.html'" style="display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-arrow-left"></i> Regresar
+                </button>
+            </div>
+        </header>
+
+        <div class="card">
+            <h3>🔍 Filtros</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                <div>
+                    <label>Evento</label>
+                    <select id="eventoFilter" onchange="actualizarReportes()">
+                        <option value="">Ver todos</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Desde</label>
+                    <input type="date" id="fechaDesde" onchange="actualizarReportes()">
+                </div>
+                <div>
+                    <label>Hasta</label>
+                    <input type="date" id="fechaHasta" onchange="actualizarReportes()">
+                </div>
+            </div>
+            <div style="margin-top: 15px; display: flex; gap: 10px;">
+                <button class="btn-secondary" onclick="actualizarReportes()" style="flex: 1;">🔍 Filtrar</button>
+                <button class="btn-primary" onclick="openDownloadModal()" style="flex: 1;">📥 Descargar</button>
+            </div>
+        </div>
+
+        <div class="sub-nav-container">
+            <button class="sub-tab-btn active" onclick="verPestana('resumen', this)">📊 Resumen</button>
+            <button class="sub-tab-btn" onclick="verPestana('graficas', this)">📈 Gráficas</button>
+            <button class="sub-tab-btn" onclick="verPestana('inventario', this)">📦 Inventario</button>
+            <button class="sub-tab-btn" onclick="verPestana('pulseras', this)">🏷️ Pulseras</button>
+        </div>
+
+        <div id="rep-resumen" class="rep-section active">
+            <h3 style="margin-bottom: 10px; color: var(--text-muted); font-size: 14px;">💵 Ingresos</h3>
+            <div class="grid">
+                <div class="stat-card">
+                    <div class="stat-label">Ventas Totales</div>
+                    <div class="stat-value">$<span id="totalVentas">0.00</span></div>
+                </div>
+                <div class="stat-card" style="border-bottom: 3px solid #f59e0b;">
+                    <div class="stat-label" style="color: #f59e0b;">💳 Ventas NFC</div>
+                    <div class="stat-value">$<span id="totalNFC">0.00</span></div>
+                </div>
+                <div class="stat-card" style="border-bottom: 3px solid #86efac;">
+                    <div class="stat-label" style="color: #22c55e;">💵 Ventas Efectivo</div>
+                    <div class="stat-value">$<span id="totalEfectivo">0.00</span></div>
+                </div>
+                <div class="stat-card" style="border-bottom: 3px solid #93c5fd;">
+                    <div class="stat-label" style="color: #3b82f6;">🏦 Transferencias</div>
+                    <div class="stat-value">$<span id="totalTransf">0.00</span></div>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: 10px; color: var(--text-muted); font-size: 14px; margin-top: 20px;">🏷️ Pulseras (Global)</h3>
+            <div class="grid">
+                <div class="stat-card">
+                    <div class="stat-label">Saldo Cargado</div>
+                    <div class="stat-value">$<span id="totalAsignado">0.00</span></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Saldo No Gastado</div>
+                    <div class="stat-value">$<span id="totalRestante">0.00</span></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Transacciones</div>
+                    <div class="stat-value"><span id="totalTrans">0</span></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>📋 Historial de Transacciones</h3>
+                <div class="table-container">
+                    <div id="transacionesList"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="rep-graficas" class="rep-section">
+            <div class="grid">
+                <div class="card">
+                    <h3>🏆 Top 5 Productos</h3>
+                    <div id="chartProductos" class="chart-container"></div>
+                </div>
+                <div class="card">
+                    <h3>👨‍💼 Ventas por Vendedor</h3>
+                    <div id="chartVendedores" class="chart-container"></div>
+                </div>
+            </div>
+            <div class="card" style="margin-top: 20px;">
+                <h3>📅 Ventas por Día</h3>
+                <div id="chartVentasDia" class="chart-container-wide"></div>
+            </div>
+            <div class="card" style="margin-top: 20px;">
+                <h3>🕐 Actividad por Hora (Hoy)</h3>
+                <div id="chartHoras" class="chart-container-wide"></div>
+            </div>
+        </div>
+
+        <div id="rep-inventario" class="rep-section">
+            <div class="grid">
+                <div class="stat-card"><div class="stat-label">Valor del Inventario</div><div class="stat-value" style="color: #22c55e;">$<span id="invValorTotal">0.00</span></div></div>
+                <div class="stat-card"><div class="stat-label">Productos Bajos de Stock</div><div class="stat-value" style="color: #ef4444;"><span id="invBajoStock">0</span></div></div>
+                <div class="stat-card"><div class="stat-label">Ítems Físicos Totales</div><div class="stat-value" style="color: #3b82f6;"><span id="invTotalItems">0</span></div></div>
+            </div>
+
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+                    <h3>📦 Existencias Actuales</h3>
+                    <div style="display: flex; gap: 10px; flex: 1; justify-content: flex-end; min-width: 280px;">
+                        <select id="invCategoriaFilter" onchange="renderInventario()" style="padding: 8px; width: 140px;">
+                            <option value="">📂 Todas</option>
+                        </select>
+                        <input type="text" id="invSearchFilter" placeholder="🔍 Buscar producto..." onkeyup="renderInventario()" style="padding: 8px; width: 160px;">
+                    </div>
+                </div>
+                <div style="font-size:11px; color:var(--text-muted); margin-bottom: 10px; display: flex; gap: 15px;">
+                    <span>🔴 Crítico (&lt;5)</span><span>🟡 Medio (&lt;15)</span><span>🟢 Bien</span><span style="color: #f59e0b;">♾️ Infinito</span>
+                </div>
+                <div class="table-container">
+                    <div id="inventarioList">Cargando inventario...</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="rep-pulseras" class="rep-section">
+            <div class="grid">
+                <div class="stat-card"><div class="stat-label">Dinero en Pulseras (Saldo Restante)</div><div class="stat-value" style="color: #f59e0b;">$<span id="pulsSaldoRestante">0.00</span></div></div>
+                <div class="stat-card"><div class="stat-label">Dinero Gastado (Consumido)</div><div class="stat-value" style="color: #22c55e;">$<span id="pulsSaldoGastado">0.00</span></div></div>
+                <div class="stat-card"><div class="stat-label">Total Pulseras Activas</div><div class="stat-value" style="color: #3b82f6;"><span id="pulsTotalCount">0</span></div></div>
+            </div>
+
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+                    <h3>🏷️ Reporte de Pulseras</h3>
+                    <div style="display: flex; gap: 10px; flex: 1; justify-content: flex-end; min-width: 280px;">
+                        <input type="text" id="pulsSearchFilter" placeholder="🔍 Buscar por nombre o ID..." onkeyup="renderReportePulseras()" style="padding: 8px; width: 200px;">
+                    </div>
+                </div>
+                <div class="table-container">
+                    <div id="reportePulserasList">Cargando datos...</div>
+                </div>
+            </div>
+        </div>
+
+    </div> <div id="downloadModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><h3>Descargar Reporte</h3><button class="modal-close" onclick="closeDownloadModal()">✕</button></div>
+            <div class="modal-body">
+                <p>Selecciona el formato:</p>
+                <div class="modal-buttons">
+                    <button class="btn-primary" onclick="downloadHTMLReport()" style="width: 100%; margin-bottom: 10px;">📄 PDF</button>
+                    <button class="btn-primary" onclick="downloadExcelReport()" style="width: 100%;">📊 Excel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <p>Hecho por <strong>Digital Thinking</strong></p>
+            <div class="footer-links">
+                <a href="https://dthinkng.com" target="_blank" title="Sitio Web"><i class="fas fa-globe"></i></a>
+                <a href="https://www.facebook.com/d.thinkng" target="_blank" title="Facebook"><i class="fab fa-facebook"></i></a>
+                <a href="https://www.instagram.com/d.thinkng/" target="_blank" title="Instagram"><i class="fab fa-instagram"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+    <script src="config.js"></script>
+
+    <script>
+        // --- GESTIÓN DE TEMAS ---
+        function toggleTheme() {
+            document.body.classList.toggle('light-mode');
+            const isLight = document.body.classList.contains('light-mode');
+            localStorage.setItem('themePreference', isLight ? 'light' : 'dark');
+            updateThemeIcon();
+        }
+
+        function updateThemeIcon() {
+            const isLight = document.body.classList.contains('light-mode');
+            const icon = document.getElementById('themeIcon');
+            if (isLight) {
+                icon.classList.remove('fa-sun');
+                icon.classList.add('fa-moon');
+            } else {
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+            }
+        }
+
+        // Cargar preferencia
+        if (localStorage.getItem('themePreference') === 'light') { document.body.classList.add('light-mode'); }
+        updateThemeIcon();
+
+        // --- LOGICA GLOBAL ---
+        let allTransactions = [], allPulseras = [], allEventos = [], filteredTransactions = [];
+        let inventarioData = [], filteredInventario = [], inventarioListenerActivo = false;
+        let filteredPulserasReport = []; 
+        let selectedEventoFilter = '';
+
+        const hoy = new Date().toISOString().split('T')[0];
+        document.getElementById('fechaDesde').value = hoy;
+        document.getElementById('fechaHasta').value = hoy;
+
+        auth.onAuthStateChanged(user => {
+            if (!user) { localStorage.clear(); window.location.replace('index.html'); return; }
+            cargarEventos(); cargarTransacciones(); cargarPulseras();
+        });
+
+        function cargarEventos() {
+            db.collection('eventos').get().then(snap => {
+                allEventos = []; let html = '<option value="">✓ Ver todos</option>';
+                snap.forEach(doc => {
+                    const e = doc.data(); allEventos.push({id: doc.id, ...e});
+                    html += `<option value="${doc.id}">${e.nombre}</option>`;
+                });
+                document.getElementById('eventoFilter').innerHTML = html;
+            });
+        }
+
+        function cargarTransacciones() {
+            db.collection('transacciones').onSnapshot(snap => {
+                allTransactions = []; 
+                let prodConteo = {}, vendConteo = {}, porHora = {}, porDia = {};
+                
+                snap.forEach(d => {
+                    const t = {id: d.id, ...d.data()};
+                    allTransactions.push(t);
+                    
+                    const monto = t.monto || 0;
+                    if(t.articulo) prodConteo[t.articulo] = (prodConteo[t.articulo]||0) + monto;
+                    if(t.vendedor) vendConteo[t.vendedor] = (vendConteo[t.vendedor]||0) + monto;
+                    if(t.fecha) {
+                        const dObj = t.fecha.toDate ? t.fecha.toDate() : new Date(t.fecha);
+                        const h = dObj.getHours();
+                        const dia = dObj.toLocaleDateString('es-MX', {weekday:'short'});
+                        porHora[h] = (porHora[h]||0) + monto;
+                        porDia[dia] = (porDia[dia]||0) + monto;
+                    }
+                });
+                actualizarReportes();
+                actualizarGraficas(prodConteo, vendConteo, porDia, porHora);
+            });
+        }
+
+        function cargarPulseras() {
+            db.collection('pulseras').onSnapshot(snap => {
+                allPulseras = []; snap.forEach(d => allPulseras.push({id: d.id, ...d.data()}));
+                actualizarReportes();
+            });
+        }
+
+        function actualizarReportes() {
+    if (document.getElementById('rep-inventario').classList.contains('active')) renderInventario();
+    if (document.getElementById('rep-pulseras').classList.contains('active')) renderReportePulseras();
+    
+    selectedEventoFilter = document.getElementById('eventoFilter').value;
+    const fDesde = document.getElementById('fechaDesde').value;
+    const fHasta = document.getElementById('fechaHasta').value;
+
+    let pulserasF = selectedEventoFilter ? allPulseras.filter(p => p.eventId === selectedEventoFilter) : allPulseras;
+    const pIds = pulserasF.map(p => p.id);
+
+    // Filtro inicial
+    let transF = [...allTransactions];
+    
+    // Filtro por Evento (Si seleccionas uno, filtra. Si es "Ver Todos", muestra todo)
+    if (selectedEventoFilter) {
+        transF = transF.filter(t => t.eventId === selectedEventoFilter || pIds.includes(t.pulseraId));
+    }
+    
+    // Filtro de Fechas
+    if (fDesde || fHasta) {
+        transF = transF.filter(t => {
+            if (!t.fecha) return false;
+            const d = t.fecha.toDate ? t.fecha.toDate() : new Date(t.fecha);
+            const start = fDesde ? new Date(fDesde+'T00:00:00') : new Date('1900-01-01');
+            const end = fHasta ? new Date(fHasta+'T23:59:59') : new Date('2100-12-31');
+            return d >= start && d <= end;
+        });
+    }
+
+    // --- IMPORTANTE: Quitar pendientes del reporte ---
+    transF = transF.filter(t => t.estadoPago !== 'pendiente');
+
+    filteredTransactions = transF;
+
+    let tV=0, tN=0, tE=0, tT=0;
+    
+    transF.forEach(t => {
+        const m = t.monto || 0;
+        tV += m;
+
+        // --- DETECCIÓN DE MÉTODO ---
+        const metodo = (t.metodoPago || '').toLowerCase();
+
+        if(metodo.includes('efectivo')) {
+            tE += m; 
+        } else if(metodo.includes('transferencia')) {
+            tT += m;
+        } else {
+            tN += m; 
+        }
+    });
+
+    // Totales de pulseras
+    const tAsig = pulserasF.reduce((a,b)=>a+(b.saldoInicial||0),0);
+    const tRest = pulserasF.reduce((a,b)=>a+(b.saldoActual||0),0);
+
+    document.getElementById('totalVentas').textContent = tV.toFixed(2);
+    document.getElementById('totalNFC').textContent = tN.toFixed(2);
+    document.getElementById('totalEfectivo').textContent = tE.toFixed(2);
+    document.getElementById('totalTransf').textContent = tT.toFixed(2);
+    document.getElementById('totalAsignado').textContent = tAsig.toFixed(2);
+    document.getElementById('totalRestante').textContent = tRest.toFixed(2);
+    document.getElementById('totalTrans').textContent = transF.length;
+
+    loadTransacciones(transF); 
+}
+
+        // --- LÓGICA GRÁFICAS ---
+        function actualizarGraficas(prod, vend, dias, horas) {
+            renderizarBarras('chartProductos', prod);
+            renderizarBarras('chartVendedores', vend);
+            renderizarLineas('chartVentasDia', dias);
+            renderizarHoras('chartHoras', horas);
+        }
+
+        function renderizarBarras(id, datos) {
+            const el = document.getElementById(id); if(!el) return;
+            const sorted = Object.entries(datos).sort((a,b)=>b[1]-a[1]).slice(0,5);
+            if(!sorted.length) { el.innerHTML='<p style="text-align:center;color:var(--text-muted);padding:20px;">Sin datos</p>'; return; }
+            const max = sorted[0][1];
+            let html = '<div class="chart-bar-container">';
+            sorted.forEach(([k,v]) => {
+                const pct = (v/max)*100;
+                html+=`<div class="chart-bar-row"><span class="chart-bar-label">${k}</span><div class="chart-bar-wrapper"><div class="chart-bar" style="width:${pct}%"><span class="chart-bar-value">$${v.toFixed(0)}</span></div></div></div>`;
+            });
+            el.innerHTML = html+'</div>';
+        }
+
+        function renderizarLineas(id, datos) {
+            const el = document.getElementById(id); if(!el) return;
+            const keys = Object.keys(datos); const vals = Object.values(datos);
+            if(!vals.length) { el.innerHTML='<p style="text-align:center;color:var(--text-muted);padding:20px;">Sin datos</p>'; return; }
+            const max = Math.max(...vals, 1);
+            let bars='', labels='';
+            keys.forEach(k => {
+                const h = (datos[k]/max)*100; bars+=`<div class="chart-line-bar" style="height:${Math.max(h,5)}%"></div>`; labels+=`<span class="chart-line-label">${k}</span>`;
+            });
+            el.innerHTML=`<div class="chart-line-container">${bars}</div><div class="chart-line-labels">${labels}</div>`;
+        }
+
+        function renderizarHoras(id, datos) {
+            const el = document.getElementById(id); if(!el) return;
+            const max = Math.max(...Object.values(datos), 1);
+            let bars='', labels='';
+            for(let i=9; i<=22; i++) {
+                const h = ((datos[i]||0)/max)*100; bars+=`<div class="chart-line-bar" style="height:${Math.max(h,5)}%"></div>`; labels+=`<span class="chart-line-label">${i}h</span>`;
+            }
+            el.innerHTML=`<div class="chart-line-container">${bars}</div><div class="chart-line-labels">${labels}</div>`;
+        }
+
+        // --- TABLAS ---
+        function loadTransacciones(lista) {
+            if(!lista.length) { document.getElementById('transacionesList').innerHTML='<p style="text-align:center;color:var(--text-muted);padding:20px;">Sin datos</p>'; return; }
+            let html='<table class="table"><thead><tr><th>Fecha</th><th>Cliente</th><th>Producto</th><th>Método</th><th>Monto</th></tr></thead><tbody>';
+            lista.sort((a,b)=>(b.fecha?.toDate?b.fecha.toDate():new Date(0))-(a.fecha?.toDate?a.fecha.toDate():new Date(0))).forEach(t=>{
+                let f = t.fecha?.toDate ? t.fecha.toDate().toLocaleString('es-MX') : 'S/F';
+                let m = t.metodoPago==='efectivo'?'<span class="badge badge-efectivo">Efe</span>':(t.metodoPago==='transferencia'?'<span class="badge badge-transf">Transf</span>':'<span class="badge badge-nfc">NFC</span>');
+                html+=`<tr><td>${f}</td><td>${t.pulsera||'Anon'}</td><td>${t.articulo}</td><td>${m}</td><td>$${(t.monto||0).toFixed(2)}</td></tr>`;
+            });
+            document.getElementById('transacionesList').innerHTML=html+'</tbody></table>';
+        }
+
+        // --- PESTAÑAS ---
+        function verPestana(id, btn) {
+            document.querySelectorAll('.rep-section').forEach(e=>e.classList.remove('active'));
+            document.querySelectorAll('.sub-tab-btn').forEach(e=>e.classList.remove('active'));
+            document.getElementById('rep-'+id).classList.add('active');
+            btn.classList.add('active');
+            
+            if(id==='inventario') cargarInventarioData();
+            if(id==='pulseras') renderReportePulseras();
+        }
+
+        // --- INVENTARIO ---
+        function cargarInventarioData() {
+            if(inventarioListenerActivo) { renderInventario(); return; }
+            document.getElementById('inventarioList').innerHTML='<p style="text-align:center;color:var(--text-muted);padding:20px;">Cargando...</p>';
+            db.collection('articulos').onSnapshot(snap => {
+                inventarioData=[]; const cats=new Set();
+                snap.forEach(d=>{ const dat=d.data(); inventarioData.push({id:d.id,...dat}); if(dat.categoria) cats.add(dat.categoria); });
+                
+                const sel = document.getElementById('invCategoriaFilter');
+                if(sel) {
+                    const curr = sel.value; let h='<option value="">📂 Todas</option>';
+                    Array.from(cats).sort().forEach(c=>h+=`<option value="${c}">${c}</option>`);
+                    sel.innerHTML=h; sel.value=curr;
+                }
+                inventarioListenerActivo=true; renderInventario();
+            });
+        }
+
+        function renderInventario() {
+    const ev = document.getElementById('eventoFilter').value;
+    const cat = document.getElementById('invCategoriaFilter').value;
+    const txt = document.getElementById('invSearchFilter').value.toLowerCase();
+
+    // 1. Filtrado
+    let lista = inventarioData.filter(i => {
+        if(ev && i.eventId !== ev) return false;
+        if(cat && i.categoria !== cat) return false;
+        if(txt && !i.nombre.toLowerCase().includes(txt)) return false;
+        return true;
+    });
+    filteredInventario = lista;
+
+    // 2. Ordenamiento (Infinitos al final, luego por stock)
+    lista.sort((a,b) => (a.esInfinito?9999:a.stock||0) - (b.esInfinito?9999:b.stock||0));
+
+    let val = 0, cri = 0, fis = 0;
+    let html = '<table class="table"><thead><tr><th>Producto</th><th>Cat</th><th>Precio</th><th>Stock</th><th>Valor</th><th>Estado</th></tr></thead><tbody>';
+    
+    if(!lista.length) {
+        html = '<div style="text-align:center;padding:20px;color:var(--text-muted);">Sin resultados</div>';
+    } else {
+        lista.forEach(i => {
+            const inf = i.esInfinito === true;
+            
+            // --- CORRECCIÓN CLAVE AQUÍ ---
+            // Aseguramos que stock sea entero y precio sea flotante (número)
+            // Si viene vacío o texto raro, usamos 0 para evitar NaN
+            const stk = parseInt(i.stock) || 0; 
+            const precioSafe = parseFloat(i.precio) || 0; 
+
+            if(!inf) { 
+                fis += stk; 
+                val += (stk * precioSafe); // Multiplicamos números seguros
+                
+                if(stk <= 5) cri++; // Contamos críticos (Agotados + Bajos)
+            }
+
+            // Lógica del Badge (Etiqueta)
+            let badge = '';
+            if (inf) {
+                badge = '<span class="badge badge-nfc">Infinito</span>';
+            } else if (stk <= 0) {
+                badge = '<span class="badge" style="background:#ef4444;color:white;">Agotado</span>';
+            } else if (stk <= 5) {
+                badge = '<span class="badge badge-pendiente">Bajo</span>';
+            } else {
+                badge = '<span class="badge badge-success">Bien</span>';
+            }
+
+            html += `<tr>
+                <td><strong>${i.nombre}</strong></td>
+                <td>${i.categoria||'-'}</td>
+                <td>$${precioSafe.toFixed(2)}</td> <td style="font-weight:bold">${inf ? '∞' : stk}</td>
+                <td>${inf ? '-' : '$' + (stk * precioSafe).toFixed(2)}</td>
+                <td>${badge}</td>
+            </tr>`;
+        });
+        html += '</tbody></table>';
+    }
+
+    document.getElementById('inventarioList').innerHTML = html;
+    
+    // Asignamos los totales calculados
+    document.getElementById('invValorTotal').textContent = val.toFixed(2);
+    document.getElementById('invBajoStock').textContent = cri;
+    document.getElementById('invTotalItems').textContent = fis;
+}
+
+        // --- PULSERAS ---
+        function renderReportePulseras() {
+            const ev = document.getElementById('eventoFilter').value;
+            const txt = document.getElementById('pulsSearchFilter').value.toLowerCase();
+
+            let lista = allPulseras.filter(p => {
+                if (ev && p.eventId !== ev) return false;
+                if (txt && !p.nombre.toLowerCase().includes(txt) && !p.id.toLowerCase().includes(txt)) return false;
+                return true;
+            });
+            filteredPulserasReport = lista;
+
+            let totalRestante = 0, totalGastado = 0;
+            let html = '<table class="table"><thead><tr><th>ID</th><th>Nombre</th><th>Saldo Inicial</th><th>Gastado</th><th>Saldo Actual</th><th>Estado</th></tr></thead><tbody>';
+            
+            if(!lista.length) html='<div style="text-align:center;padding:20px;color:var(--text-muted);">Sin pulseras</div>';
+            else {
+                lista.forEach(p => {
+                    const sIni = p.saldoInicial || 0;
+                    const sAct = p.saldoActual || 0;
+                    const gastado = sIni - sAct;
+                    totalRestante += sAct; totalGastado += gastado;
+                    const estado = p.bloqueada ? '<span class="badge badge-pendiente">Bloqueada</span>' : '<span class="badge badge-success">Activa</span>';
+                    html += `<tr><td>${p.id}</td><td>${p.nombre}</td><td>$${sIni.toFixed(2)}</td><td style="color:#ef4444;">-$${gastado.toFixed(2)}</td><td style="font-weight:bold;">$${sAct.toFixed(2)}</td><td>${estado}</td></tr>`;
+                });
+                html += '</tbody></table>';
+            }
+
+            document.getElementById('reportePulserasList').innerHTML = html;
+            document.getElementById('pulsSaldoRestante').textContent = totalRestante.toFixed(2);
+            document.getElementById('pulsSaldoGastado').textContent = totalGastado.toFixed(2);
+            document.getElementById('pulsTotalCount').textContent = lista.length;
+        }
+
+        // --- EXPORTAR ---
+        function openDownloadModal(){ document.getElementById('downloadModal').style.display='flex'; }
+        function closeDownloadModal(){ document.getElementById('downloadModal').style.display='none'; }
+
+        function downloadExcelReport() {
+            if (typeof XLSX === 'undefined') { alert('⚠️ Error al cargar librería Excel (Modo Offline). Conéctate para descargarla.'); return; }
+            try {
+                const isInv = document.getElementById('rep-inventario').classList.contains('active');
+                const isPuls = document.getElementById('rep-pulseras').classList.contains('active');
+                let dataToExport = [], sheetName = "Reporte", fileName = "Reporte";
+
+                if (isInv) {
+                    sheetName = "Inventario"; fileName = "Inventario";
+                    dataToExport = (filteredInventario.length?filteredInventario:inventarioData).map(i => ({ Producto: i.nombre, Categoria: i.categoria, Precio: i.precio, Stock: i.esInfinito?'Infinito':i.stock, Valor: i.esInfinito?0:(i.stock*i.precio) }));
+                } else if (isPuls) {
+                    sheetName = "Pulseras"; fileName = "Pulseras";
+                    dataToExport = (filteredPulserasReport.length?filteredPulserasReport:allPulseras).map(p => ({ ID: p.id, Nombre: p.nombre, 'Saldo Inicial': p.saldoInicial, 'Saldo Actual': p.saldoActual, 'Gastado': (p.saldoInicial||0)-(p.saldoActual||0), Estado: p.bloqueada?'Bloqueada':'Activa' }));
+                } else {
+                    sheetName = "Ventas"; fileName = "Ventas";
+                    dataToExport = (filteredTransactions.length?filteredTransactions:allTransactions).map(t => ({ Fecha: t.fecha?.toDate?t.fecha.toDate().toLocaleString():'', Cliente: t.pulsera, Producto: t.articulo, Metodo: t.metodoPago, Monto: t.monto }));
+                }
+
+                if(!dataToExport.length) { alert('Sin datos para exportar'); return; }
+                const wb = XLSX.utils.book_new(); const ws = XLSX.utils.json_to_sheet(dataToExport);
+                XLSX.utils.book_append_sheet(wb, ws, sheetName); XLSX.writeFile(wb, `Reporte_${fileName}_${hoy}.xlsx`);
+                closeDownloadModal();
+            } catch(e) { console.error(e); alert('Error generando Excel: '+e.message); }
+        }
+
+        function downloadHTMLReport() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    // Título
+    doc.text("Reporte Genesaret", 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Fecha impresión: ${new Date().toLocaleDateString()}`, 14, 22);
+
+    // Seleccionar datos según la pestaña activa
+    let head = [], body = [];
+    
+    if(document.getElementById('rep-inventario').classList.contains('active')) {
+        head = [['Producto', 'Categoría', 'Stock', 'Valor']];
+        body = (filteredInventario.length ? filteredInventario : inventarioData).map(i => [
+            i.nombre, 
+            i.categoria, 
+            i.esInfinito ? 'Inf' : i.stock, 
+            i.esInfinito ? '-' : `$${(i.stock*i.precio).toFixed(2)}`
+        ]);
+    } else {
+        // Transacciones (Resumen)
+        head = [['Fecha', 'Vendedor', 'Producto', 'Método', 'Monto']];
+        body = (filteredTransactions.length ? filteredTransactions : allTransactions).map(t => [
+            t.fecha?.toDate ? t.fecha.toDate().toLocaleDateString() : '-',
+            t.vendedor || 'Sistema', // Cambio Cliente -> Vendedor solicitado
+            t.articulo,
+            t.metodoPago,
+            `$${t.monto.toFixed(2)}`
+        ]);
+    }
+
+    doc.autoTable({
+        head: head,
+        body: body,
+        startY: 30,
+        theme: 'grid'
+    });
+
+    doc.save('Reporte_Genesaret.pdf');
+    closeDownloadModal();
+}
+    </script>
+</body>
+</html>

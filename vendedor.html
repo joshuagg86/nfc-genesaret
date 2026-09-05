@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendedor - NFC Genesaret</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta name="theme-color" content="#003d7a">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+</head>
+<body>
+    <div id="loadingOverlay">
+        <h1 class="loading-text">¡Hola, <span id="loadingUserName" class="loading-name">...</span>! 👋</h1>
+        <img src="logo.png" alt="Logo" class="loading-logo-img">
+    </div>
+    <script>
+        (function() {
+            // VERSIÓN 1.6 - TEXTOS PENDIENTES EN AZUL
+            const APP_VERSION = '1.6'; 
+            const savedVersion = localStorage.getItem('app_version');
+            if (savedVersion !== APP_VERSION) {
+                localStorage.setItem('app_version', APP_VERSION);
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                        for(let registration of registrations) { registration.unregister(); }
+                    });
+                }
+                window.location.reload(true);
+            }
+        })();
+        const CHURCH_CONFIG = {
+            nombre: "VENDEDOR",       // Título
+            logoUrl: "logo.png",          // Ruta del logo
+            colorPrincipal: "#f59e0b"     // Color principal
+        };
+
+        function aplicarIdentidad() {
+            // 1. Cambiar Título de la pestaña
+            document.title = `Vendedor - ${CHURCH_CONFIG.nombre}`;
+            
+            // 2. Inyectar Colores Dinámicos (Sobrescribe el naranja)
+            document.documentElement.style.setProperty('--color-destacado', CHURCH_CONFIG.colorPrincipal);
+            document.documentElement.style.setProperty('--color-precio', CHURCH_CONFIG.colorPrincipal);
+            
+            // 3. Esperar a que cargue el HTML para cambiar textos
+            window.addEventListener('DOMContentLoaded', () => {
+                const tituloTexto = document.querySelector('header h2');
+                const logoImg = document.querySelector('.logo-header');
+                
+                if (tituloTexto) tituloTexto.textContent = CHURCH_CONFIG.nombre;
+                if (logoImg) logoImg.src = CHURCH_CONFIG.logoUrl;
+                
+                console.log(`🎨 Identidad aplicada: ${CHURCH_CONFIG.nombre}`);
+            });
+        }
+        
+        // Ejecutar inmediatamente
+        aplicarIdentidad();
+    </script>
+    <div class="container">
+        <header style="display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: var(--bg-header); border-radius: 0 0 16px 16px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+    
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <img src="logo.png" alt="Logo" class="logo-header" style="height: 42px; width: 42px; object-fit: contain; border-radius: 8px;">
+                
+                <div style="display: flex; flex-direction: column;">
+                    <h2 style="font-size: 16px; margin: 0; line-height: 1.2; color: #ffffff; font-weight: 700;">ICGH</h2>
+                    
+                    <div class="user-info" style="font-size: 11px; color: #cbd5e1;">
+                        Hola, <strong id="userName" style="color: #f59e0b;">Vendedor</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 8px; align-items: center;">
+                
+                <button class="theme-toggle-btn" onclick="toggleTheme()" title="Cambiar Tema">
+                    <i class="fas fa-sun" id="themeIcon"></i>
+                </button>
+
+                <button onclick="logout()" title="Cerrar Sesión" style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #ef4444; width: 38px; height: 38px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+
+        </header>
+
+        <div class="alert alert-success" id="successAlert"></div>
+        <div class="alert alert-error" id="errorAlert"></div>
+
+        <div class="sub-nav-container">
+            <button class="sub-tab-btn active" onclick="cambiarPestana('venta', this)">🛒 Venta</button>
+            <button class="sub-tab-btn" onclick="cambiarPestana('pendientes', this)">
+                ⏳ Pendientes <span id="tabBadgePendientes" class="tab-badge">0</span>
+            </button>
+            <button class="sub-tab-btn" onclick="cambiarPestana('saldo', this)">🔍 Saldo</button>
+            <button class="sub-tab-btn" onclick="cambiarPestana('corte', this)">📊 Mi Corte</button>
+        </div>
+
+        <div id="tab-venta" class="tab-content active">
+            
+            <div class="pos-layout">
+                
+                <div class="pos-left">
+                    <div class="card" style="margin-bottom: 0; min-height: 100%;">
+                        <h2 style="font-size: 16px; margin-bottom: 10px;">📦 Catálogo</h2>
+                        
+                        <div class="form-group">
+                            <div class="form-group">
+                            <select id="eventSelect" onchange="cargarProductosPorEvento()" style="background: var(--bg-input); border-color: rgba(245, 158, 11, 0.3);">
+                                <option value="">Cargando eventos...</option>
+                            </select>
+                        </div>
+
+                        <div class="search-wrapper" style="margin-bottom: 15px;">
+                            <input type="text" id="buscadorVendedor" onkeyup="renderizarGridProductos()" placeholder="🔍 Buscar producto (ej: Coca, Pizza...)" style="background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); width: 100%; padding: 10px; border-radius: 8px;">
+                        </div>
+
+                        <div id="categoryTabs" class="category-tabs-container"></div>
+                        </div>
+
+                        <div id="categoryTabs" class="category-tabs-container"></div>
+                        
+                        <div id="contenedorProductos" class="contenedor-productos">
+                            <p style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 40px;">
+                                ⬅️ Selecciona un evento arriba para comenzar
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pos-right">
+                    
+                    <div class="carrito-header">
+                        <h4><i class="fas fa-shopping-cart" style="color:#f59e0b;"></i> Carrito</h4>
+                        <div style="display: flex; align-items: center;">
+                            <span id="headerTotalDisplay" class="total-badge">$0.00</span>
+                            <button onclick="vaciarCarrito()" class="btn-vaciar">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="carrito-items" id="carritoItems">
+                        <div class="carrito-vacio">
+                            <i class="fas fa-cash-register"></i>
+                            <p>Listo para vender</p>
+                        </div>
+                    </div>
+
+                    <div class="payment-section">
+                        <label style="margin-bottom: 8px; font-size: 12px; color: var(--text-muted); display:block;">Método de Cobro:</label>
+                        <div class="payment-methods">
+                            <button class="pm-btn active" onclick="cambiarMetodoPago('nfc')" id="pm-nfc">
+                                <i class="fas fa-wifi"></i> <span style="font-size: 10px;">NFC</span>
+                            </button>
+                            <button class="pm-btn" onclick="cambiarMetodoPago('efectivo')" id="pm-efectivo">
+                                <i class="fas fa-money-bill-wave"></i> <span style="font-size: 10px;">Efectivo</span>
+                            </button>
+                            <button class="pm-btn" onclick="cambiarMetodoPago('transferencia')" id="pm-transferencia">
+                                <i class="fas fa-university"></i> <span style="font-size: 10px;">Transf.</span>
+                            </button>
+                        </div>
+
+                        <div id="seccionNFC">
+                            <div class="nfc-reader" id="nfcReader" style="padding: 10px; margin: 0 0 10px 0;">
+                                <div class="nfc-icon" style="font-size: 24px;">📱</div>
+                                <div class="nfc-status">Escanear Pulsera</div>
+                                <div style="display: flex; flex-direction: column; gap: 15px; width: 100%; max-width: 250px; margin: 15px auto 0 auto;">
+                                    <button class="btn-primary" onclick="startNFCRead()" style="width: 100%; padding: 12px;">📡 Activar Lector NFC</button>
+                                    <button class="btn-secondary" onclick="iniciarEscanerQR('cobro_nfc')" style="width: 100%; padding: 12px; border-color: var(--text-main);">📸 Escanear QR</button>
+                                </div>
+                            </div>
+                            
+                            <div class="saldo-info" id="saldoInfo" style="font-size: 13px; padding: 8px;">
+                                <strong>Saldo:</strong> $<span id="saldoActual"></span>
+                            </div>
+
+                            <div class="form-group" style="margin-top: 5px; opacity: 0.8; margin-bottom: 5px;">
+                                <select id="simulatedPulsera" onchange="selectSimulatedPulsera()" style="font-size: 11px; padding: 6px;">
+                                    <option value="">(Test) Simular Pulsera...</option>
+                                </select>
+                            </div>
+
+                            <button class="btn-success" onclick="procesarPago()" id="btnPagarNFC" style="display: none; width: 100%; font-size: 14px; padding: 10px;">
+                                ✓ COBRAR
+                            </button>
+                        </div>
+
+                        <div id="seccionPagoDirecto" style="display: none;">
+                            <div id="inputsTransferencia" style="display: none; margin-bottom: 8px;">
+                                <input type="text" id="nombreClienteTransferencia" placeholder="Nombre del cliente..." style="font-size: 12px; margin-bottom: 5px;">
+                                <div class="transfer-status-group">
+                                    <button type="button" class="status-btn active-pagado" id="btnStatusPagado" onclick="setEstadoTransferencia('pagado')">Pagado</button>
+                                    <button type="button" class="status-btn" id="btnStatusPendiente" onclick="setEstadoTransferencia('pendiente')">Fiar</button>
+                                </div>
+                            </div>
+
+                            <button class="btn-success" onclick="procesarPago()" style="width: 100%; height: 40px; font-size: 14px;">
+                                ✓ REGISTRAR VENTA
+                            </button>
+                        </div>
+                    </div>
+
+                </div> </div> </div>
+
+        <div id="tab-pendientes" class="tab-content">
+            <div class="card" id="seccionPendientesCard">
+                <h2 class="text-pendiente-dynamic">⏳ Cuentas Pendientes</h2>
+                <div id="listaPendientesContainer">
+                    <p style="color: var(--text-muted); text-align: center; padding: 20px;">No hay cuentas pendientes por cobrar</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-saldo" class="tab-content">
+            <div class="card">
+                <h2>🔍 Consultar Saldo</h2>
+                <div class="nfc-reader" id="nfcReaderConsulta" style="padding: 20px; margin: 10px 0;">
+                    <div class="nfc-icon" style="font-size: 32px;">🔍</div>
+                    <div class="nfc-status" style="font-size: 14px; margin-bottom: 15px;">Escanea para ver saldo</div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 15px; width: 100%; max-width: 250px; margin: 0 auto;">
+                        <button class="btn-primary" onclick="startNFCReadConsulta()" style="width: 100%; padding: 12px;">📡 Consultar NFC</button>
+                        <button class="btn-secondary" onclick="iniciarEscanerQR('consulta')" style="width: 100%; padding: 12px; border-color: var(--text-main);">📸 Consultar QR</button>
+                    </div>
+                </div>
+                <div id="saldoInfoConsulta" style="display: none; background: var(--bg-input); padding: 15px; border-radius: 8px;">
+                    <div style="font-size: 12px; color: var(--text-muted);">Cliente</div>
+                    <div id="consultaNombre" style="font-size: 16px; font-weight: bold; color: var(--text-main); margin-bottom: 5px;">-</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">Saldo Disponible</div>
+                    <div style="font-size: 24px; font-weight: bold; color: #f59e0b;">$<span id="consultaSaldo">0.00</span></div>
+                    <button class="btn-secondary" onclick="resetConsulta()" style="width: 100%; margin-top: 10px; font-size: 12px;">Nueva Consulta</button>
+                </div>
+                 <div class="form-group" style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                    <label style="font-size: 11px; color: var(--text-muted);">Simulación Consulta</label>
+                    <select id="simulatedPulseraConsulta" onchange="consultarSaldoSimulado()" style="font-size: 12px; padding: 8px;">
+                        <option value="">Simular lectura...</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-corte" class="tab-content">
+            <div class="card" style="margin-bottom: 20px;">
+                <h2>📊 Resumen Hoy</h2>
+                
+                <div style="margin-bottom: 15px; padding: 10px; background: rgba(0,0,0,0.05); border-radius: 8px; border: 1px solid var(--border-color);">
+                    <label style="color: var(--text-muted); font-size: 12px; display:block; margin-bottom:5px;">Fecha del corte:</label>
+                    <input type="date" id="filtroFechaCorte" onchange="loadMyTransactions()" 
+                           style="background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px; border-radius: 6px; width: 100%; font-size:14px;">
+                </div>
+
+                <div class="stat-grid">
+                    <div class="stat-box">
+                        <div class="number" id="ventasCount">0</div>
+                        <div class="label"># Ventas</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="number">$<span id="totalVentas">0.00</span></div>
+                        <div class="label">Total Global</div>
+                    </div>
+                </div>
+                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 5px;">
+                    <div class="stat-box" style="padding: 8px;">
+                        <div class="number" style="font-size: 14px;">$<span id="totalNFC">0</span></div>
+                        <div class="label" style="color: #f59e0b; font-size: 10px;">NFC</div>
+                    </div>
+                    <div class="stat-box" style="padding: 8px;">
+                        <div class="number" style="font-size: 14px;">$<span id="totalEfectivo">0</span></div>
+                        <div class="label" style="color: #22c55e; font-size: 10px;">Efectivo</div>
+                    </div>
+                    <div class="stat-box" style="padding: 8px;">
+                        <div class="number" style="font-size: 14px;">$<span id="totalTransf">0</span></div>
+                        <div class="label" style="color: #3b82f6; font-size: 10px;">Transf.</div>
+                    </div>
+                    
+                    <div class="stat-box border-pendiente-dynamic" style="padding: 8px; border: 1px solid;">
+                        <div class="number text-pendiente-dynamic" style="font-size: 14px;">$<span id="totalPendiente">0</span></div>
+                        <div class="label text-pendiente-dynamic" style="font-size: 9px;">Por Cobrar</div>
+                    </div>
+                 </div>
+            </div>
+
+            <div class="card">
+                <h2>🕒 Historial Reciente</h2>
+                <div id="transactionsList">
+                    <p style="color: var(--text-muted); font-size: 12px;">Cargando...</p>
+                </div>
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color);">
+                    <h4 style="font-size: 14px; margin-bottom: 10px; color:var(--text-muted);">Top Productos</h4>
+                    <div id="ventasPorArticulo"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="pago-confirmado-overlay" id="pagoConfirmadoOverlay" onclick="cerrarConfirmacion()">
+        <div class="pago-confirmado-content" onclick="event.stopPropagation()">
+            <div class="pago-check">✅</div>
+            <h1 class="pago-titulo">¡Pago Exitoso!</h1>
+            <p style="color: #94a3b8; margin-bottom: 20px;">La transacción se completó correctamente</p>
+            <div class="pago-monto" id="confirmarMonto">$0.00</div>
+            <div style="background: rgba(30,41,59,0.8); padding: 15px; border-radius: 8px; text-align: left; margin-bottom: 20px;">
+                <p><strong>Producto:</strong> <span id="confirmarProducto">-</span></p>
+                <p><strong>Cliente:</strong> <span id="confirmarCliente">-</span></p>
+                <p><strong>Método:</strong> <span id="confirmarMetodo" style="color:#f59e0b;">-</span></p>
+                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); color: #86efac;">
+                    <strong>Nuevo Saldo:</strong> <span id="confirmarSaldoNuevo">$0.00</span>
+                </div>
+            </div>
+            <button class="pago-cerrar-btn" onclick="cerrarConfirmacion()">Continuar (<span id="contadorCierre">10</span>s)</button>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <p>Hecho por <strong>Digital Thinking</strong></p>
+            <div class="footer-links">
+                <a href="https://dthinkng.com" target="_blank" title="Sitio Web"><i class="fas fa-globe"></i></a>
+                <a href="https://www.facebook.com/d.thinkng" target="_blank" title="Facebook"><i class="fab fa-facebook"></i></a>
+                <a href="https://www.instagram.com/d.thinkng/" target="_blank" title="Instagram"><i class="fab fa-instagram"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+
+    <script src="config.js?v=1.1"></script>
+
+    <script>
+        // Configuración de SweetAlert2
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            background: '#1e293b',
+            color: '#ffffff',
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer)
+                toast.addEventListener('mouseleave', Swal.resumeTimer)
+            }
+        });
+
+// Sobrescribimos las funciones viejas con las nuevas
+function showSuccess(message) {
+    Toast.fire({ icon: 'success', title: message });
+}
+
+function showError(message) {
+    Toast.fire({ icon: 'error', title: message });
+}
+        // --- GESTIÓN DE TEMAS ---
+        function toggleTheme() {
+            document.body.classList.toggle('light-mode');
+            const isLight = document.body.classList.contains('light-mode');
+            localStorage.setItem('themePreference', isLight ? 'light' : 'dark');
+            updateThemeIcon();
+        }
+
+        function updateThemeIcon() {
+            const isLight = document.body.classList.contains('light-mode');
+            const icon = document.getElementById('themeIcon');
+            if (isLight) {
+                icon.classList.remove('fa-sun');
+                icon.classList.add('fa-moon');
+            } else {
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+            }
+        }
+
+        // Cargar preferencia al inicio
+        if (localStorage.getItem('themePreference') === 'light') {
+            document.body.classList.add('light-mode');
+        }
+        updateThemeIcon();
+
+        // --- SISTEMA DE SONIDOS ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playTone(freq, type, duration) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function playSound(type) {
+            try {
+                if (type === 'scan') playTone(800, 'sine', 0.1); 
+                else if (type === 'success') { playTone(600, 'sine', 0.1); setTimeout(() => playTone(1200, 'sine', 0.3), 100); } 
+                else if (type === 'error') playTone(150, 'sawtooth', 0.4); 
+            } catch (e) { console.log("Audio no disponible"); }
+        }
+
+        // --- LÓGICA PRINCIPAL ---
+        let currentUserId = localStorage.getItem('userId');
+        let scannedPulsera = null;
+        let carrito = [];
+        let authInitialized = false;
+        let productosGlobales = [];
+        let categoriaActiva = 'Todo';
+        let metodoPagoActual = 'efectivo'; 
+        let estadoTransferencia = 'pagado';
+        let unsubscribeTransacciones = null;
+
+        const unsubscribe = auth.onAuthStateChanged(user => {
+            if (authInitialized) return;
+            authInitialized = true;
+
+            // 1. Verificación de seguridad (Igual que antes)
+            if (!user || localStorage.getItem('userRole') !== 'vendedor') {
+                localStorage.clear(); window.location.replace('index.html'); return;
+            }
+
+            // 2. Configuración de Usuario
+            currentUserId = user.uid;
+            localStorage.setItem('userId', user.uid);
+            
+            // Obtenemos el nombre para el saludo
+            const nombreGuardado = localStorage.getItem('userName') || 'Vendedor';
+            
+            // A. Actualizamos el Header de la App
+            document.getElementById('userName').textContent = nombreGuardado;
+            
+            // B. Actualizamos la Pantalla de Carga (NUEVO)
+            // Tomamos solo el primer nombre para que sea más amigable (ej: "Joshua" en vez de "Joshua Gonzalez")
+            const primerNombre = nombreGuardado.split(' ')[0];
+            const loadNameEl = document.getElementById('loadingUserName');
+            if(loadNameEl) loadNameEl.textContent = primerNombre;
+
+            // 3. Configuración de Fecha (Igual que antes)
+            const hoy = new Date();
+            // Corrección de zona horaria local simple
+            const year = hoy.getFullYear();
+            const month = String(hoy.getMonth() + 1).padStart(2, '0');
+            const day = String(hoy.getDate()).padStart(2, '0');
+            const fechaLocal = `${year}-${month}-${day}`;
+            
+            const inputFecha = document.getElementById('filtroFechaCorte');
+            if(inputFecha) inputFecha.value = fechaLocal;
+
+            // 4. Carga de Datos (Igual que antes)
+            loadProducts();
+            cargarPulseras();
+            loadMyTransactions(); 
+            cargarPendientes(); 
+            cambiarMetodoPago('efectivo');
+
+            // 5. ANIMACIÓN DE SALIDA (NUEVO) ✨
+            // Esperamos 1.5 segundos para que se vea el saludo y luego quitamos la pantalla
+            setTimeout(() => {
+                const overlay = document.getElementById('loadingOverlay');
+                if(overlay) overlay.classList.add('hidden');
+            }, 1500);
+
+            unsubscribe();
+        });
+
+        // --- LOGOUT SEGURO (VENDEDOR) ---
+        function logout() {
+            Swal.fire({
+                title: '¿Cerrar Sesión?',
+                text: "Tendrás que ingresar tus datos nuevamente.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#334155',
+                confirmButtonText: 'Sí, salir',
+                cancelButtonText: 'Cancelar',
+                background: '#1e293b',
+                color: '#ffffff'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    auth.signOut().then(() => {
+                        localStorage.clear();
+                        window.location.href = 'index.html';
+                    });
+                }
+            });
+        }
+        
+        function showSuccess(msg) { const a=document.getElementById('successAlert'); a.textContent=msg; a.classList.add('show'); setTimeout(()=>a.classList.remove('show'),3000); }
+        function showError(msg) { playSound('error'); const a=document.getElementById('errorAlert'); a.textContent=msg; a.classList.add('show'); setTimeout(()=>a.classList.remove('show'),3000); }
+
+        function cambiarPestana(tabId, btn) {
+            // 1. Cambio visual de pestañas (Lo que ya tenías)
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.sub-tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + tabId).classList.add('active');
+            btn.classList.add('active');
+
+            // 2. --- LÓGICA DE ACTUALIZACIÓN AUTOMÁTICA ---
+            // Si entras a "Mi Corte", recargamos las transacciones al instante.
+            if (tabId === 'corte') {
+                // Pequeño indicador visual de que está actualizando
+                const lista = document.getElementById('transactionsList');
+                if(lista) lista.style.opacity = '0.5'; 
+                
+                loadMyTransactions(); // <--- ESTA ES LA CLAVE
+                
+                // Restauramos opacidad tras un momento breve
+                setTimeout(() => { if(lista) lista.style.opacity = '1'; }, 300);
+            }
+            
+            // Si entras a "Pendientes", recargamos la lista de fiados.
+            if (tabId === 'pendientes') {
+                cargarPendientes();
+            }
+            
+            // Si entras a "Venta", nos aseguramos que el foco esté en el lector o catálogo
+            if (tabId === 'venta') {
+               // Opcional: podrías poner foco en algún input si quisieras
+            }
+        }
+
+        function cambiarMetodoPago(metodo) {
+            metodoPagoActual = metodo;
+            document.querySelectorAll('.pm-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('pm-' + metodo).classList.add('active');
+            const seccionNFC = document.getElementById('seccionNFC');
+            const seccionDirecto = document.getElementById('seccionPagoDirecto');
+            const inputsTransf = document.getElementById('inputsTransferencia');
+
+            if (metodo === 'nfc') { seccionNFC.style.display = 'block'; seccionDirecto.style.display = 'none'; } 
+            else {
+                seccionNFC.style.display = 'none'; seccionDirecto.style.display = 'block';
+                inputsTransf.style.display = (metodo === 'transferencia') ? 'block' : 'none';
+            }
+        }
+        function setEstadoTransferencia(estado) {
+            estadoTransferencia = estado;
+            document.getElementById('btnStatusPagado').className = 'status-btn ' + (estado==='pagado' ? 'active-pagado' : '');
+            document.getElementById('btnStatusPendiente').className = 'status-btn ' + (estado==='pendiente' ? 'active-pendiente' : '');
+        }
+
+        function loadProducts() {
+            db.collection('eventos').orderBy('createdAt', 'desc').onSnapshot(snap => {
+                let html = '<option value="">Selecciona un evento</option>';
+                snap.forEach(doc => html += `<option value="${doc.id}">${doc.data().nombre}</option>`);
+                document.getElementById('eventSelect').innerHTML = html;
+            });
+        }
+        function separarEmoji(texto) {
+            if (!texto || texto === 'Todo') return { emoji: '🔎', nombre: 'Todo' };
+            const partes = texto.split(' ');
+            if (partes.length > 1) return { emoji: partes[0], nombre: partes.slice(1).join(' ') };
+            return { emoji: '📦', nombre: texto };
+        }
+        function cargarProductosPorEvento() {
+            const eventId = document.getElementById('eventSelect').value;
+            const container = document.getElementById('contenedorProductos');
+            const tabsContainer = document.getElementById('categoryTabs');
+            if (!eventId) { container.innerHTML = '<p style="color:var(--text-muted); font-size:13px; text-align:center; padding:20px;">⬅️ Selecciona evento</p>'; tabsContainer.innerHTML = ''; return; }
+            db.collection('articulos').where('eventId', '==', eventId).onSnapshot(snapshot => {
+                if (snapshot.empty) { container.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding:20px;">Sin productos</p>'; tabsContainer.innerHTML = ''; return; }
+                productosGlobales = []; const categoriasSet = new Set(['Todo']);
+                snapshot.forEach(doc => {
+                    const p = doc.data(); const cat = p.categoria || 'Otros';
+                    categoriasSet.add(cat); productosGlobales.push({ id: doc.id, ...p, categoria: cat });
+                });
+                renderizarPestañas(Array.from(categoriasSet));
+                categoriaActiva = 'Todo'; renderizarGridProductos();
+            });
+        }
+        function renderizarPestañas(cats) {
+            const tabs = document.getElementById('categoryTabs'); let html = '';
+            cats.sort((a,b) => (a==='Todo')?-1:(b==='Todo')?1:a.localeCompare(b));
+            cats.forEach(c => {
+                const d = separarEmoji(c); html += `<button class="cat-tab ${c==='Todo'?'active':''}" onclick="filtrarPorCategoria('${c}', this)"><span>${d.emoji}</span> ${d.nombre}</button>`;
+            });
+            tabs.innerHTML = html;
+        }
+        function filtrarPorCategoria(c, el) {
+            document.querySelectorAll('.cat-tab').forEach(b => b.classList.remove('active')); if(el) el.classList.add('active');
+            categoriaActiva = c; renderizarGridProductos();
+        }
+        function renderizarGridProductos() {
+            const container = document.getElementById('contenedorProductos');
+            
+            // 1. Obtener texto del buscador
+            const textoBusqueda = document.getElementById('buscadorVendedor') ? document.getElementById('buscadorVendedor').value.toLowerCase() : '';
+            
+            let filtrados = productosGlobales; 
+
+            // 2. Filtro por Categoría
+            if (categoriaActiva !== 'Todo') {
+                filtrados = productosGlobales.filter(p => p.categoria === categoriaActiva);
+            }
+            
+            // 3. Filtro por Texto
+            if (textoBusqueda) {
+                filtrados = filtrados.filter(p => p.nombre.toLowerCase().includes(textoBusqueda));
+            }
+            
+            if (filtrados.length === 0) { 
+                container.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div><p class="empty-desc">No encontramos productos con ese nombre</p></div>'; 
+                return; 
+            }
+            
+            let html = '<div class="productos-grid">';
+            
+            filtrados.forEach(p => {
+                const d = separarEmoji(p.categoria);
+                
+                // --- CORRECCIONES DE SEGURIDAD ---
+                // 1. Validar Stock
+                const stockActual = (p.stock !== undefined && p.stock !== null) ? p.stock : 0;
+                
+                // 2. Validar Precio (ESTO ARREGLA EL $NaN)
+                // Intentamos convertir a número. Si falla (NaN), usamos 0.
+                const precioSeguro = parseFloat(p.precio) || 0;
+
+                // Condición de Agotado
+                const sinStock = !p.esInfinito && stockActual <= 0;
+
+                let stockHTML = '';
+                let estilosCard = '';
+                let clickAction = '';
+
+                // --- LÓGICA VISUAL ---
+                if (p.esInfinito) {
+                    stockHTML = '<span style="font-size:11px; color:#f59e0b; font-weight:bold; background:rgba(245,158,11,0.1); padding:2px 6px; border-radius:4px;">♾️ Infinito</span>';
+                    clickAction = `onclick="agregarDirecto('${p.id}')"`;
+                    estilosCard = 'cursor: pointer;';
+                } else {
+                    if (sinStock) {
+                        stockHTML = '<span style="font-size:11px; background:#334155; color:#cbd5e1; padding:2px 6px; border-radius:4px; font-weight:bold;">AGOTADO</span>';
+                        estilosCard = 'filter: grayscale(1); opacity: 0.6; pointer-events: none; cursor: not-allowed;';
+                        clickAction = ''; 
+                    } else {
+                        const colorStock = stockActual < 5 ? '#ef4444' : 'var(--text-muted)';
+                        const bgStock = stockActual < 5 ? 'rgba(239,68,68,0.1)' : 'transparent';
+                        stockHTML = `<span style="font-size:11px; color:${colorStock}; background:${bgStock}; padding:2px 6px; border-radius:4px; font-weight:600;">${stockActual} disp.</span>`;
+                        clickAction = `onclick="agregarDirecto('${p.id}')"`;
+                        estilosCard = 'cursor: pointer;';
+                    }
+                }
+
+                html += `<div class="producto-card" ${clickAction} style="${estilosCard} transition: all 0.2s;">
+                            <div class="prod-emoji">${d.emoji}</div>
+                            <div class="prod-info">
+                                <div class="prod-nombre">${p.nombre}</div>
+                                <div class="prod-precio">$${precioSeguro.toFixed(2)}</div>
+                                <div style="margin-top:auto; padding-top:5px;">${stockHTML}</div>
+                            </div>
+                        </div>`;
+            });
+            container.innerHTML = html + '</div>';
+        }
+
+        function agregarDirecto(id) {
+            const productoReal = productosGlobales.find(p => p.id === id);
+            if (!productoReal) return;
+            const itemEnCarrito = carrito.find(x => x.id === id);
+            const cantidadEnCarrito = itemEnCarrito ? itemEnCarrito.cantidad : 0;
+            if (!productoReal.esInfinito && (cantidadEnCarrito + 1 > productoReal.stock)) {
+                showError('⚠️ Stock insuficiente');
+                return;
+            }
+            if (itemEnCarrito) { itemEnCarrito.cantidad++; } else {
+                carrito.push({ id: id, nombre: productoReal.nombre, precio: parseFloat(productoReal.precio), cantidad: 1, esInfinito: productoReal.esInfinito, stock: productoReal.stock });
+            }
+            renderizarCarrito(); 
+            if (navigator.vibrate) navigator.vibrate(50);
+            const btnCobrar = document.querySelector('.btn-success:not([style*="display: none"])') || document.querySelector('.btn-success');
+            if(btnCobrar) {
+                btnCobrar.style.transition = "transform 0.1s";
+                btnCobrar.style.transform = "scale(1.05)";
+                setTimeout(() => btnCobrar.style.transform = "scale(1)", 150);
+            }
+        }
+        function cambiarCantidad(idx, d) { carrito[idx].cantidad+=d; if(carrito[idx].cantidad<=0)carrito.splice(idx,1); renderizarCarrito(); }
+        function eliminarDelCarrito(idx) { carrito.splice(idx, 1); renderizarCarrito(); }
+        function vaciarCarrito() { carrito = []; renderizarCarrito(); }
+        
+        function renderizarCarrito() {
+            const cont = document.getElementById('carritoItems'); 
+            const btnNFC = document.getElementById('btnPagarNFC');
+            const totalDisplay = document.getElementById('headerTotalDisplay');
+            let total = 0;
+            if (carrito.length === 0) { 
+                cont.innerHTML = `<div class="carrito-vacio"><i class="fas fa-shopping-basket"></i><p>El carrito está esperando productos</p></div>`; 
+                if(btnNFC) btnNFC.style.display = 'none'; 
+                totalDisplay.textContent = '$0.00'; return; 
+            }
+            let html='';
+            carrito.forEach((it, ix) => {
+                const sub = it.precio * it.cantidad; total += sub;
+                html += `
+                    <div class="carrito-item">
+                        <div class="carrito-item-info">
+                            <div class="carrito-item-nombre">${it.nombre}</div>
+                            <div class="carrito-item-precio">$${it.precio.toFixed(2)} c/u</div>
+                        </div>
+                        <div class="carrito-item-cantidad">
+                            <button class="qty-btn" onclick="cambiarCantidad(${ix}, -1)"><i class="fas fa-minus" style="font-size:10px;"></i></button>
+                            <span class="qty-val">${it.cantidad}</span>
+                            <button class="qty-btn" onclick="cambiarCantidad(${ix}, 1)"><i class="fas fa-plus" style="font-size:10px;"></i></button>
+                        </div>
+                        <div class="carrito-item-subtotal">$${sub.toFixed(2)}</div>
+                        <button class="btn-eliminar-item" onclick="eliminarDelCarrito(${ix})"><i class="fas fa-trash-alt"></i></button>
+                    </div>`;
+            });
+            cont.innerHTML = html; totalDisplay.textContent = '$' + total.toFixed(2);
+            if(btnNFC) btnNFC.style.display = 'block';
+        }
+        function obtenerTotalCarrito() { return carrito.reduce((s, i) => s + (i.precio * i.cantidad), 0); }
+
+        // --- NFC ---
+        function startNFCRead() {
+            if (carrito.length === 0) { showError('Agrega productos primero'); return; }
+            if (!('NDEFReader' in window)) { showError('Navegador sin soporte NFC'); return; }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            document.getElementById('nfcReader').innerHTML = `<div class="nfc-icon">⏳</div><div class="nfc-status">Acerca el gafete...</div>`;
+            
+            const ndef = new NDEFReader();
+            ndef.scan().then(() => {
+                ndef.onreading = event => {
+                    // Leemos el UID de fábrica del NTAG213
+                    let id = event.serialNumber;
+                    
+                    if (!id && event.message && event.message.records) {
+                        for (const r of event.message.records) {
+                            if (r.recordType === 'text') {
+                                id = new TextDecoder().decode(r.data);
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (id) {
+                        id = id.replace(/:/g, '').toUpperCase();
+                        readPulseraData(id);
+                    } else {
+                        showError('Chip sin identificador');
+                        resetScan();
+                    }
+                };
+            }).catch(e => {
+                showError('Error NFC: ' + (e.message || e));
+                resetScan();
+            });
+        }
+        function readPulseraData(id) {
+            db.collection('pulseras').where('id', '==', id).get().then(snap => {
+                if (snap.empty) { showError('Pulsera no encontrada'); resetScan(); return; }
+                snap.forEach(doc => {
+                    const p = doc.data(); if (p.bloqueada) { showError('🔒 Bloqueada'); resetScan(); return; }
+                    scannedPulsera = { id: doc.id, nombre: p.nombre, saldo: p.saldoActual }; 
+                    playSound('scan'); mostrarPulseraDetectada();
+                });
+            });
+        }
+        function mostrarPulseraDetectada() {
+            document.getElementById('saldoInfo').classList.add('show'); document.getElementById('saldoActual').textContent = scannedPulsera.saldo.toFixed(2);
+            document.getElementById('nfcReader').innerHTML = `<div class="nfc-icon">✅</div><div class="nfc-status"><strong>${scannedPulsera.nombre}</strong></div>`;
+        }
+        function resetScan() {
+            scannedPulsera = null; document.getElementById('nfcReader').innerHTML = `<div class="nfc-icon">📱</div><div class="nfc-status">Escanea para cobrar</div><button class="btn-primary" onclick="startNFCRead()">Leer NFC</button>`;
+            document.getElementById('saldoInfo').classList.remove('show'); document.getElementById('simulatedPulsera').value = '';
+        }
+        function selectSimulatedPulsera() {
+            const val = document.getElementById('simulatedPulsera').value; if (!val) { resetScan(); return; }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const [id, nom, sal] = val.split('|');
+            db.collection('pulseras').doc(id).get().then(doc => {
+                const p = doc.data(); if(p.bloqueada) { showError('🔒 Bloqueada'); document.getElementById('simulatedPulsera').value=''; return; }
+                scannedPulsera = { id, nombre: nom, saldo: parseFloat(sal) }; 
+                playSound('scan'); mostrarPulseraDetectada();
+            });
+        }
+        function startNFCReadConsulta() {
+            if (!('NDEFReader' in window)) { showError('Navegador sin soporte NFC'); return; }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            document.getElementById('nfcReaderConsulta').innerHTML = `<div class="nfc-icon">⏳</div><div class="nfc-status">Acerca el gafete...</div>`;
+            
+            const ndef = new NDEFReader();
+            ndef.scan().then(() => {
+                ndef.onreading = event => {
+                    let id = event.serialNumber;
+                    
+                    if (!id && event.message && event.message.records) {
+                        for (const r of event.message.records) {
+                            if (r.recordType === 'text') {
+                                id = new TextDecoder().decode(r.data);
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (id) {
+                        id = id.replace(/:/g, '').toUpperCase();
+                        leerPulseraConsulta(id);
+                    } else {
+                        showError('Chip sin identificador');
+                        resetConsulta();
+                    }
+                };
+            }).catch(e => {
+                showError('Error NFC: ' + (e.message || e));
+                resetConsulta();
+            });
+        }
+        function leerPulseraConsulta(id) {
+            db.collection('pulseras').where('id', '==', id).get().then(snap => {
+                if (snap.empty) { showError('No encontrada'); resetConsulta(); return; }
+                snap.forEach(doc => {
+                    const p = doc.data();
+                    document.getElementById('consultaNombre').textContent = p.nombre; document.getElementById('consultaSaldo').textContent = p.saldoActual.toFixed(2);
+                    document.getElementById('saldoInfoConsulta').style.display = 'block'; document.getElementById('nfcReaderConsulta').innerHTML = `<div class="nfc-icon">✅</div><div class="nfc-status">Leída correctamente</div>`;
+                    playSound('scan');
+                });
+            });
+        }
+        function consultarSaldoSimulado() {
+            const val = document.getElementById('simulatedPulseraConsulta').value; if (!val) { resetConsulta(); return; }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const [id, nom, sal] = val.split('|');
+            document.getElementById('consultaNombre').textContent = nom; document.getElementById('consultaSaldo').textContent = parseFloat(sal).toFixed(2);
+            document.getElementById('saldoInfoConsulta').style.display = 'block'; document.getElementById('nfcReaderConsulta').innerHTML = `<div class="nfc-icon">✅</div><div class="nfc-status">Simulación activa</div>`;
+            playSound('scan');
+        }
+        function resetConsulta() {
+            document.getElementById('nfcReaderConsulta').innerHTML = `<div class="nfc-icon">📱</div><div class="nfc-status">Escanea para ver saldo</div><button class="btn-primary" onclick="startNFCReadConsulta()">Leer NFC</button>`;
+            document.getElementById('saldoInfoConsulta').style.display = 'none'; document.getElementById('simulatedPulseraConsulta').value = '';
+            document.getElementById('consultaNombre').textContent = '-'; document.getElementById('consultaSaldo').textContent = '0.00';
+        }
+        function cargarPulseras() {
+            db.collection('pulseras').onSnapshot(snap => {
+                let s = '<option value="">Selecciona para cobrar...</option>', c = '<option value="">Simular lectura...</option>';
+                snap.forEach(doc => {
+                    const p = doc.data(), b = p.bloqueada ? ' (🔒)' : '', v = `${doc.id}|${p.nombre}|${p.saldoActual}`;
+                    s += `<option value="${v}">${p.nombre} - $${p.saldoActual.toFixed(2)}${b}</option>`; c += `<option value="${v}">${p.nombre} - $${p.saldoActual.toFixed(2)}${b}</option>`;
+                });
+                document.getElementById('simulatedPulsera').innerHTML = s; document.getElementById('simulatedPulseraConsulta').innerHTML = c;
+            });
+        }
+
+        // --- PROCESAMIENTO PAGO ---
+        function procesarPago() {
+            if (carrito.length === 0) { showError('Carrito vacío'); return; }
+            
+            // Reactivar AudioContext si está suspendido (navegadores modernos)
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            const btnNFC = document.getElementById('btnPagarNFC');
+            const btnDirecto = document.querySelector('#seccionPagoDirecto button'); // El botón verde de registrar
+            
+            // Deshabilitar botones para evitar doble venta
+            if(btnNFC) btnNFC.disabled = true;
+            if(btnDirecto) btnDirecto.disabled = true;
+
+            const total = obtenerTotalCarrito(); 
+            const eventId = document.getElementById('eventSelect').value;
+            const carritoId = Date.now().toString();
+
+            // --- LÓGICA DE PAGO NFC ---
+            if (metodoPagoActual === 'nfc') {
+                if (!scannedPulsera) { 
+                    showError('Falta escanear pulsera'); 
+                    if(btnNFC) btnNFC.disabled = false; 
+                    return; 
+                }
+                if (scannedPulsera.saldo < total) { 
+                    showError('Saldo insuficiente'); 
+                    if(btnNFC) btnNFC.disabled = false; 
+                    return; 
+                }
+                const nuevoSaldo = scannedPulsera.saldo - total;
+                
+                db.collection('pulseras').doc(scannedPulsera.id).update({ saldoActual: nuevoSaldo }).then(() => {
+                    registrarTransaccion(eventId, scannedPulsera.id, scannedPulsera.nombre, nuevoSaldo, 'nfc', 'pagado', carritoId);
+                }).catch(e => { 
+                    showError(e.message); 
+                    if(btnNFC) btnNFC.disabled = false; 
+                });
+
+            // --- LÓGICA DE PAGO DIRECTO (Efectivo / Transferencia) ---
+            } else {
+                
+                // 1. NUEVO: SI ES EFECTIVO, ABRIMOS CALCULADORA Y PARAMOS AQUÍ
+                if (metodoPagoActual === 'efectivo') {
+                    pedirMontoEfectivo(total);
+                    return; // ¡Importante! Detiene la función para esperar a la calculadora
+                }
+
+                // 2. LÓGICA PARA TRANSFERENCIA (Se mantiene igual)
+                let nombreCliente = 'Venta Mostrador'; 
+                let idCliente = 'pago_transferencia'; 
+                let estado = 'pagado';
+
+                if (metodoPagoActual === 'transferencia') {
+                    // Obtenemos el nombre escrito
+                    let inputNombre = document.getElementById('nombreClienteTransferencia').value.trim();
+                    
+                    // Validación de FIAR
+                    if (estadoTransferencia === 'pendiente' && !inputNombre) {
+                        showError('⚠️ Para FIAR debes escribir el nombre del cliente');
+                        if(btnDirecto) btnDirecto.disabled = false; 
+                        return; 
+                    }
+
+                    if (!inputNombre) {
+                        inputNombre = "Cliente Transferencia";
+                    }
+
+                    nombreCliente = inputNombre + ' (Transferencia)'; 
+                    idCliente = 'transf_' + carritoId; 
+                    estado = estadoTransferencia;
+                } 
+                
+                // Procedemos a registrar (Solo llegará aquí si es Transferencia)
+                registrarTransaccion(eventId, idCliente, nombreCliente, 0, metodoPagoActual, estado, carritoId);
+            }
+        }
+
+        function registrarTransaccion(eventId, pulseraId, pulseraNombre, saldoNuevo, metodo, estado, carritoId) {
+            const batch = db.batch(); 
+            carrito.forEach(i => {
+                const refTrans = db.collection('transacciones').doc();
+                batch.set(refTrans, {
+                    eventId, pulseraId, pulsera: pulseraNombre, articulo: i.nombre, cantidad: i.cantidad, precioUnitario: i.precio,
+                    monto: i.precio * i.cantidad, saldoAnterior: (metodo === 'nfc' ? scannedPulsera.saldo : 0),
+                    saldoNuevo: saldoNuevo, vendedor: localStorage.getItem('userName'), vendedorId: currentUserId, 
+                    fecha: new Date(), metodoPago: metodo, estadoPago: estado, carritoId: carritoId 
+                });
+                if (!i.esInfinito) {
+                    const refArt = db.collection('articulos').doc(i.id);
+                    batch.update(refArt, { stock: firebase.firestore.FieldValue.increment(-i.cantidad) });
+                }
+            });
+            batch.commit().then(() => {
+                const total = obtenerTotalCarrito(); 
+                playSound('success');
+                mostrarConfirmacionPago(total, pulseraNombre, saldoNuevo, metodo, estado);
+                vaciarCarrito(); if(metodo === 'nfc') resetScan();
+                document.getElementById('nombreClienteTransferencia').value = ''; 
+                setEstadoTransferencia('pagado');
+                loadMyTransactions(); 
+                cargarProductosPorEvento();
+            }).finally(() => {
+                const btnNFC = document.getElementById('btnPagarNFC');
+                const btnDirecto = document.querySelector('#seccionPagoDirecto button');
+                if(btnNFC) btnNFC.disabled = false;
+                if(btnDirecto) btnDirecto.disabled = false;
+            });
+        }
+
+        let interval;
+        function mostrarConfirmacionPago(total, cliente, saldo, metodo, estado) {
+            document.getElementById('confirmarMonto').textContent = '$'+total.toFixed(2);
+            document.getElementById('confirmarProducto').textContent = `Carrito (${carrito.length} items)`;
+            document.getElementById('confirmarCliente').textContent = cliente;
+            let txtMetodo = metodo === 'nfc' ? 'Pulsera NFC' : (metodo === 'efectivo' ? 'Efectivo' : 'Transferencia');
+            if (estado === 'pendiente') txtMetodo += ' (PENDIENTE)';
+            document.getElementById('confirmarMetodo').textContent = txtMetodo;
+            if (metodo === 'nfc') { document.getElementById('confirmarSaldoNuevo').textContent = '$'+saldo.toFixed(2); document.getElementById('confirmarSaldoNuevo').parentElement.style.display = 'block'; }
+            else { document.getElementById('confirmarSaldoNuevo').parentElement.style.display = 'none'; }
+            document.getElementById('pagoConfirmadoOverlay').classList.add('active');
+            let s = 4; document.getElementById('contadorCierre').textContent = s;
+            interval = setInterval(() => { s--; document.getElementById('contadorCierre').textContent = s; if(s<=0) cerrarConfirmacion(); }, 1000);
+        }
+        function cerrarConfirmacion() { document.getElementById('pagoConfirmadoOverlay').classList.remove('active'); if(interval) clearInterval(interval); }
+
+        function cargarPendientes() {
+            if(!currentUserId) return;
+            db.collection('transacciones').where('vendedorId', '==', currentUserId).where('estadoPago', '==', 'pendiente').onSnapshot(snapshot => {
+                  const lista = document.getElementById('listaPendientesContainer');
+                  const badge = document.getElementById('tabBadgePendientes');
+                  if (snapshot.empty) {
+                      lista.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding:20px;">No hay cuentas pendientes por cobrar</p>';
+                      badge.style.display = 'none'; return;
+                  }
+                  const grupos = {};
+                  snapshot.forEach(doc => {
+                      const t = doc.data(); const key = t.carritoId || doc.id; 
+                      if (!grupos[key]) grupos[key] = { nombre: t.pulsera.replace(' (Transferencia)', ''), montoTotal: 0, items: [], ids: [], fecha: t.fecha };
+                      grupos[key].montoTotal += t.monto; grupos[key].items.push(`${t.cantidad}x ${t.articulo}`); grupos[key].ids.push(doc.id);
+                  });
+                  badge.textContent = Object.keys(grupos).length; badge.style.display = 'inline-block';
+                  let html = '';
+                  Object.values(grupos).sort((a, b) => b.fecha.toDate() - a.fecha.toDate()).forEach(grupo => {
+                      const hora = grupo.fecha.toDate().toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'});
+                      const idsString = JSON.stringify(grupo.ids).replace(/"/g, '&quot;');
+                      html += `
+                        <div class="pendiente-item">
+                            <div class="pendiente-info" style="flex: 1; padding-right: 10px;">
+                                <h4>${grupo.nombre}</h4>
+                                <p>${grupo.items.join(', ')}</p>
+                                <div style="display:flex; justify-content: space-between; align-items: center; margin-top:5px;">
+                                    <small style="color:#64748b;">${hora}</small>
+                                    <strong style="color:#eab308;">$${grupo.montoTotal.toFixed(2)}</strong>
+                                </div>
+                            </div>
+                            <button class="btn-cobrar-pendiente" onclick="confirmarPagoPendiente(this, '${idsString}', ${grupo.montoTotal}, '${grupo.nombre}')">✅ Cobrar</button>
+                        </div>`;
+                  });
+                  lista.innerHTML = html;
+              });
+        }
+        function confirmarPagoPendiente(btn, idsString, monto, nombre) {
+            // DISEÑO PRO: Usamos SweetAlert interactivo en lugar de confirm() aburrido
+            Swal.fire({
+                title: '¿Confirmar cobro?',
+                html: `
+                    <div style="text-align: center;">
+                        <p style="color: #94a3b8; font-size: 14px; margin-bottom: 5px;">Estás cobrando a:</p>
+                        <h3 style="color: #f59e0b; font-size: 24px; margin: 0;">${nombre}</h3>
+                        <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; margin-top: 20px;">
+                            <span style="display: block; font-size: 12px; color: #cbd5e1;">Monto Total</span>
+                            <span style="display: block; font-size: 32px; font-weight: 800; color: #ffffff;">$${monto.toFixed(2)}</span>
+                        </div>
+                    </div>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#f59e0b', // Tu color naranja de marca
+                cancelButtonColor: '#334155',  // Un gris azulado para cancelar (más elegante que rojo)
+                confirmButtonText: 'Sí, cobrar ahora',
+                cancelButtonText: 'Cancelar',
+                background: '#1e293b', // Fondo oscuro del tema
+                color: '#ffffff',
+                reverseButtons: true, // Pone el botón de confirmar a la derecha (estándar UX)
+                focusConfirm: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // --- LÓGICA DE COBRO (IDÉNTICA A LA QUE TENÍAS) ---
+                    btn.disabled = true; 
+                    btn.textContent = 'Procesando...';
+                    
+                    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                    const ids = JSON.parse(idsString); 
+                    const batch = db.batch();
+                    
+                    ids.forEach(id => { 
+                        const ref = db.collection('transacciones').doc(id); 
+                        batch.update(ref, { 
+                            estadoPago: 'pagado',
+                            fecha: new Date() // Actualizamos fecha al momento del pago real
+                        }); 
+                    });
+
+                    batch.commit().then(() => { 
+                        playSound('success'); 
+                        
+                        // ALERTA DE ÉXITO (TICKET)
+                        Swal.fire({
+                            title: '¡Cobro Exitoso!',
+                            text: `Se han recuperado $${monto.toFixed(2)}`,
+                            icon: 'success',
+                            background: '#1e293b',
+                            color: '#ffffff',
+                            confirmButtonColor: '#22c55e', // Verde de éxito
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+
+                        loadMyTransactions(); 
+                        cargarPendientes(); // Recargamos la lista para que desaparezca el cobrado
+                        
+                    }).catch(e => { 
+                        showError(e.message); 
+                        btn.disabled = false; 
+                        btn.textContent = '✅ Cobrar'; 
+                    });
+                }
+            });
+        }
+
+        // --- DASHBOARD ---
+        function loadMyTransactions() {
+    if (!currentUserId) return;
+
+    const inputFecha = document.getElementById('filtroFechaCorte');
+    let fechaStr = inputFecha.value;
+
+    // --- LÓGICA DE FECHA (Mantenemos tu corrección) ---
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hoyStr = `${year}-${month}-${day}`;
+
+    if (!fechaStr || fechaStr > hoyStr) {
+        fechaStr = hoyStr;
+        inputFecha.value = fechaStr; 
+    }
+    
+    // Aplicamos estilo al input de fecha
+    inputFecha.classList.add('date-picker-styled');
+
+    const startOfDay = new Date(fechaStr + 'T00:00:00');
+    const endOfDay = new Date(fechaStr + 'T23:59:59');
+
+    if (unsubscribeTransacciones) { unsubscribeTransacciones(); }
+
+    unsubscribeTransacciones = db.collection('transacciones')
+        .where('vendedorId', '==', currentUserId)
+        .where('fecha', '>=', startOfDay)
+        .where('fecha', '<=', endOfDay)
+        .orderBy('fecha', 'desc')
+        .onSnapshot(snap => {
+            const trans = [];
+            snap.forEach(d => trans.push(d.data()));
+
+            let total = 0, subNFC = 0, subEfe = 0, subTrans = 0, subPend = 0;
+            
+            // 1. Calculamos Totales primero
+            trans.forEach(t => {
+                // Sumamos al total general solo lo cobrado realmente (Opcional: Si quieres que el pendiente cuente en el total, déjalo así. Si no, resta subPend al final)
+                total += t.monto; 
+                
+                if (t.metodoPago === 'efectivo') {
+                    subEfe += t.monto;
+                } else if (t.metodoPago === 'transferencia') {
+                    // AQUÍ ESTÁ LA LÓGICA QUE YA TENÍAS (Correcta)
+                    if (t.estadoPago === 'pendiente') {
+                        subPend += t.monto;
+                    } else {
+                        subTrans += t.monto;
+                    }
+                } else {
+                    subNFC += t.monto;
+                }
+            });
+
+            // 2. Construimos la UI "Fintech"
+            // NOTA: Agregué 'style="grid-template-columns: repeat(2, 1fr);"' para que se vea en cuadrícula de 2x2
+            const container = document.getElementById('transactionsList'); 
+            
+            // A. Header con Totales (Tarjetas)
+            let dashboardHTML = `
+                <div class="balance-card">
+                    <div class="balance-title">Ventas Totales (${fechaStr})</div>
+                    <div class="balance-amount">$${total.toFixed(2)}</div>
+                    <div style="font-size:12px; color:var(--text-muted);">${trans.length} movimientos hoy</div>
+                </div>
+
+                <div class="corte-grid" style="grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                    
+                    <div class="corte-box stat-nfc">
+                        <div class="corte-icon"><i class="fas fa-wifi"></i></div>
+                        <div class="corte-label">NFC</div>
+                        <div class="corte-value">$${subNFC.toFixed(0)}</div>
+                    </div>
+
+                    <div class="corte-box stat-efectivo">
+                        <div class="corte-icon"><i class="fas fa-money-bill-wave"></i></div>
+                        <div class="corte-label">Efectivo</div>
+                        <div class="corte-value">$${subEfe.toFixed(0)}</div>
+                    </div>
+
+                    <div class="corte-box stat-transf">
+                        <div class="corte-icon"><i class="fas fa-university"></i></div>
+                        <div class="corte-label">Transf.</div>
+                        <div class="corte-value">$${subTrans.toFixed(0)}</div>
+                    </div>
+                    <div class="corte-box stat-pendiente" style="border-color: #eab308;">
+                    <div class="corte-icon" style="color: #eab308;"><i class="fas fa-clock"></i></div>
+                    <div class="corte-label">Por Cobrar</div>
+                    <div class="corte-value" style="color: #eab308;">$${totalPendiente.toFixed(0)}</div>
+                </div>
+
+                    <div class="corte-box stat-pendiente" style="border-color: rgba(234, 179, 8, 0.3); background: rgba(234, 179, 8, 0.05);">
+                        <div class="corte-icon" style="color: #eab308;"><i class="fas fa-clock"></i></div>
+                        <div class="corte-label" style="color: #eab308;">Por Cobrar</div>
+                        <div class="corte-value" style="color: #eab308;">$${subPend.toFixed(0)}</div>
+                    </div>
+
+                </div>
+                
+                <div class="trans-list-header">
+                    <span class="trans-list-title">Historial Reciente</span>
+                    <small style="color:var(--text-muted)">Últimos 15</small>
+                </div>
+            `;
+
+            // B. Lista de Transacciones Estilizada
+            let listaHTML = '';
+            if (trans.length === 0) {
+                listaHTML = `
+                <div style="text-align:center; padding:40px; color:var(--text-muted);">
+                    <i class="fas fa-receipt" style="font-size:40px; margin-bottom:10px; opacity:0.3;"></i>
+                    <p>Sin ventas registradas hoy</p>
+                </div>`;
+            } else {
+                trans.slice(0, 15).forEach(t => {
+                    const hora = t.fecha.toDate().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+                    
+                    // Icono según método
+                    let iconClass = 'fa-shopping-bag';
+                    let iconColor = '#94a3b8'; // Gris default
+                    
+                    if(t.metodoPago === 'nfc') { iconClass = 'fa-wifi'; iconColor = '#3b82f6'; }
+                    else if(t.metodoPago === 'efectivo') { iconClass = 'fa-money-bill'; iconColor = '#10b981'; }
+                    else { iconClass = 'fa-exchange-alt'; iconColor = '#8b5cf6'; }
+
+                    // Badge de Pendiente (Rojo para resaltar en la lista)
+                    let statusColor = 'var(--text-main)'; 
+                    let statusLabel = '';
+
+                    if(t.estadoPago === 'pendiente') {
+                        statusColor = '#ef4444'; // Rojo para deuda en lista
+                        iconColor = '#ef4444';
+                        statusLabel = '<small style="color:#ef4444; display:block; font-size:9px;">(PENDIENTE)</small>';
+                    }
+
+                    listaHTML += `
+                    <div class="trans-item">
+                        <div class="trans-left">
+                            <div class="trans-icon-bg" style="color:${iconColor}">
+                                <i class="fas ${iconClass}"></i>
+                            </div>
+                            <div class="trans-info">
+                                <span class="trans-name">${t.pulsera || 'Cliente'}</span>
+                                <span class="trans-desc">${t.articulo || 'Varios'}</span>
+                            </div>
+                        </div>
+                        <div class="trans-right">
+                            <span class="trans-amount" style="color:${statusColor}">$${t.monto.toFixed(2)}</span>
+                            <span class="trans-time">${hora}</span>
+                            ${statusLabel}
+                        </div>
+                    </div>`;
+                });
+            }
+
+            // Inyectamos TODO (Dashboard + Lista)
+            const tabCorte = document.getElementById('tab-corte');
+            let innerContainer = document.getElementById('corte-inner-container');
+            
+            if(!innerContainer) {
+                const inputHTML = document.getElementById('filtroFechaCorte').outerHTML;
+                tabCorte.innerHTML = `<div class="section-title">📊 Mi Corte</div>
+                                      <div style="padding:0 5px;">${inputHTML}</div>
+                                      <div id="corte-inner-container"></div>`;
+                innerContainer = document.getElementById('corte-inner-container');
+                
+                document.getElementById('filtroFechaCorte').onchange = loadMyTransactions;
+                document.getElementById('filtroFechaCorte').classList.add('date-picker-styled');
+                // Restaurar valor de fecha si se perdió al reescribir HTML
+                document.getElementById('filtroFechaCorte').value = fechaStr;
+            }
+            
+            innerContainer.innerHTML = dashboardHTML + listaHTML;
+        });
+}
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'F1') { e.preventDefault(); cambiarMetodoPago('efectivo'); }
+            if (e.key === 'F2') { e.preventDefault(); cambiarMetodoPago('nfc'); }
+            if (e.code === 'Space' && carrito.length > 0 && e.target.tagName !== 'INPUT') {
+                e.preventDefault(); 
+                if (metodoPagoActual === 'nfc') startNFCRead();
+                else {
+                    const btnDirecto = document.querySelector('#seccionPagoDirecto button');
+                    if(btnDirecto && !btnDirecto.disabled) btnDirecto.click();
+                }
+            }
+        });
+        // --- LÓGICA LECTOR QR (VENDEDOR - CORREGIDA) ---
+let html5QrcodeScanner = null;
+
+// Forzamos que la función sea global usando 'window'
+window.cerrarScannerQR = function() {
+    // 1. Ocultar visualmente primero (para que se sienta rápido)
+    const modal = document.getElementById('modalQR');
+    if (modal) modal.classList.remove('active');
+    
+    // 2. Detener la cámara si existe y está corriendo
+    if (html5QrcodeScanner) {
+        try {
+            html5QrcodeScanner.stop().then(() => {
+                console.log("Cámara detenida correctamente");
+                html5QrcodeScanner.clear();
+            }).catch(err => {
+                console.warn("La cámara ya estaba detenida o hubo un error menor:", err);
+                html5QrcodeScanner.clear();
+            });
+        } catch (e) {
+            console.log("Error intentando detener cámara:", e);
+        }
+    }
+};
+
+window.iniciarEscanerQR = function(modo) {
+    // Aseguramos que el modal exista y lo mostramos
+    const modal = document.getElementById('modalQR');
+    if (!modal) { console.error("No encuentro el modalQR en el HTML"); return; }
+    
+    modal.classList.add('active');
+
+    // Limpiamos instancia anterior si existiera colgada
+    if (html5QrcodeScanner) { 
+        try { html5QrcodeScanner.clear(); } catch(e){}
+    }
+
+    // Creamos nueva instancia
+    html5QrcodeScanner = new Html5Qrcode("qr-reader");
+
+    const config = { 
+        fps: 10, 
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0
+    };
+    
+    // Iniciar cámara
+    html5QrcodeScanner.start({ facingMode: "environment" }, config, (decodedText) => {
+        // --- ÉXITO AL LEER ---
+        window.cerrarScannerQR(); // Cerramos inmediatamente
+        
+        const id = decodedText.trim();
+        playSound('scan');
+
+        // Lógica según el modo
+        if (modo === 'cobro_nfc') {
+            readPulseraData(id); 
+        } 
+        else if (modo === 'identificar_cliente') {
+            identificarClientePorQR(id);
+        }
+        else if (modo === 'consulta') {
+            leerPulseraConsulta(id); 
+        }
+
+    }).catch(err => {
+        // Error al iniciar (ej. permisos denegados)
+        console.log("Error cámara: ", err);
+        // Opcional: mostrar alerta si es error de permisos
+        if(err?.name === 'NotAllowedError') showError('⚠️ Permiso de cámara denegado');
+    });
+};
+        
+
+
+// Función auxiliar para llenar el nombre al escanear en Efectivo/Transferencia
+function identificarClientePorQR(id) {
+    db.collection('pulseras').where('id', '==', id).get().then(snap => {
+        if (snap.empty) {
+            showError('Usuario no encontrado');
+            return;
+        }
+        snap.forEach(doc => {
+            const p = doc.data();
+            if (p.bloqueada) { showError('Usuario Bloqueado'); return; }
+            
+            // Llenamos el input de nombre
+            const inputNombre = document.getElementById('nombreClienteTransferencia');
+            inputNombre.value = p.nombre;
+            
+            // Forzamos que se muestre el input aunque sea Efectivo, para que veas quién es
+            document.getElementById('inputsTransferencia').style.display = 'block';
+            
+            showSuccess(`Cliente identificado: ${p.nombre}`);
+        });
+    });
+}
+// --- CALCULADORA DE CAMBIO (VENDEDOR) ---
+function pedirMontoEfectivo(total) {
+    Swal.fire({
+        title: `Total: $${total.toFixed(2)}`,
+        text: "¿Con cuánto paga el cliente?",
+        input: 'number',
+        inputPlaceholder: 'Ej: 500',
+        inputAttributes: { min: total, step: '0.50' },
+        showCancelButton: true,
+        confirmButtonText: 'Calcular Cambio',
+        confirmButtonColor: '#f59e0b',
+        background: '#1e293b', color: '#fff',
+        inputValidator: (value) => {
+            if (!value) return 'Escribe una cantidad';
+            if (parseFloat(value) < total) return '¡Falta dinero! El monto es menor al total.';
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const pago = parseFloat(result.value);
+            const cambio = pago - total;
+
+            // Mostramos el cambio en GRANDE
+            Swal.fire({
+                title: `💰 Cambio: $${cambio.toFixed(2)}`,
+                html: `<p style="font-size:18px; color:#cbd5e1;">Cobra <strong>$${total.toFixed(2)}</strong> y devuelve <strong>$${cambio.toFixed(2)}</strong></p>`,
+                icon: 'success',
+                confirmButtonText: '✅ Confirmar Venta',
+                confirmButtonColor: '#22c55e',
+                showCancelButton: true,
+                cancelButtonText: 'Corregir',
+                background: '#1e293b', color: '#fff'
+            }).then((resFinal) => {
+                if(resFinal.isConfirmed) {
+                    // Si confirma, procedemos a guardar la venta
+                    const eventId = document.getElementById('eventSelect').value;
+                    const carritoId = Date.now().toString();
+                    
+                    // Llamamos directo a registrarTransaccion con los datos de efectivo
+                    registrarTransaccion(eventId, 'pago_efectivo', 'Venta Mostrador (Efectivo)', 0, 'efectivo', 'pagado', carritoId);
+                }
+            });
+        }
+    });
+}
+    </script>
+    <div class="modal-overlay" id="modalQR" onclick="cerrarScannerQR()">
+    <div class="modal-box" onclick="event.stopPropagation()" style="max-width: 500px;">
+        <div class="modal-header">
+            <h3>📸 Escanear QR</h3>
+            <button class="modal-close" onclick="cerrarScannerQR()">×</button>
+        </div>
+        <div class="modal-body" style="text-align: center;">
+            <div id="qr-reader" style="width: 100%;"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary" onclick="cerrarScannerQR()">Cancelar</button>
+        </div>
+    </div>
+</div>
+</body>
+</html>

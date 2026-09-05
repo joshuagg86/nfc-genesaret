@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFC Genesaret - Sistema de Cobro</title>
+    <link rel="manifest" href="manifest.json">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta name="theme-color" content="#003d7a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #003d7a 0%, #001a2e 50%, #0d47a1 100%);
+            min-height: 100vh;
+            display: flex; justify-content: center; align-items: center; color: #e2e8f0;
+        }
+        .container { width: 100%; max-width: 420px; padding: 20px; }
+        .card {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 16px; padding: 40px;
+            backdrop-filter: blur(10px); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        .header { text-align: center; margin-bottom: 40px; }
+        .logo { width: 80px; height: 80px; margin: 0 auto 20px; display: block; }
+        h1 {
+            font-size: 28px; margin-bottom: 8px;
+            background: linear-gradient(135deg, #f59e0b, #f97316);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .subtitle { color: #94a3b8; font-size: 14px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-size: 14px; color: #cbd5e1; font-weight: 500; }
+        input[type="email"], input[type="password"], input[type="text"], select {
+            width: 100%; padding: 12px 16px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            border-radius: 8px; color: #e2e8f0; font-size: 14px; transition: all 0.3s ease;
+        }
+        input:focus, select:focus {
+            outline: none; border-color: #f59e0b; background: rgba(15, 23, 42, 0.8);
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+        }
+        button {
+            width: 100%; padding: 12px; border: none; border-radius: 8px;
+            font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+            color: white;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(245, 158, 11, 0.3); }
+        .btn-link { background: none; color: #f59e0b; padding: 0; text-decoration: none; cursor: pointer; }
+        .btn-link:hover { text-decoration: underline; }
+        
+        .error, .success {
+            padding: 12px; border-radius: 8px; margin-bottom: 20px;
+            font-size: 13px; display: none;
+        }
+        .error { background: rgba(239, 68, 68, 0.1); color: #fca5a5; border-left: 4px solid #ef4444; }
+        .success { background: rgba(34, 197, 94, 0.1); color: #86efac; border-left: 4px solid #22c55e; }
+        .show { display: block; }
+        
+        .toggle-form { text-align: center; margin-top: 20px; font-size: 13px; }
+        .form-section { display: none; }
+        .form-section.active { display: block; }
+        
+        .loading { display: none; text-align: center; color: #94a3b8; font-size: 13px; margin-top: 15px; }
+        .spinner {
+            display: inline-block; width: 16px; height: 16px;
+            border: 2px solid rgba(245, 158, 11, 0.3); border-top-color: #f59e0b;
+            border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 8px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .forgot-pass { text-align: right; margin-bottom: 15px; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <script>
+        (function() {
+            const APP_VERSION = '1.2'; // Incrementado para forzar actualización
+            const savedVersion = localStorage.getItem('app_version');
+            if (savedVersion !== APP_VERSION) {
+                localStorage.setItem('app_version', APP_VERSION);
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.getRegistrations().then(r => r.forEach(reg => reg.unregister()));
+                }
+                window.location.reload(true);
+            }
+        })();
+    </script>
+
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <img src="logo.png" alt="Logo" class="logo">
+                <h1>Portal Genesaret</h1>
+                <p class="subtitle">Gestión de Accesos y Pagos</p>
+            </div>
+
+            <div class="error" id="error"></div>
+            <div class="success" id="success"></div>
+
+            <div class="form-section active" id="loginForm">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="loginEmail" placeholder="tu@email.com">
+                </div>
+                <div class="form-group" style="position: relative;">
+                    <label>Contraseña</label>
+                    <input type="password" id="loginPassword" placeholder="Ingresa tu contraseña" style="padding-right: 40px;">
+                    
+                    <i class="fas fa-eye" id="togglePasswordBtn" onclick="togglePasswordVisibility()" 
+                       style="position: absolute; right: 15px; top: 38px; cursor: pointer; color: #94a3b8; font-size: 16px; z-index: 10;">
+                    </i>
+                </div>
+                
+                <div class="forgot-pass">
+                    <button type="button" class="btn-link" onclick="recuperarPassword()">¿Olvidaste tu contraseña?</button>
+                </div>
+
+                <button class="btn-primary" onclick="login()">Iniciar Sesión</button>
+                <div class="toggle-form">
+                    ¿No tienes cuenta? <a class="btn-link" onclick="toggleForms()">Regístrate aquí</a>
+                </div>
+            </div>
+            <div id="loginLoader" style="display: none; text-align: center; padding: 40px 0;">
+                <img src="logo.png" alt="Cargando" style="width: 70px; height: 70px; animation: pulse 1s infinite;">
+                <h3 style="margin-top: 15px; color: #f59e0b; font-weight: 700;">Verificando...</h3>
+                <p style="color: #94a3b8; font-size: 14px;">Estamos validando tus credenciales</p>
+            </div>
+
+            <div class="form-section" id="registerForm">
+                <div class="form-group">
+                    <label>Nombre Completo</label>
+                    <input type="text" id="registerName" placeholder="Tu nombre">
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="registerEmail" placeholder="tu@email.com">
+                </div>
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <input type="password" id="registerPassword" placeholder="••••••••">
+                </div>
+                <div class="form-group">
+                    <label>Confirmar Contraseña</label>
+                    <input type="password" id="registerConfirm" placeholder="••••••••">
+                </div>
+
+                <button class="btn-primary" onclick="register()">Crear Cuenta</button>
+                <div class="toggle-form">
+                    ¿Ya tienes cuenta? <a class="btn-link" onclick="toggleForms()">Inicia sesión aquí</a>
+                </div>
+            </div>
+
+            <div class="loading" id="loading">
+                <span class="spinner"></span><span>Procesando...</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+    <script src="config.js?v=1.2"></script>
+
+    <script>
+        // Utilidades UI
+        const showError = (msg) => {
+            const el = document.getElementById('error');
+            el.textContent = msg; el.classList.add('show');
+            setTimeout(() => el.classList.remove('show'), 5000);
+        };
+        const showSuccess = (msg) => {
+            const el = document.getElementById('success');
+            el.textContent = msg; el.classList.add('show');
+            setTimeout(() => el.classList.remove('show'), 5000);
+        };
+        const showLoading = (show) => document.getElementById('loading').classList.toggle('show', show);
+        const toggleForms = () => {
+            document.getElementById('loginForm').classList.toggle('active');
+            document.getElementById('registerForm').classList.toggle('active');
+            document.getElementById('error').classList.remove('show');
+        };
+
+        function login() {
+        // 1. OBTENER DATOS (Con tus IDs correctos)
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+
+        // 2. VALIDAR
+        if (!email || !password) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Faltan datos',
+                text: 'Por favor ingresa tu correo y contraseña',
+                background: '#1e293b',
+                color: '#fff',
+                confirmButtonColor: '#f59e0b'
+            });
+            return;
+        }
+
+        // 3. ACTIVAR EFECTO DE CARGA (Ocultar Form -> Mostrar Loader)
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('loginLoader').style.display = 'block';
+
+        // 4. INTENTAR INICIAR SESIÓN
+        firebase.auth().signInWithEmailAndPassword(email, password)
+            .then((userCredential) => {
+                // Éxito: Buscamos el rol en la base de datos
+                return db.collection('usuarios').doc(userCredential.user.uid).get();
+            })
+            .then((doc) => {
+                if (doc.exists) {
+                    const role = doc.data().role;
+                    const name = doc.data().name;
+                    
+                    // Guardar sesión local
+                    localStorage.setItem('userRole', role);
+                    localStorage.setItem('userName', name);
+                    localStorage.setItem('userId', doc.id);
+
+                    // Redirigir
+                    if (role === 'admin') {
+                        window.location.href = 'admin.html';
+                    } else {
+                        window.location.href = 'vendedor.html';
+                    }
+                } else {
+                    throw new Error("Usuario sin rol asignado.");
+                }
+            })
+            .catch((error) => {
+                // 5. SI FALLA: RESTAURAR EL FORMULARIO
+                // Ocultamos el Loader y volvemos a mostrar el Formulario
+                document.getElementById('loginLoader').style.display = 'none';
+                document.getElementById('loginForm').style.display = 'block';
+
+                console.error(error);
+                
+                // Mensajes de error amigables
+                let msg = "Error al iniciar sesión";
+                if(error.code === 'auth/wrong-password') msg = "La contraseña es incorrecta";
+                if(error.code === 'auth/user-not-found') msg = "Este correo no está registrado";
+                if(error.code === 'auth/invalid-email') msg = "El correo no es válido";
+                if(error.code === 'auth/too-many-requests') msg = "Muchos intentos fallidos. Espera un momento.";
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'No pudimos entrar',
+                    text: msg,
+                    background: '#1e293b',
+                    color: '#fff',
+                    confirmButtonColor: '#ef4444'
+                });
+            });
+    }
+        function guardarSesion(uid, role, name) {
+            localStorage.setItem('userId', uid);
+            localStorage.setItem('userRole', role);
+            localStorage.setItem('userName', name);
+            
+            setTimeout(() => {
+                window.location.href = role === 'admin' ? 'admin.html' : 'vendedor.html';
+            }, 500);
+        }
+
+        // ---  RECUPERAR CONTRASEÑA (CON CONFIRMACIÓN) ---
+        function recuperarPassword() {
+            const email = document.getElementById('loginEmail').value.trim();
+            
+            if (!email) {
+                showError('⚠️ Por favor, escribe tu correo en el campo de Email primero.');
+                document.getElementById('loginEmail').focus();
+                return;
+            }
+            
+            // CONFIRMACIÓN DE SEGURIDAD
+            if(confirm(`¿Estás seguro que deseas restablecer la contraseña para: ${email}?\n\nTe enviaremos un correo.`)) {
+                showLoading(true);
+                auth.sendPasswordResetEmail(email)
+                    .then(() => {
+                        showSuccess('✅ Enlace enviado. Revisa tu correo (y la carpeta de Spam).');
+                    })
+                    .catch(e => {
+                        if(e.code === 'auth/user-not-found') showError('Este correo no está registrado.');
+                        else showError(e.message);
+                    })
+                    .finally(() => showLoading(false));
+            }
+        }
+
+        // --- 3. REGISTRO ---
+        function register() {
+            const name = document.getElementById('registerName').value.trim();
+            const email = document.getElementById('registerEmail').value.trim();
+            const password = document.getElementById('registerPassword').value;
+            const confirm = document.getElementById('registerConfirm').value;
+
+            if (!name || !email || !password) return showError('Completa los campos');
+            if (password !== confirm) return showError('Las contraseñas no coinciden');
+            if (password.length < 6) return showError('Mínimo 6 caracteres');
+
+            showLoading(true);
+
+            // Usar app secundaria para no cerrar sesión si ya hay una (aunque aquí no afecta tanto)
+            const secondaryApp = firebase.initializeApp(firebase.app().options, 'Secondary');
+            
+            secondaryApp.auth().createUserWithEmailAndPassword(email, password)
+                .then(cred => {
+                    return db.collection('usuarios').doc(cred.user.uid).set({
+                        name: name, email: email, role: 'vendedor', createdAt: new Date(), activo: true
+                    });
+                })
+                .then(() => {
+                    secondaryApp.delete();
+                    showSuccess('✅ Cuenta creada. Ya puedes iniciar sesión.');
+                    toggleForms();
+                    document.getElementById('loginEmail').value = email;
+                })
+                .catch(error => {
+                    secondaryApp.delete();
+                    if (error.code === 'auth/email-already-in-use') {
+                        showError('⚠️ Este correo ya existe. Si olvidaste la clave, usa "Olvidé mi contraseña"');
+                    } else {
+                        showError(error.message);
+                    }
+                })
+                .finally(() => showLoading(false));
+        }
+
+        // --- MANEJO DE ESTADO ---
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                // En lugar de leer localStorage (que puede estar viejo),
+                // consultamos el rol REAL en la base de datos.
+                db.collection('usuarios').doc(user.uid).get().then(doc => {
+                    if (doc.exists) {
+                        const realRole = doc.data().role;
+                        
+                        // Actualizamos la memoria para corregir cualquier error
+                        localStorage.setItem('userRole', realRole);
+                        localStorage.setItem('userId', user.uid);
+                        
+                        // Redirigimos basándonos EXCLUSIVAMENTE en la base de datos
+                        if (realRole === 'admin') {
+                            window.location.replace('admin.html');
+                        } else if (realRole === 'vendedor') {
+                            window.location.replace('vendedor.html');
+                        }
+                    } else {
+                        // Si el usuario no existe en la BD (error raro), cerramos sesión por seguridad
+                        console.error("Usuario autenticado pero no encontrado en BD");
+                        auth.signOut();
+                    }
+                }).catch(error => {
+                    console.error("Error verificando rol:", error);
+                });
+            }
+            // Si no hay usuario, se queda en el login esperando (correcto)
+        });
+        
+        // Enter para login
+        document.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const isLogin = document.getElementById('loginForm').classList.contains('active');
+                isLogin ? login() : register();
+            }
+        });
+        // --- FUNCIÓN PARA VER/OCULTAR CONTRASEÑA ---
+        function togglePasswordVisibility() {
+            // Ahora buscamos 'loginPassword'
+            const input = document.getElementById('loginPassword');
+            const icon = document.getElementById('togglePasswordBtn');
+            
+            if (input.type === 'password') {
+                input.type = 'text'; 
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash'); 
+            } else {
+                input.type = 'password'; 
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye'); 
+            }
+        }
+    </script>
+</body>
+</html>
