@@ -545,10 +545,24 @@ function showError(message) {
         }
 
         function loadProducts() {
-            db.collection('eventos').orderBy('createdAt', 'desc').onSnapshot(snap => {
-                let html = '<option value="">Selecciona un evento</option>';
-                snap.forEach(doc => html += `<option value="${doc.id}">${doc.data().nombre}</option>`);
-                document.getElementById('eventSelect').innerHTML = html;
+            db.collection('eventos').where('activo', '==', true).get().then(snap => {
+                let html = '';
+                let primerEventoId = '';
+                
+                snap.forEach((doc, idx) => {
+                    if (idx === 0) primerEventoId = doc.id;
+                    html += `<option value="${doc.id}">${doc.data().nombre}</option>`;
+                });
+                
+                const sel = document.getElementById('eventSelect');
+                if (sel) {
+                    sel.innerHTML = html;
+                    // Si hay evento activo, lo selecciona solo y carga el catálogo de inmediato
+                    if (primerEventoId) {
+                        sel.value = primerEventoId;
+                        cargarProductosPorEvento();
+                    }
+                }
             });
         }
         function separarEmoji(texto) {
@@ -791,12 +805,39 @@ function showError(message) {
         function readPulseraData(id) {
             db.collection('pulseras').where('id', '==', id).get().then(snap => {
                 if (snap.empty) { showError('Pulsera no encontrada'); resetScan(); return; }
-                snap.forEach(doc => {
-                    const p = doc.data(); if (p.bloqueada) { showError('🔒 Bloqueada'); resetScan(); return; }
-                    scannedPulsera = { id: doc.id, nombre: p.nombre, saldo: p.saldoActual }; 
-                    playSound('scan'); mostrarPulseraDetectada();
-                });
+                
+                const doc = snap.docs[0];
+                const p = doc.data();
+                if (p.bloqueada) { showError('🔒 Pulsera Bloqueada'); resetScan(); return; }
+
+                scannedPulsera = { id: doc.id, nombre: p.nombre, saldo: p.saldoActual };
+                
+                // ¡COBRO AUTOMÁTICO INMEDIATO!
+                const total = obtenerTotalCarrito();
+                if (total > 0) {
+                    if (scannedPulsera.saldo < total) {
+                        showError(`Saldo insuficiente ($${scannedPulsera.saldo.toFixed(2)})`);
+                        resetScan();
+                        return;
+                    }
+                    // Disparar venta directa
+                    ejecutarCobroInmediatoNFC();
+                } else {
+                    // Si el carrito está vacío, solo muestra el saldo
+                    mostrarPulseraDetectada();
+                }
             });
+        }
+        function ejecutarCobroInmediatoNFC() {
+            const total = obtenerTotalCarrito();
+            const eventId = document.getElementById('eventSelect').value;
+            const carritoId = Date.now().toString();
+            const nuevoSaldo = scannedPulsera.saldo - total;
+
+            // Actualizar pulsera y guardar venta de un solo golpe
+            db.collection('pulseras').doc(scannedPulsera.id).update({ saldoActual: nuevoSaldo }).then(() => {
+                registrarTransaccion(eventId, scannedPulsera.id, scannedPulsera.nombre, nuevoSaldo, 'nfc', 'pagado', carritoId);
+            }).catch(e => showError(e.message));
         }
         function mostrarPulseraDetectada() {
             document.getElementById('saldoInfo').classList.add('show'); document.getElementById('saldoActual').textContent = scannedPulsera.saldo.toFixed(2);
@@ -807,13 +848,25 @@ function showError(message) {
             document.getElementById('saldoInfo').classList.remove('show'); document.getElementById('simulatedPulsera').value = '';
         }
         function selectSimulatedPulsera() {
-            const val = document.getElementById('simulatedPulsera').value; if (!val) { resetScan(); return; }
-            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const val = document.getElementById('simulatedPulsera').value;
+            if (!val) { resetScan(); return; }
             const [id, nom, sal] = val.split('|');
+
             db.collection('pulseras').doc(id).get().then(doc => {
-                const p = doc.data(); if(p.bloqueada) { showError('🔒 Bloqueada'); document.getElementById('simulatedPulsera').value=''; return; }
-                scannedPulsera = { id, nombre: nom, saldo: parseFloat(sal) }; 
-                playSound('scan'); mostrarPulseraDetectada();
+                const p = doc.data();
+                if (p.bloqueada) { showError('🔒 Bloqueada'); document.getElementById('simulatedPulsera').value=''; return; }
+                
+                scannedPulsera = { id, nombre: nom, saldo: parseFloat(sal) };
+                const total = obtenerTotalCarrito();
+                if (total > 0) {
+                    if (scannedPulsera.saldo < total) {
+                        showError(`Saldo insuficiente ($${scannedPulsera.saldo.toFixed(2)})`);
+                        return;
+                    }
+                    ejecutarCobroInmediatoNFC();
+                } else {
+                    mostrarPulseraDetectada();
+                }
             });
         }
         function startNFCReadConsulta() {
@@ -1117,176 +1170,110 @@ function showError(message) {
         }
 
         // --- DASHBOARD ---
-        function loadMyTransactions() {
-    if (!currentUserId) return;
+function loadMyTransactions() {
+    const myId = currentUserId || localStorage.getItem('userId');
+    if (!myId) return;
 
     const inputFecha = document.getElementById('filtroFechaCorte');
-    let fechaStr = inputFecha.value;
-
-    // --- LÓGICA DE FECHA (Mantenemos tu corrección) ---
     const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const hoyStr = `${year}-${month}-${day}`;
+    const hoyStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-    if (!fechaStr || fechaStr > hoyStr) {
-        fechaStr = hoyStr;
-        inputFecha.value = fechaStr; 
-    }
-    
-    // Aplicamos estilo al input de fecha
-    inputFecha.classList.add('date-picker-styled');
+    if (!inputFecha.value) inputFecha.value = hoyStr;
+    const fechaStr = inputFecha.value;
 
-    const startOfDay = new Date(fechaStr + 'T00:00:00');
-    const endOfDay = new Date(fechaStr + 'T23:59:59');
+    const startOfDay = new Date(fechaStr + 'T00:00:00').getTime();
+    const endOfDay = new Date(fechaStr + 'T23:59:59').getTime();
 
-    if (unsubscribeTransacciones) { unsubscribeTransacciones(); }
+    if (unsubscribeTransacciones) unsubscribeTransacciones();
 
+    // Consulta limpia: SOLO por vendedor para evitar bloqueo de índices de Firebase
     unsubscribeTransacciones = db.collection('transacciones')
-        .where('vendedorId', '==', currentUserId)
-        .where('fecha', '>=', startOfDay)
-        .where('fecha', '<=', endOfDay)
-        .orderBy('fecha', 'desc')
+        .where('vendedorId', '==', myId)
         .onSnapshot(snap => {
             const trans = [];
-            snap.forEach(d => trans.push(d.data()));
-
-            let total = 0, subNFC = 0, subEfe = 0, subTrans = 0, subPend = 0;
             
-            // 1. Calculamos Totales primero
-            trans.forEach(t => {
-                // Sumamos al total general solo lo cobrado realmente (Opcional: Si quieres que el pendiente cuente en el total, déjalo así. Si no, resta subPend al final)
-                total += t.monto; 
-                
-                if (t.metodoPago === 'efectivo') {
-                    subEfe += t.monto;
-                } else if (t.metodoPago === 'transferencia') {
-                    // AQUÍ ESTÁ LA LÓGICA QUE YA TENÍAS (Correcta)
-                    if (t.estadoPago === 'pendiente') {
-                        subPend += t.monto;
-                    } else {
-                        subTrans += t.monto;
-                    }
-                } else {
-                    subNFC += t.monto;
+            snap.forEach(d => {
+                const data = d.data();
+                const fMillis = data.fecha?.toDate ? data.fecha.toDate().getTime() : new Date(data.fecha || 0).getTime();
+                // Filtramos el día en memoria
+                if (fMillis >= startOfDay && fMillis <= endOfDay) {
+                    trans.push({ id: d.id, ...data, millis: fMillis });
                 }
             });
 
-            // 2. Construimos la UI "Fintech"
-            // NOTA: Agregué 'style="grid-template-columns: repeat(2, 1fr);"' para que se vea en cuadrícula de 2x2
-            const container = document.getElementById('transactionsList'); 
+            // Ordenar del más reciente al más antiguo
+            trans.sort((a, b) => b.millis - a.millis);
+
+            let total = 0, subNFC = 0, subEfe = 0, subTrans = 0, subPend = 0;
+            const articulosConteo = {};
             
-            // A. Header con Totales (Tarjetas)
-            let dashboardHTML = `
-                <div class="balance-card">
-                    <div class="balance-title">Ventas Totales (${fechaStr})</div>
-                    <div class="balance-amount">$${total.toFixed(2)}</div>
-                    <div style="font-size:12px; color:var(--text-muted);">${trans.length} movimientos hoy</div>
-                </div>
+            trans.forEach(t => {
+                const m = parseFloat(t.monto) || 0;
+                total += m;
+                if (t.metodoPago === 'efectivo') subEfe += m;
+                else if (t.metodoPago === 'transferencia') {
+                    if (t.estadoPago === 'pendiente') subPend += m;
+                    else subTrans += m;
+                } else subNFC += m;
 
-                <div class="corte-grid" style="grid-template-columns: repeat(2, 1fr); gap: 10px;">
-                    
-                    <div class="corte-box stat-nfc">
-                        <div class="corte-icon"><i class="fas fa-wifi"></i></div>
-                        <div class="corte-label">NFC</div>
-                        <div class="corte-value">$${subNFC.toFixed(0)}</div>
-                    </div>
+                if (t.articulo) {
+                    articulosConteo[t.articulo] = (articulosConteo[t.articulo] || 0) + (t.cantidad || 1);
+                }
+            });
 
-                    <div class="corte-box stat-efectivo">
-                        <div class="corte-icon"><i class="fas fa-money-bill-wave"></i></div>
-                        <div class="corte-label">Efectivo</div>
-                        <div class="corte-value">$${subEfe.toFixed(0)}</div>
-                    </div>
+            // Actualizar tarjetas
+            document.getElementById('totalVentas').textContent = total.toFixed(2);
+            document.getElementById('ventasCount').textContent = trans.length;
+            document.getElementById('totalNFC').textContent = subNFC.toFixed(0);
+            document.getElementById('totalEfectivo').textContent = subEfe.toFixed(0);
+            document.getElementById('totalTransf').textContent = subTrans.toFixed(0);
+            document.getElementById('totalPendiente').textContent = subPend.toFixed(0);
 
-                    <div class="corte-box stat-transf">
-                        <div class="corte-icon"><i class="fas fa-university"></i></div>
-                        <div class="corte-label">Transf.</div>
-                        <div class="corte-value">$${subTrans.toFixed(0)}</div>
-                    </div>
+            // Renderizar lista
+            const listCont = document.getElementById('transactionsList');
+            if (!listCont) return;
 
-                    <div class="corte-box stat-pendiente" style="border-color: rgba(234, 179, 8, 0.3); background: rgba(234, 179, 8, 0.05);">
-                        <div class="corte-icon" style="color: #eab308;"><i class="fas fa-clock"></i></div>
-                        <div class="corte-label" style="color: #eab308;">Por Cobrar</div>
-                        <div class="corte-value" style="color: #eab308;">$${subPend.toFixed(0)}</div>
-                    </div>
-
-                </div>
-                
-                <div class="trans-list-header">
-                    <span class="trans-list-title">Historial Reciente</span>
-                    <small style="color:var(--text-muted)">Últimos 15</small>
-                </div>
-            `;
-
-            // B. Lista de Transacciones Estilizada
-            let listaHTML = '';
             if (trans.length === 0) {
-                listaHTML = `
-                <div style="text-align:center; padding:40px; color:var(--text-muted);">
-                    <i class="fas fa-receipt" style="font-size:40px; margin-bottom:10px; opacity:0.3;"></i>
-                    <p>Sin ventas registradas hoy</p>
+                listCont.innerHTML = '<p style="color:var(--text-muted); font-size:12px; text-align:center; padding:15px;">Sin ventas registradas en esta fecha</p>';
+                return;
+            }
+
+            let html = '';
+            trans.slice(0, 15).forEach(t => {
+                const dObj = new Date(t.millis);
+                const hora = dObj.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+                let metodoBadge = (t.metodoPago || 'NFC').toUpperCase();
+                let estiloMonto = 'color: #f59e0b;';
+
+                if (t.estadoPago === 'pendiente') {
+                    metodoBadge += ' (PENDIENTE)';
+                    estiloMonto = 'color: #ef4444;';
+                }
+
+                html += `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.05); font-size:12px;">
+                    <div>
+                        <strong>${t.articulo || 'Varios'}</strong> <span style="color:var(--text-muted)">(${t.pulsera || 'Cliente'})</span>
+                        <div style="font-size:10px; color:var(--text-muted)">${hora} · ${metodoBadge}</div>
+                    </div>
+                    <div style="font-weight:bold; ${estiloMonto}">$${(t.monto || 0).toFixed(2)}</div>
                 </div>`;
-            } else {
-                trans.slice(0, 15).forEach(t => {
-                    const hora = t.fecha.toDate().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
-                    
-                    // Icono según método
-                    let iconClass = 'fa-shopping-bag';
-                    let iconColor = '#94a3b8'; // Gris default
-                    
-                    if(t.metodoPago === 'nfc') { iconClass = 'fa-wifi'; iconColor = '#3b82f6'; }
-                    else if(t.metodoPago === 'efectivo') { iconClass = 'fa-money-bill'; iconColor = '#10b981'; }
-                    else { iconClass = 'fa-exchange-alt'; iconColor = '#8b5cf6'; }
+            });
+            listCont.innerHTML = html;
 
-                    // Badge de Pendiente (Rojo para resaltar en la lista)
-                    let statusColor = 'var(--text-main)'; 
-                    let statusLabel = '';
-
-                    if(t.estadoPago === 'pendiente') {
-                        statusColor = '#ef4444'; // Rojo para deuda en lista
-                        iconColor = '#ef4444';
-                        statusLabel = '<small style="color:#ef4444; display:block; font-size:9px;">(PENDIENTE)</small>';
-                    }
-
-                    listaHTML += `
-                    <div class="trans-item">
-                        <div class="trans-left">
-                            <div class="trans-icon-bg" style="color:${iconColor}">
-                                <i class="fas ${iconClass}"></i>
-                            </div>
-                            <div class="trans-info">
-                                <span class="trans-name">${t.pulsera || 'Cliente'}</span>
-                                <span class="trans-desc">${t.articulo || 'Varios'}</span>
-                            </div>
-                        </div>
-                        <div class="trans-right">
-                            <span class="trans-amount" style="color:${statusColor}">$${t.monto.toFixed(2)}</span>
-                            <span class="trans-time">${hora}</span>
-                            ${statusLabel}
-                        </div>
-                    </div>`;
+            // Top productos
+            const topCont = document.getElementById('ventasPorArticulo');
+            if (topCont) {
+                const entries = Object.entries(articulosConteo).sort((a, b) => b[1] - a[1]).slice(0, 5);
+                let topHtml = '<div style="display:flex; flex-wrap:wrap; gap:8px;">';
+                entries.forEach(([art, cant]) => {
+                    topHtml += `<span style="background:rgba(255,255,255,0.05); border:1px solid var(--border-color); padding:3px 8px; border-radius:4px; font-size:11px;">${art}: <strong>${cant}</strong></span>`;
                 });
+                topCont.innerHTML = topHtml + '</div>';
             }
-
-            // Inyectamos TODO (Dashboard + Lista)
-            const tabCorte = document.getElementById('tab-corte');
-            let innerContainer = document.getElementById('corte-inner-container');
-            
-            if(!innerContainer) {
-                const inputHTML = document.getElementById('filtroFechaCorte').outerHTML;
-                tabCorte.innerHTML = `<div class="section-title">📊 Mi Corte</div>
-                                      <div style="padding:0 5px;">${inputHTML}</div>
-                                      <div id="corte-inner-container"></div>`;
-                innerContainer = document.getElementById('corte-inner-container');
-                
-                document.getElementById('filtroFechaCorte').onchange = loadMyTransactions;
-                document.getElementById('filtroFechaCorte').classList.add('date-picker-styled');
-                // Restaurar valor de fecha si se perdió al reescribir HTML
-                document.getElementById('filtroFechaCorte').value = fechaStr;
-            }
-            
-            innerContainer.innerHTML = dashboardHTML + listaHTML;
+        }, err => {
+            console.error("Error:", err);
+            document.getElementById('transactionsList').innerHTML = `<p style="color:red; font-size:12px;">Error: ${err.message}</p>`;
         });
 }
 
@@ -1302,30 +1289,31 @@ function showError(message) {
                 }
             }
         });
-        // --- LÓGICA LECTOR QR (VENDEDOR - CORREGIDA) ---
-let html5QrcodeScanner = null;
 
-// Forzamos que la función sea global usando 'window'
-window.cerrarScannerQR = function() {
-    // 1. Ocultar visualmente primero (para que se sienta rápido)
-    const modal = document.getElementById('modalQR');
-    if (modal) modal.classList.remove('active');
-    
-    // 2. Detener la cámara si existe y está corriendo
-    if (html5QrcodeScanner) {
-        try {
-            html5QrcodeScanner.stop().then(() => {
-                console.log("Cámara detenida correctamente");
-                html5QrcodeScanner.clear();
-            }).catch(err => {
-                console.warn("La cámara ya estaba detenida o hubo un error menor:", err);
-                html5QrcodeScanner.clear();
-            });
-        } catch (e) {
-            console.log("Error intentando detener cámara:", e);
-        }
-    }
-};
+        // --- LÓGICA LECTOR QR (VENDEDOR - CORREGIDA) ---
+        let html5QrcodeScanner = null;
+
+        // Forzamos que la función sea global usando 'window'
+        window.cerrarScannerQR = function() {
+            // 1. Ocultar visualmente primero (para que se sienta rápido)
+            const modal = document.getElementById('modalQR');
+            if (modal) modal.classList.remove('active');
+            
+            // 2. Detener la cámara si existe y está corriendo
+            if (html5QrcodeScanner) {
+                try {
+                    html5QrcodeScanner.stop().then(() => {
+                        console.log("Cámara detenida correctamente");
+                        html5QrcodeScanner.clear();
+                    }).catch(err => {
+                        console.warn("La cámara ya estaba detenida o hubo un error menor:", err);
+                        html5QrcodeScanner.clear();
+                    });
+                } catch (e) {
+                    console.log("Error intentando detener cámara:", e);
+                }
+            }
+        };
 
 window.iniciarEscanerQR = function(modo) {
     // Aseguramos que el modal exista y lo mostramos

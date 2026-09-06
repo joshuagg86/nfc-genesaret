@@ -1640,3 +1640,226 @@ body.light-mode .mobile-menu-header h2 {
 #modalPOSAdmin {
     display: none !important;
 }
+
+/* =========================================================
+   UI MÓVIL ESTILO APP POS (BOTTOM DOCK DINÁMICO)
+   ========================================================= */
+@media (max-width: 768px) {
+    body {
+        background: #0b1329 !important;
+        overflow-x: hidden;
+    }
+
+    /* Espacio inferior para que el panel de cobro fijo no tape productos */
+    .container {
+        padding: 8px 10px 240px 10px !important;
+        max-width: 100% !important;
+    }
+
+    header {
+        padding: 8px 12px !important;
+        margin-bottom: 6px !important;
+    }
+
+    .sub-nav-container {
+        margin-bottom: 8px !important;
+        gap: 4px !important;
+    }
+
+    .sub-tab-btn {
+        padding: 6px 4px !important;
+        font-size: 11px !important;
+    }
+
+    /* 1. SECCIÓN SUPERIOR: CATÁLOGO Y SELECTOR DE EVENTO */
+    .pos-left {
+        width: 100% !important;
+    }
+
+    .pos-left .card {
+        background: transparent !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+    }
+
+    .pos-left .card h2 {
+        display: none !important; /* Título redundante fuera */
+    }
+
+    /* Selector de evento: Compacto y visible */
+    #eventSelect {
+        display: block !important;
+        width: 100% !important;
+        padding: 8px 12px !important;
+        font-size: 13px !important;
+        border-radius: 8px !important;
+        margin-bottom: 8px !important;
+        background: #1e293b !important;
+        color: #f8fafc !important;
+        border: 1px solid rgba(245, 158, 11, 0.4) !important;
+    }
+
+    /* Buscador compacto */
+    .search-wrapper {
+        margin-bottom: 8px !important;
+    }
+
+    .search-wrapper input {
+        padding: 8px 10px !important;
+        font-size: 12px !important;
+    }
+
+    /* Cuadrícula de productos */
+    .productos-grid {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+    }
+
+    .producto-card {
+        background: #1e293b !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 14px !important;
+        padding: 14px 8px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        min-height: 120px !important;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3) !important;
+        cursor: pointer;
+    }
+
+    .prod-emoji {
+        font-size: 36px !important;
+        margin-bottom: 4px !important;
+    }
+
+    .prod-nombre {
+        font-size: 13px !important;
+        font-weight: 700 !important;
+        color: #f8fafc !important;
+        text-align: center !important;
+    }
+
+    .prod-precio {
+        font-size: 15px !important;
+        font-weight: 800 !important;
+        color: #f59e0b !important;
+    }
+
+    /* 2. BARRA DE COBRO FIJA ABAJO (Colapsada a su contenido exacto) */
+    .pos-right {
+        position: fixed !important;
+        top: auto !important;          /* ⬅️ CLAVE: Evita que se estire hacia el techo */
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        height: auto !important;       /* ⬅️ CLAVE: Mide estrictamente lo que ocupan los botones */
+        min-height: auto !important;
+        background: #151f38 !important;
+        border-top: 2px solid #f59e0b !important;
+        border-radius: 18px 18px 0 0 !important;
+        padding: 12px 14px 16px 14px !important;
+        box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.6) !important;
+        z-index: 1000 !important;
+        box-sizing: border-box !important;
+    }
+
+    .carrito-header {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        margin-bottom: 8px !important;
+    }
+
+    .carrito-header h4 {
+        font-size: 13px !important;
+        color: #94a3b8 !important;
+        margin: 0 !important;
+    }
+
+    .total-badge {
+        font-size: 20px !important;
+        font-weight: 800 !important;
+        color: #f59e0b !important;
+    }
+
+    /* Ocultar items detallados para no inflar la barra en móvil */
+    .carrito-items {
+        display: none !important;
+    }
+
+    /* Selector de Métodos de Pago */
+    .payment-methods {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 6px !important;
+        margin-bottom: 8px !important;
+    }
+
+    .pm-btn {
+        padding: 7px 0 !important;
+        font-size: 11px !important;
+        border-radius: 6px !important;
+    }
+
+    /* 3. BOTONES DE LECTURA NFC Y QR RESTAURADOS Y COMPACTOS */
+    #seccionNFC {
+        margin-bottom: 6px !important;
+    }
+
+    .nfc-reader {
+        display: block !important;
+        padding: 6px !important;
+        margin: 0 0 6px 0 !important;
+        background: rgba(255, 255, 255, 0.03) !important;
+        border: 1px dashed rgba(245, 158, 11, 0.3) !important;
+        border-radius: 8px !important;
+    }
+
+    .nfc-icon,
+    .nfc-status {
+        display: none !important; /* Ocultar icono grande y texto para ahorrar altura */
+    }
+
+    .nfc-reader > div[style*="flex"] {
+        display: flex !important;
+        flex-direction: row !important; /* Botones NFC y QR lado a lado */
+        gap: 8px !important;
+        margin: 0 !important;
+        max-width: 100% !important;
+    }
+
+    .nfc-reader button {
+        flex: 1 !important;
+        padding: 8px 4px !important;
+        font-size: 12px !important;
+        font-weight: 600 !important;
+        border-radius: 6px !important;
+    }
+
+    /* Información de Saldo */
+    .saldo-info {
+        padding: 5px !important;
+        font-size: 12px !important;
+        margin-bottom: 5px !important;
+    }
+
+    /* Botón verde principal de cobro */
+    .btn-success {
+        width: 100% !important;
+        padding: 10px !important;
+        font-size: 14px !important;
+        font-weight: 800 !important;
+        border-radius: 8px !important;
+    }
+
+    /* Simulador oculto en móvil */
+    #simulatedPulsera {
+        display: none !important;
+    }
+}

@@ -11,16 +11,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
-    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
 </head>
 <body>
     <script>
         (function() {
-            const APP_VERSION = '2.1'; 
+            const APP_VERSION = '2.5'; 
             const savedVersion = localStorage.getItem('app_version');
             if (savedVersion !== APP_VERSION) {
                 localStorage.setItem('app_version', APP_VERSION);
@@ -51,11 +47,17 @@
 
         <div class="card">
             <h3>🔍 Filtros</h3>
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px;">
                 <div>
                     <label>Evento</label>
                     <select id="eventoFilter" onchange="actualizarReportes()">
                         <option value="">Ver todos</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Vendedor / Puesto</label>
+                    <select id="vendedorFilter" onchange="actualizarReportes()">
+                        <option value="">Todos los vendedores</option>
                     </select>
                 </div>
                 <div>
@@ -101,6 +103,16 @@
                 </div>
             </div>
 
+            <div class="card" style="margin-top: 20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h3>🏪 Resumen por Vendedor / Puesto</h3>
+                    <small style="color:var(--text-muted)" id="piezasTotalesVendidas">0 piezas vendidas</small>
+                </div>
+                <div class="table-container">
+                    <div id="vendedoresList">Cargando datos...</div>
+                </div>
+            </div>
+
             <h3 style="margin-bottom: 10px; color: var(--text-muted); font-size: 14px; margin-top: 20px;">🏷️ Pulseras (Global)</h3>
             <div class="grid">
                 <div class="stat-card">
@@ -141,7 +153,7 @@
                 <div id="chartVentasDia" class="chart-container-wide"></div>
             </div>
             <div class="card" style="margin-top: 20px;">
-                <h3>🕐 Actividad por Hora (Hoy)</h3>
+                <h3>🕐 Actividad por Hora</h3>
                 <div id="chartHoras" class="chart-container-wide"></div>
             </div>
         </div>
@@ -192,7 +204,9 @@
             </div>
         </div>
 
-    </div> <div id="downloadModal" class="modal">
+    </div>
+
+    <div id="downloadModal" class="modal">
         <div class="modal-content">
             <div class="modal-header"><h3>Descargar Reporte</h3><button class="modal-close" onclick="closeDownloadModal()">✕</button></div>
             <div class="modal-body">
@@ -222,7 +236,6 @@
     <script src="config.js"></script>
 
     <script>
-        // --- GESTIÓN DE TEMAS ---
         function toggleTheme() {
             document.body.classList.toggle('light-mode');
             const isLight = document.body.classList.contains('light-mode');
@@ -242,135 +255,223 @@
             }
         }
 
-        // Cargar preferencia
         if (localStorage.getItem('themePreference') === 'light') { document.body.classList.add('light-mode'); }
         updateThemeIcon();
 
-        // --- LOGICA GLOBAL ---
         let allTransactions = [], allPulseras = [], allEventos = [], filteredTransactions = [];
         let inventarioData = [], filteredInventario = [], inventarioListenerActivo = false;
         let filteredPulserasReport = []; 
-        let selectedEventoFilter = '';
 
-        const hoy = new Date().toISOString().split('T')[0];
+        // OBTENCIÓN ESTRICTA DE FECHA LOCAL
+        const ahora = new Date();
+        const aYear = ahora.getFullYear();
+        const aMonth = String(ahora.getMonth() + 1).padStart(2, '0');
+        const aDay = String(ahora.getDate()).padStart(2, '0');
+        const hoy = `${aYear}-${aMonth}-${aDay}`;
+
         document.getElementById('fechaDesde').value = hoy;
         document.getElementById('fechaHasta').value = hoy;
 
         auth.onAuthStateChanged(user => {
             if (!user) { localStorage.clear(); window.location.replace('index.html'); return; }
-            cargarEventos(); cargarTransacciones(); cargarPulseras();
+            cargarEventos(); 
+            cargarTransacciones(); 
+            cargarPulseras();
+            cargarVendedoresFiltro();
         });
 
         function cargarEventos() {
             db.collection('eventos').get().then(snap => {
-                allEventos = []; let html = '<option value="">✓ Ver todos</option>';
+                allEventos = []; 
+                let html = '<option value="">✓ Ver todos</option>';
                 snap.forEach(doc => {
-                    const e = doc.data(); allEventos.push({id: doc.id, ...e});
+                    const e = doc.data(); 
+                    allEventos.push({id: doc.id, ...e});
                     html += `<option value="${doc.id}">${e.nombre}</option>`;
                 });
                 document.getElementById('eventoFilter').innerHTML = html;
             });
         }
 
+        function cargarVendedoresFiltro() {
+            db.collection('usuarios').where('role', '==', 'vendedor').get().then(snap => {
+                let html = '<option value="">Todos los vendedores</option>';
+                snap.forEach(doc => {
+                    const u = doc.data();
+                    const nombre = u.name || u.email;
+                    html += `<option value="${nombre}">${nombre}</option>`;
+                });
+                const sel = document.getElementById('vendedorFilter');
+                if (sel) sel.innerHTML = html;
+            });
+        }
+
         function cargarTransacciones() {
             db.collection('transacciones').onSnapshot(snap => {
                 allTransactions = []; 
-                let prodConteo = {}, vendConteo = {}, porHora = {}, porDia = {};
-                
                 snap.forEach(d => {
-                    const t = {id: d.id, ...d.data()};
-                    allTransactions.push(t);
-                    
-                    const monto = t.monto || 0;
-                    if(t.articulo) prodConteo[t.articulo] = (prodConteo[t.articulo]||0) + monto;
-                    if(t.vendedor) vendConteo[t.vendedor] = (vendConteo[t.vendedor]||0) + monto;
-                    if(t.fecha) {
-                        const dObj = t.fecha.toDate ? t.fecha.toDate() : new Date(t.fecha);
-                        const h = dObj.getHours();
-                        const dia = dObj.toLocaleDateString('es-MX', {weekday:'short'});
-                        porHora[h] = (porHora[h]||0) + monto;
-                        porDia[dia] = (porDia[dia]||0) + monto;
-                    }
+                    allTransactions.push({ id: d.id, ...d.data() });
                 });
-                actualizarReportes();
-                actualizarGraficas(prodConteo, vendConteo, porDia, porHora);
+                actualizarReportes(); // Actualiza estadísticas Y gráficas con los filtros actuales
             });
         }
 
         function cargarPulseras() {
             db.collection('pulseras').onSnapshot(snap => {
-                allPulseras = []; snap.forEach(d => allPulseras.push({id: d.id, ...d.data()}));
+                allPulseras = []; 
+                snap.forEach(d => allPulseras.push({id: d.id, ...d.data()}));
                 actualizarReportes();
             });
         }
 
         function actualizarReportes() {
-    if (document.getElementById('rep-inventario').classList.contains('active')) renderInventario();
-    if (document.getElementById('rep-pulseras').classList.contains('active')) renderReportePulseras();
-    
-    selectedEventoFilter = document.getElementById('eventoFilter').value;
-    const fDesde = document.getElementById('fechaDesde').value;
-    const fHasta = document.getElementById('fechaHasta').value;
+            if (document.getElementById('rep-inventario').classList.contains('active')) renderInventario();
+            if (document.getElementById('rep-pulseras').classList.contains('active')) renderReportePulseras();
+            
+            const selectedEventoFilter = document.getElementById('eventoFilter').value;
+            const selectedVendedorFilter = document.getElementById('vendedorFilter')?.value || '';
+            const fDesde = document.getElementById('fechaDesde').value;
+            const fHasta = document.getElementById('fechaHasta').value;
 
-    let pulserasF = selectedEventoFilter ? allPulseras.filter(p => p.eventId === selectedEventoFilter) : allPulseras;
-    const pIds = pulserasF.map(p => p.id);
+            let pulserasF = selectedEventoFilter ? allPulseras.filter(p => p.eventId === selectedEventoFilter) : allPulseras;
+            const pIds = pulserasF.map(p => p.id);
 
-    // Filtro inicial
-    let transF = [...allTransactions];
-    
-    // Filtro por Evento (Si seleccionas uno, filtra. Si es "Ver Todos", muestra todo)
-    if (selectedEventoFilter) {
-        transF = transF.filter(t => t.eventId === selectedEventoFilter || pIds.includes(t.pulseraId));
-    }
-    
-    // Filtro de Fechas
-    if (fDesde || fHasta) {
-        transF = transF.filter(t => {
-            if (!t.fecha) return false;
-            const d = t.fecha.toDate ? t.fecha.toDate() : new Date(t.fecha);
-            const start = fDesde ? new Date(fDesde+'T00:00:00') : new Date('1900-01-01');
-            const end = fHasta ? new Date(fHasta+'T23:59:59') : new Date('2100-12-31');
-            return d >= start && d <= end;
-        });
-    }
+            let transF = [...allTransactions];
+            
+            // 1. Filtro por Evento
+            if (selectedEventoFilter) {
+                transF = transF.filter(t => t.eventId === selectedEventoFilter || pIds.includes(t.pulseraId));
+            }
 
-    // --- IMPORTANTE: Quitar pendientes del reporte ---
-    transF = transF.filter(t => t.estadoPago !== 'pendiente');
+            // 2. Filtro por Vendedor
+            if (selectedVendedorFilter) {
+                transF = transF.filter(t => (t.vendedor || '').toLowerCase() === selectedVendedorFilter.toLowerCase());
+            }
+            
+            // 3. Filtro de Fechas
+            if (fDesde || fHasta) {
+                transF = transF.filter(t => {
+                    if (!t.fecha) return false;
+                    const d = t.fecha.toDate ? t.fecha.toDate() : new Date(t.fecha);
+                    const start = fDesde ? new Date(fDesde + 'T00:00:00') : new Date('1900-01-01');
+                    const end = fHasta ? new Date(fHasta + 'T23:59:59') : new Date('2100-12-31');
+                    return d >= start && d <= end;
+                });
+            }
 
-    filteredTransactions = transF;
+            // Excluir pendientes no cobrados
+            transF = transF.filter(t => t.estadoPago !== 'pendiente');
+            filteredTransactions = transF;
 
-    let tV=0, tN=0, tE=0, tT=0;
-    
-    transF.forEach(t => {
-        const m = t.monto || 0;
-        tV += m;
+            let tV=0, tN=0, tE=0, tT=0;
+            let prodConteo = {}, vendConteo = {}, porHora = {}, porDia = {};
+            
+            transF.forEach(t => {
+                const m = parseFloat(t.monto) || 0;
+                tV += m;
+                const metodo = (t.metodoPago || '').toLowerCase();
+                if(metodo.includes('efectivo')) tE += m;
+                else if(metodo.includes('transferencia')) tT += m;
+                else tN += m;
 
-        // --- DETECCIÓN DE MÉTODO ---
-        const metodo = (t.metodoPago || '').toLowerCase();
+                // Datos dinámicos para las gráficas basados en lo filtrado
+                const art = t.articulo || 'Varios';
+                const vend = t.vendedor || 'Venta Mostrador';
+                prodConteo[art] = (prodConteo[art] || 0) + m;
+                vendConteo[vend] = (vendConteo[vend] || 0) + m;
 
-        if(metodo.includes('efectivo')) {
-            tE += m; 
-        } else if(metodo.includes('transferencia')) {
-            tT += m;
-        } else {
-            tN += m; 
+                if (t.fecha) {
+                    const dObj = t.fecha.toDate ? t.fecha.toDate() : new Date(t.fecha);
+                    const h = dObj.getHours();
+                    const dia = dObj.toLocaleDateString('es-MX', { weekday:'short', day:'numeric' });
+                    porHora[h] = (porHora[h] || 0) + m;
+                    porDia[dia] = (porDia[dia] || 0) + m;
+                }
+            });
+
+            // Totales Pulseras
+            const tAsig = pulserasF.reduce((a,b)=>a+(b.saldoInicial||0),0);
+            const tRest = pulserasF.reduce((a,b)=>a+(b.saldoActual||0),0);
+
+            document.getElementById('totalVentas').textContent = tV.toFixed(2);
+            document.getElementById('totalNFC').textContent = tN.toFixed(2);
+            document.getElementById('totalEfectivo').textContent = tE.toFixed(2);
+            document.getElementById('totalTransf').textContent = tT.toFixed(2);
+            document.getElementById('totalAsignado').textContent = tAsig.toFixed(2);
+            document.getElementById('totalRestante').textContent = tRest.toFixed(2);
+            document.getElementById('totalTrans').textContent = transF.length;
+
+            renderizarTablaVendedores(transF);
+            loadTransacciones(transF); 
+            actualizarGraficas(prodConteo, vendConteo, porDia, porHora); // ⬅️ Gráficas filtradas
         }
-    });
 
-    // Totales de pulseras
-    const tAsig = pulserasF.reduce((a,b)=>a+(b.saldoInicial||0),0);
-    const tRest = pulserasF.reduce((a,b)=>a+(b.saldoActual||0),0);
+        // --- TABLA DE RENDIMIENTO POR VENDEDOR ---
+        function renderizarTablaVendedores(lista) {
+            const cont = document.getElementById('vendedoresList');
+            const totalPiezasBadge = document.getElementById('piezasTotalesVendidas');
+            if (!cont) return;
 
-    document.getElementById('totalVentas').textContent = tV.toFixed(2);
-    document.getElementById('totalNFC').textContent = tN.toFixed(2);
-    document.getElementById('totalEfectivo').textContent = tE.toFixed(2);
-    document.getElementById('totalTransf').textContent = tT.toFixed(2);
-    document.getElementById('totalAsignado').textContent = tAsig.toFixed(2);
-    document.getElementById('totalRestante').textContent = tRest.toFixed(2);
-    document.getElementById('totalTrans').textContent = transF.length;
+            if (!lista.length) {
+                cont.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:15px;">Sin ventas registradas con los filtros actuales</p>';
+                if(totalPiezasBadge) totalPiezasBadge.textContent = '0 piezas vendidas';
+                return;
+            }
 
-    loadTransacciones(transF); 
-}
+            const vendedoresMap = {};
+            let totalPiezasGlobal = 0;
+
+            lista.forEach(t => {
+                const vend = t.vendedor || 'Venta Mostrador';
+                const cant = parseInt(t.cantidad) || 1;
+                const monto = parseFloat(t.monto) || 0;
+
+                totalPiezasGlobal += cant;
+
+                if (!vendedoresMap[vend]) {
+                    vendedoresMap[vend] = { piezas: 0, total: 0, operaciones: 0, productos: {} };
+                }
+                vendedoresMap[vend].piezas += cant;
+                vendedoresMap[vend].total += monto;
+                vendedoresMap[vend].operaciones += 1;
+
+                const art = t.articulo || 'Varios';
+                vendedoresMap[vend].productos[art] = (vendedoresMap[vend].productos[art] || 0) + cant;
+            });
+
+            if(totalPiezasBadge) totalPiezasBadge.textContent = `${totalPiezasGlobal} piezas vendidas`;
+
+            const ordenados = Object.entries(vendedoresMap).sort((a, b) => b[1].total - a[1].total);
+
+            let html = `
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Vendedor / Puesto</th>
+                        <th>Desglose de Artículos</th>
+                        <th style="text-align:center;">Piezas</th>
+                        <th style="text-align:right;">Total Recaudado</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            ordenados.forEach(([nombre, dat]) => {
+                const prodDesglose = Object.entries(dat.productos)
+                    .map(([p, c]) => `<span style="font-size:11px; background:rgba(255,255,255,0.06); padding:2px 6px; border-radius:4px; margin-right:4px; display:inline-block; margin-bottom:2px;">${p} (<strong>${c}</strong>)</span>`)
+                    .join(' ');
+
+                html += `
+                <tr>
+                    <td style="vertical-align:top;"><strong><i class="fas fa-store" style="color:#f59e0b; margin-right:6px;"></i>${nombre}</strong></td>
+                    <td style="vertical-align:top;">${prodDesglose}</td>
+                    <td style="text-align:center; font-weight:bold; vertical-align:top;">${dat.piezas}</td>
+                    <td style="text-align:right; font-weight:bold; color:#22c55e; vertical-align:top;">$${dat.total.toFixed(2)}</td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+            cont.innerHTML = html;
+        }
 
         // --- LÓGICA GRÁFICAS ---
         function actualizarGraficas(prod, vend, dias, horas) {
@@ -383,7 +484,7 @@
         function renderizarBarras(id, datos) {
             const el = document.getElementById(id); if(!el) return;
             const sorted = Object.entries(datos).sort((a,b)=>b[1]-a[1]).slice(0,5);
-            if(!sorted.length) { el.innerHTML='<p style="text-align:center;color:var(--text-muted);padding:20px;">Sin datos</p>'; return; }
+            if(!sorted.length) { el.innerHTML='<p style="text-align:center;color:var(--text-muted);padding:20px;">Sin datos para el filtro</p>'; return; }
             const max = sorted[0][1];
             let html = '<div class="chart-bar-container">';
             sorted.forEach(([k,v]) => {
@@ -396,7 +497,7 @@
         function renderizarLineas(id, datos) {
             const el = document.getElementById(id); if(!el) return;
             const keys = Object.keys(datos); const vals = Object.values(datos);
-            if(!vals.length) { el.innerHTML='<p style="text-align:center;color:var(--text-muted);padding:20px;">Sin datos</p>'; return; }
+            if(!vals.length) { el.innerHTML='<p style="text-align:center;color:var(--text-muted);padding:20px;">Sin datos para el filtro</p>'; return; }
             const max = Math.max(...vals, 1);
             let bars='', labels='';
             keys.forEach(k => {
@@ -415,19 +516,17 @@
             el.innerHTML=`<div class="chart-line-container">${bars}</div><div class="chart-line-labels">${labels}</div>`;
         }
 
-        // --- TABLAS ---
         function loadTransacciones(lista) {
             if(!lista.length) { document.getElementById('transacionesList').innerHTML='<p style="text-align:center;color:var(--text-muted);padding:20px;">Sin datos</p>'; return; }
-            let html='<table class="table"><thead><tr><th>Fecha</th><th>Cliente</th><th>Producto</th><th>Método</th><th>Monto</th></tr></thead><tbody>';
+            let html='<table class="table"><thead><tr><th>Fecha</th><th>Vendedor</th><th>Cliente</th><th>Producto</th><th>Cant</th><th>Método</th><th>Monto</th></tr></thead><tbody>';
             lista.sort((a,b)=>(b.fecha?.toDate?b.fecha.toDate():new Date(0))-(a.fecha?.toDate?a.fecha.toDate():new Date(0))).forEach(t=>{
-                let f = t.fecha?.toDate ? t.fecha.toDate().toLocaleString('es-MX') : 'S/F';
+                let f = t.fecha?.toDate ? t.fecha.toDate().toLocaleString('es-MX', { hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit' }) : 'S/F';
                 let m = t.metodoPago==='efectivo'?'<span class="badge badge-efectivo">Efe</span>':(t.metodoPago==='transferencia'?'<span class="badge badge-transf">Transf</span>':'<span class="badge badge-nfc">NFC</span>');
-                html+=`<tr><td>${f}</td><td>${t.pulsera||'Anon'}</td><td>${t.articulo}</td><td>${m}</td><td>$${(t.monto||0).toFixed(2)}</td></tr>`;
+                html+=`<tr><td>${f}</td><td>${t.vendedor||'-'}</td><td>${t.pulsera||'Anon'}</td><td>${t.articulo}</td><td>${t.cantidad||1}</td><td>${m}</td><td>$${(t.monto||0).toFixed(2)}</td></tr>`;
             });
             document.getElementById('transacionesList').innerHTML=html+'</tbody></table>';
         }
 
-        // --- PESTAÑAS ---
         function verPestana(id, btn) {
             document.querySelectorAll('.rep-section').forEach(e=>e.classList.remove('active'));
             document.querySelectorAll('.sub-tab-btn').forEach(e=>e.classList.remove('active'));
@@ -438,7 +537,6 @@
             if(id==='pulseras') renderReportePulseras();
         }
 
-        // --- INVENTARIO ---
         function cargarInventarioData() {
             if(inventarioListenerActivo) { renderInventario(); return; }
             document.getElementById('inventarioList').innerHTML='<p style="text-align:center;color:var(--text-muted);padding:20px;">Cargando...</p>';
@@ -457,76 +555,65 @@
         }
 
         function renderInventario() {
-    const ev = document.getElementById('eventoFilter').value;
-    const cat = document.getElementById('invCategoriaFilter').value;
-    const txt = document.getElementById('invSearchFilter').value.toLowerCase();
+            const ev = document.getElementById('eventoFilter').value;
+            const cat = document.getElementById('invCategoriaFilter').value;
+            const txt = document.getElementById('invSearchFilter').value.toLowerCase();
 
-    // 1. Filtrado
-    let lista = inventarioData.filter(i => {
-        if(ev && i.eventId !== ev) return false;
-        if(cat && i.categoria !== cat) return false;
-        if(txt && !i.nombre.toLowerCase().includes(txt)) return false;
-        return true;
-    });
-    filteredInventario = lista;
+            let lista = inventarioData.filter(i => {
+                if(ev && i.eventId !== ev) return false;
+                if(cat && i.categoria !== cat) return false;
+                if(txt && !i.nombre.toLowerCase().includes(txt)) return false;
+                return true;
+            });
+            filteredInventario = lista;
 
-    // 2. Ordenamiento (Infinitos al final, luego por stock)
-    lista.sort((a,b) => (a.esInfinito?9999:a.stock||0) - (b.esInfinito?9999:b.stock||0));
+            lista.sort((a,b) => (a.esInfinito?9999:a.stock||0) - (b.esInfinito?9999:b.stock||0));
 
-    let val = 0, cri = 0, fis = 0;
-    let html = '<table class="table"><thead><tr><th>Producto</th><th>Cat</th><th>Precio</th><th>Stock</th><th>Valor</th><th>Estado</th></tr></thead><tbody>';
-    
-    if(!lista.length) {
-        html = '<div style="text-align:center;padding:20px;color:var(--text-muted);">Sin resultados</div>';
-    } else {
-        lista.forEach(i => {
-            const inf = i.esInfinito === true;
+            let val = 0, cri = 0, fis = 0;
+            let html = '<table class="table"><thead><tr><th>Producto</th><th>Cat</th><th>Precio</th><th>Stock</th><th>Valor</th><th>Estado</th></tr></thead><tbody>';
             
-            // --- CORRECCIÓN CLAVE AQUÍ ---
-            // Aseguramos que stock sea entero y precio sea flotante (número)
-            // Si viene vacío o texto raro, usamos 0 para evitar NaN
-            const stk = parseInt(i.stock) || 0; 
-            const precioSafe = parseFloat(i.precio) || 0; 
-
-            if(!inf) { 
-                fis += stk; 
-                val += (stk * precioSafe); // Multiplicamos números seguros
-                
-                if(stk <= 5) cri++; // Contamos críticos (Agotados + Bajos)
-            }
-
-            // Lógica del Badge (Etiqueta)
-            let badge = '';
-            if (inf) {
-                badge = '<span class="badge badge-nfc">Infinito</span>';
-            } else if (stk <= 0) {
-                badge = '<span class="badge" style="background:#ef4444;color:white;">Agotado</span>';
-            } else if (stk <= 5) {
-                badge = '<span class="badge badge-pendiente">Bajo</span>';
+            if(!lista.length) {
+                html = '<div style="text-align:center;padding:20px;color:var(--text-muted);">Sin resultados</div>';
             } else {
-                badge = '<span class="badge badge-success">Bien</span>';
+                lista.forEach(i => {
+                    const inf = i.esInfinito === true;
+                    const stk = parseInt(i.stock) || 0; 
+                    const precioSafe = parseFloat(i.precio) || 0; 
+
+                    if(!inf) { 
+                        fis += stk; 
+                        val += (stk * precioSafe);
+                        if(stk <= 5) cri++;
+                    }
+
+                    let badge = '';
+                    if (inf) {
+                        badge = '<span class="badge badge-nfc">Infinito</span>';
+                    } else if (stk <= 0) {
+                        badge = '<span class="badge" style="background:#ef4444;color:white;">Agotado</span>';
+                    } else if (stk <= 5) {
+                        badge = '<span class="badge badge-pendiente">Bajo</span>';
+                    } else {
+                        badge = '<span class="badge badge-success">Bien</span>';
+                    }
+
+                    html += `<tr>
+                        <td><strong>${i.nombre}</strong></td>
+                        <td>${i.categoria||'-'}</td>
+                        <td>$${precioSafe.toFixed(2)}</td> <td style="font-weight:bold">${inf ? '∞' : stk}</td>
+                        <td>${inf ? '-' : '$' + (stk * precioSafe).toFixed(2)}</td>
+                        <td>${badge}</td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
             }
 
-            html += `<tr>
-                <td><strong>${i.nombre}</strong></td>
-                <td>${i.categoria||'-'}</td>
-                <td>$${precioSafe.toFixed(2)}</td> <td style="font-weight:bold">${inf ? '∞' : stk}</td>
-                <td>${inf ? '-' : '$' + (stk * precioSafe).toFixed(2)}</td>
-                <td>${badge}</td>
-            </tr>`;
-        });
-        html += '</tbody></table>';
-    }
+            document.getElementById('inventarioList').innerHTML = html;
+            document.getElementById('invValorTotal').textContent = val.toFixed(2);
+            document.getElementById('invBajoStock').textContent = cri;
+            document.getElementById('invTotalItems').textContent = fis;
+        }
 
-    document.getElementById('inventarioList').innerHTML = html;
-    
-    // Asignamos los totales calculados
-    document.getElementById('invValorTotal').textContent = val.toFixed(2);
-    document.getElementById('invBajoStock').textContent = cri;
-    document.getElementById('invTotalItems').textContent = fis;
-}
-
-        // --- PULSERAS ---
         function renderReportePulseras() {
             const ev = document.getElementById('eventoFilter').value;
             const txt = document.getElementById('pulsSearchFilter').value.toLowerCase();
@@ -560,12 +647,11 @@
             document.getElementById('pulsTotalCount').textContent = lista.length;
         }
 
-        // --- EXPORTAR ---
         function openDownloadModal(){ document.getElementById('downloadModal').style.display='flex'; }
         function closeDownloadModal(){ document.getElementById('downloadModal').style.display='none'; }
 
         function downloadExcelReport() {
-            if (typeof XLSX === 'undefined') { alert('⚠️ Error al cargar librería Excel (Modo Offline). Conéctate para descargarla.'); return; }
+            if (typeof XLSX === 'undefined') { alert('⚠️ Error al cargar librería Excel.'); return; }
             try {
                 const isInv = document.getElementById('rep-inventario').classList.contains('active');
                 const isPuls = document.getElementById('rep-pulseras').classList.contains('active');
@@ -579,7 +665,7 @@
                     dataToExport = (filteredPulserasReport.length?filteredPulserasReport:allPulseras).map(p => ({ ID: p.id, Nombre: p.nombre, 'Saldo Inicial': p.saldoInicial, 'Saldo Actual': p.saldoActual, 'Gastado': (p.saldoInicial||0)-(p.saldoActual||0), Estado: p.bloqueada?'Bloqueada':'Activa' }));
                 } else {
                     sheetName = "Ventas"; fileName = "Ventas";
-                    dataToExport = (filteredTransactions.length?filteredTransactions:allTransactions).map(t => ({ Fecha: t.fecha?.toDate?t.fecha.toDate().toLocaleString():'', Cliente: t.pulsera, Producto: t.articulo, Metodo: t.metodoPago, Monto: t.monto }));
+                    dataToExport = (filteredTransactions.length?filteredTransactions:allTransactions).map(t => ({ Fecha: t.fecha?.toDate?t.fecha.toDate().toLocaleString():'', Vendedor: t.vendedor, Cliente: t.pulsera, Producto: t.articulo, Cantidad: t.cantidad||1, Metodo: t.metodoPago, Monto: t.monto }));
                 }
 
                 if(!dataToExport.length) { alert('Sin datos para exportar'); return; }
@@ -590,47 +676,45 @@
         }
 
         function downloadHTMLReport() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    
-    // Título
-    doc.text("Reporte Genesaret", 14, 15);
-    doc.setFontSize(10);
-    doc.text(`Fecha impresión: ${new Date().toLocaleDateString()}`, 14, 22);
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            doc.text("Reporte Genesaret", 14, 15);
+            doc.setFontSize(10);
+            doc.text(`Fecha impresión: ${new Date().toLocaleDateString()}`, 14, 22);
 
-    // Seleccionar datos según la pestaña activa
-    let head = [], body = [];
-    
-    if(document.getElementById('rep-inventario').classList.contains('active')) {
-        head = [['Producto', 'Categoría', 'Stock', 'Valor']];
-        body = (filteredInventario.length ? filteredInventario : inventarioData).map(i => [
-            i.nombre, 
-            i.categoria, 
-            i.esInfinito ? 'Inf' : i.stock, 
-            i.esInfinito ? '-' : `$${(i.stock*i.precio).toFixed(2)}`
-        ]);
-    } else {
-        // Transacciones (Resumen)
-        head = [['Fecha', 'Vendedor', 'Producto', 'Método', 'Monto']];
-        body = (filteredTransactions.length ? filteredTransactions : allTransactions).map(t => [
-            t.fecha?.toDate ? t.fecha.toDate().toLocaleDateString() : '-',
-            t.vendedor || 'Sistema', // Cambio Cliente -> Vendedor solicitado
-            t.articulo,
-            t.metodoPago,
-            `$${t.monto.toFixed(2)}`
-        ]);
-    }
+            let head = [], body = [];
+            
+            if(document.getElementById('rep-inventario').classList.contains('active')) {
+                head = [['Producto', 'Categoría', 'Stock', 'Valor']];
+                body = (filteredInventario.length ? filteredInventario : inventarioData).map(i => [
+                    i.nombre, 
+                    i.categoria, 
+                    i.esInfinito ? 'Inf' : i.stock, 
+                    i.esInfinito ? '-' : `$${(i.stock*i.precio).toFixed(2)}`
+                ]);
+            } else {
+                head = [['Fecha', 'Vendedor', 'Producto', 'Cant', 'Método', 'Monto']];
+                body = (filteredTransactions.length ? filteredTransactions : allTransactions).map(t => [
+                    t.fecha?.toDate ? t.fecha.toDate().toLocaleDateString() : '-',
+                    t.vendedor || 'Sistema',
+                    t.articulo,
+                    t.cantidad || 1,
+                    t.metodoPago,
+                    `$${t.monto.toFixed(2)}`
+                ]);
+            }
 
-    doc.autoTable({
-        head: head,
-        body: body,
-        startY: 30,
-        theme: 'grid'
-    });
+            doc.autoTable({
+                head: head,
+                body: body,
+                startY: 30,
+                theme: 'grid'
+            });
 
-    doc.save('Reporte_Genesaret.pdf');
-    closeDownloadModal();
-}
+            doc.save('Reporte_Genesaret.pdf');
+            closeDownloadModal();
+        }
     </script>
 </body>
 </html>

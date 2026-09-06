@@ -556,60 +556,33 @@ function toggleBloqueoPulsera(id, estaBloqueada) {
 
 function abrirModalEditarPulsera(docId, nombre, idNfc, eventoId) {
     const modal = document.getElementById('modalEditarPulsera');
-    if(modal) {
-        document.getElementById('editPulseraId').value = docId; // Este es el ID oculto de Firestore
-        document.getElementById('editPulseraNombre').value = nombre;
-        document.getElementById('editPulseraIdNfc').value = idNfc; // Este es el ID Visible (NFC)
-        const combo = document.getElementById('editPulseraEvento');
-        if(combo) combo.value = eventoId;
-        modal.classList.add('active');
-    }
-}
+    if (!modal) return;
 
-function filtrarPulserasTabla() {
-    paginaActualPulseras = 1; 
-    renderizarTablaPulseras();
-}
+    document.getElementById('editPulseraId').value = docId;
+    document.getElementById('editPulseraNombre').value = nombre;
+    document.getElementById('editPulseraIdNfc').value = idNfc;
 
-function cambiarPaginaPulseras(delta) {
-    paginaActualPulseras += delta;
-    renderizarTablaPulseras();
-}
+    const selectEvento = document.getElementById('editPulseraEvento');
+    selectEvento.innerHTML = '<option value="">Cargando eventos...</option>';
 
-// --- ACCIONES DE PULSERAS ---
-
-function toggleBloqueoPulsera(id, estaBloqueada) {
-    const accion = estaBloqueada ? 'desbloquear' : 'bloquear';
-    Swal.fire({
-        title: `¿${accion.charAt(0).toUpperCase() + accion.slice(1)} pulsera?`,
-        text: estaBloqueada ? "El usuario podrá volver a comprar." : "El usuario ya no podrá realizar compras.",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: estaBloqueada ? '#22c55e' : '#ef4444',
-        cancelButtonColor: '#334155',
-        confirmButtonText: `Sí, ${accion}`,
-        background: '#1e293b',
-        color: '#ffffff'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            db.collection('pulseras').doc(id).update({ bloqueada: !estaBloqueada })
-                .then(() => showSuccess(`Pulsera ${accion}a correctamente`))
-                .catch(e => showError(e.message));
-        }
+    // Consultamos los eventos activos para poblar el desplegable
+    db.collection('eventos').where('activo', '==', true).get().then(snap => {
+        let opciones = '<option value="">Sin evento asignado</option>';
+        snap.forEach(doc => {
+            const ev = doc.data();
+            const seleccionado = doc.id === eventoId ? 'selected' : '';
+            opciones += `<option value="${doc.id}" ${seleccionado}>${ev.nombre}</option>`;
+        });
+        selectEvento.innerHTML = opciones;
+        if (eventoId) selectEvento.value = eventoId;
+    }).catch(err => {
+        console.error("Error cargando eventos para modal:", err);
+        selectEvento.innerHTML = '<option value="">Error al cargar</option>';
     });
+
+    modal.classList.add('active');
 }
 
-function abrirModalEditarPulsera(docId, nombre, idNfc, eventoId) {
-    const modal = document.getElementById('modalEditarPulsera');
-    if(modal) {
-        document.getElementById('editPulseraId').value = docId;
-        document.getElementById('editPulseraNombre').value = nombre;
-        document.getElementById('editPulseraIdNfc').value = idNfc; 
-        const combo = document.getElementById('editPulseraEvento');
-        if(combo) combo.value = eventoId;
-        modal.classList.add('active');
-    }
-}
 
 function registrarPulsera() {
     const ev = document.getElementById('pulseraEvento').value; 
