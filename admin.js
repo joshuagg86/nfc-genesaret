@@ -584,6 +584,7 @@ function abrirModalEditarPulsera(docId, nombre, idNfc, eventoId) {
 }
 
 
+
 function registrarPulsera() {
     const ev = document.getElementById('pulseraEvento').value; 
     const id = document.getElementById('pulseraId').value; 
@@ -1840,6 +1841,7 @@ function actualizarTextoTemaMobile() {
 // Llamar al inicio para poner el texto correcto
 actualizarTextoTemaMobile();
 
+// --- 1. LECTURA NFC EN REGISTRO (CON PROTECCIÓN ANTI-SOBREESCRITURA) ---
 async function startNFCReadAdmin() {
     if (!('NDEFReader' in window)) {
         showError('❌ Tu dispositivo o navegador no soporta lectura NFC web. Usa la opción QR.');
@@ -1850,16 +1852,14 @@ async function startNFCReadAdmin() {
         const ndef = new NDEFReader();
         document.getElementById('nfcReaderAdmin').innerHTML = `
             <div class="nfc-icon">⏳</div>
-            <div class="nfc-status">Acerca el sticker o gafete al sensor...</div>
+            <div class="nfc-status">Acerca el chip nuevo al sensor...</div>
         `;
         
         await ndef.scan();
         
         ndef.onreading = event => {
-            // Prioridad 1: Tomar el número de serie de fábrica (UID único del NTAG213)
             let id = event.serialNumber;
             
-            // Prioridad 2: Si por alguna razón viene vacío, buscar si tiene texto grabado
             if (!id && event.message && event.message.records) {
                 const decoder = new TextDecoder();
                 for (const record of event.message.records) {
@@ -1872,22 +1872,45 @@ async function startNFCReadAdmin() {
                 return;
             }
 
-            // Normalizamos a mayúsculas y quitamos los dos puntos que a veces pone Android (ej: 04:a1:b2 -> 04A1B2)
             id = id.replace(/:/g, '').toUpperCase();
             
-            // Llenar el campo en la interfaz
-            document.getElementById('pulseraId').value = id;
-            showSuccess('✅ Chip leído: ' + id);
-            playSound('scan');
-            
-            // Restaurar diseño del botón
-            document.getElementById('nfcReaderAdmin').innerHTML = `
-                <div class="nfc-icon">✅</div>
-                <div class="nfc-status">Leído: <strong>${id}</strong></div>
-                <div style="display: flex; gap: 10px; justify-content: center;">
-                    <button class="btn-primary" onclick="startNFCReadAdmin()">📡 Leer Otro</button>
-                </div>
-            `;
+            db.collection('pulseras').where('id', '==', id).get().then(snap => {
+                if (!snap.empty) {
+                    const existente = snap.docs[0].data();
+                    document.getElementById('pulseraId').value = '';
+                    
+                    Swal.fire({
+                        icon: 'warning',
+                        title: '¡Pulsera ya registrada!',
+                        html: `Este chip pertenece a: <br><strong style="font-size:18px; color:#f59e0b;">${existente.nombre}</strong><br>Saldo actual: <strong>$${(existente.saldoActual || 0).toFixed(2)}</strong><br><small style="color:#94a3b8;">Si deseas recargarle saldo, ve a la pestaña "Recargar".</small>`,
+                        confirmButtonColor: '#f59e0b',
+                        background: '#1e293b',
+                        color: '#ffffff'
+                    });
+
+                    document.getElementById('nfcReaderAdmin').innerHTML = `
+                        <div class="nfc-icon">⚠️</div>
+                        <div class="nfc-status">Chip ocupado: <strong>${existente.nombre}</strong></div>
+                        <button class="btn-primary" onclick="startNFCReadAdmin()">Leer Otro</button>
+                    `;
+                    return;
+                }
+
+                document.getElementById('pulseraId').value = id;
+                showSuccess('✅ Chip disponible: ' + id);
+                playSound('scan');
+                
+                document.getElementById('nfcReaderAdmin').innerHTML = `
+                    <div class="nfc-icon">✅</div>
+                    <div class="nfc-status">Chip libre: <strong>${id}</strong></div>
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button class="btn-primary" onclick="startNFCReadAdmin()">📡 Leer Otro</button>
+                    </div>
+                `;
+            }).catch(err => {
+                console.error(err);
+                showError('Error al validar el chip en base de datos');
+            });
         };
     } catch (error) {
         showError('Error NFC: ' + error.message);
@@ -1899,13 +1922,102 @@ async function startNFCReadAdmin() {
     }
 }
 
+// --- 2. LECTURA NFC EN RECARGA (BUSCA Y AUTORRELLENA) ---
 async function startNFCRecarga() {
     if (!('NDEFReader' in window)) {
         showError('❌ Tu dispositivo no soporta NFC Web. Usa QR.');
         return;
     }
-    // Lógica similar para recarga...
-    // (Te recomiendo usar el QR en iPhone obligatoriamente)
+    
+    try {
+        const ndef = new NDEFReader();
+        const readerEl = document.getElementById('nfcReaderRecarga') || document.getElementById('adminNfcReader');
+        if (readerEl) {
+            readerEl.innerHTML = `
+                <div class="nfc-icon">⏳</div>
+                <div class="nfc-status">Acerca la pulsera a recargar...</div>
+            `;
+        }
+
+        await ndef.scan();
+        
+        ndef.onreading = event => {
+            let id = event.serialNumber;
+            
+            if (!id && event.message && event.message.records) {
+                const decoder = new TextDecoder();
+                for (const record of event.message.records) {
+                    id = decoder.decode(record.data);
+                }
+            }
+            
+            if (!id) {
+                showError('No se pudo obtener el ID del chip.');
+                return;
+            }
+
+            id = id.replace(/:/g, '').toUpperCase();
+            
+            db.collection('pulseras').where('id', '==', id).get().then(snap => {
+                if (snap.empty) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Pulsera no encontrada',
+                        text: `El chip "${id}" no está registrado. Primero regístralo en la pestaña "Registrar".`,
+                        confirmButtonColor: '#ef4444',
+                        background: '#1e293b',
+                        color: '#ffffff'
+                    });
+                    return;
+                }
+
+                const doc = snap.docs[0];
+                const data = doc.data();
+
+                const sel = document.getElementById('recargaPulsera');
+                let encontrada = false;
+
+                if (sel) {
+                    for (let i = 0; i < sel.options.length; i++) {
+                        if (sel.options[i].value.startsWith(doc.id + '|')) {
+                            sel.selectedIndex = i;
+                            encontrada = true;
+                            break;
+                        }
+                    }
+
+                    if (!encontrada) {
+                        const nuevaOpt = document.createElement('option');
+                        nuevaOpt.value = `${doc.id}|${data.saldoActual}|${data.nombre}|${data.eventId || ''}`;
+                        nuevaOpt.textContent = `${data.nombre} ($${(data.saldoActual || 0).toFixed(2)})`;
+                        sel.appendChild(nuevaOpt);
+                        sel.value = nuevaOpt.value;
+                    }
+
+                    mostrarSaldoActual();
+                }
+
+                const inputMonto = document.getElementById('montoRecarga');
+                if (inputMonto) inputMonto.focus();
+
+                showSuccess(`Pulsera de ${data.nombre} lista para recargar`);
+                playSound('scan');
+
+                if (readerEl) {
+                    readerEl.innerHTML = `
+                        <div class="nfc-icon">✅</div>
+                        <div class="nfc-status">Seleccionado: <strong>${data.nombre}</strong> ($${(data.saldoActual || 0).toFixed(2)})</div>
+                        <button class="btn-primary" onclick="startNFCRecarga()">📡 Leer Otra</button>
+                    `;
+                }
+            }).catch(err => {
+                console.error("Error buscando pulsera para recarga:", err);
+                showError("Error al consultar la pulsera");
+            });
+        };
+    } catch (error) {
+        showError('Error NFC Recarga: ' + error.message);
+    }
 }
 // --- FUNCIÓN RECUPERAR CONTRASEÑA (AGREGAR AL FINAL) ---
 function resetPass(email) {
