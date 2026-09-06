@@ -1,65 +1,63 @@
-/* style.css - Estilos Globales Genesaret (v3.5 - Final Consolidado) */
-
-/* --- VARIABLES DE TEMA --- */
+/* --- VARIABLES DE TEMA (VIBRA FINTECH MODERNA & ELEVADA) --- */
 :root {
-    /* MODO NOCHE (DEFAULT) */
-    --bg-body: linear-gradient(135deg, #003d7a 0%, #001a2e 50%, #0d47a1 100%);
-    --bg-card: rgba(30, 41, 59, 0.8);
-    --bg-header: rgba(30, 41, 59, 0.95);
-    --bg-input: rgba(15, 23, 42, 0.6);
-    --bg-item-list: rgba(255, 255, 255, 0.03);
-    --bg-th: rgba(15, 23, 42, 0.8);
+    /* MODO OBSIDIAN CYBER (DEFAULT) */
+    --bg-body: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #090d16 55%, #030712 100%);
+    --bg-card: rgba(17, 24, 39, 0.72);
+    --bg-header: rgba(11, 17, 32, 0.88);
+    --bg-input: rgba(15, 23, 42, 0.75);
+    --bg-item-list: rgba(255, 255, 255, 0.04);
+    --bg-th: rgba(17, 24, 39, 0.95);
     
-    --text-main: #e2e8f0;
+    --text-main: #f8fafc;
     --text-muted: #94a3b8;
     --text-label: #cbd5e1;
     
-    --border-color: rgba(148, 163, 184, 0.2);
-    --shadow-card: 0 4px 6px rgba(0,0,0,0.1);
+    --border-color: rgba(255, 255, 255, 0.08);
+    --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.6), 0 0 1px 1px rgba(255, 255, 255, 0.05);
 
-    /* COLORES DE ACENTO */
-    --color-destacado: #f59e0b; /* Amarillo Naranja */
-    --color-precio: #f59e0b;
-    --color-titulo: #e2e8f0;
+    /* COLORES DE ACENTO ELECTRIC AMBER & NEON */
+    --color-destacado: #f59e0b; /* Neón ámbar brillante */
+    --color-precio: #fbbf24;
+    --color-titulo: #ffffff;
     
     /* ESTADOS */
-    --bg-success: rgba(34, 197, 94, 0.1);
-    --color-success: #22c55e;
-    --bg-danger: rgba(239, 68, 68, 0.1);
-    --color-danger: #fca5a5;
+    --bg-success: rgba(16, 185, 129, 0.15);
+    --color-success: #34d399; /* Esmeralda fintech */
+    --bg-danger: rgba(244, 63, 94, 0.15);
+    --color-danger: #fb7185;
     
     /* DINÁMICOS */
-    --color-pendiente: #fde047;
+    --color-pendiente: #facc15;
     --border-pendiente: #eab308;
 }
 
-/* MODO SOL (TEMA CLARO HÍBRIDO - AZUL PROFESIONAL) */
+/* MODO SOL (TEMA CLARO HYPER-CLEAN STRIPE) */
 body.light-mode {
-    --bg-body: #f8fafc;       /* Gris azulado muy suave */
-    --bg-card: #ffffff;       /* Blanco puro */
-    --bg-header: rgba(30, 41, 59, 0.95); /* Header oscuro fijo */
-    --bg-input: #f1f5f9;      /* Gris muy claro */
+    --bg-body: #f1f5f9;
+    --bg-card: #ffffff;
+    --bg-header: rgba(255, 255, 255, 0.92);
+    --bg-input: #f8fafc;
     --bg-item-list: #f8fafc;
     --bg-th: #f1f5f9;
 
-    --text-main: #0f172a;     /* Azul muy oscuro (casi negro) */
-    --text-muted: #64748b;    /* Gris medio */
-    --text-label: #475569;    /* Gris azulado */
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --text-label: #475569;
 
-    --border-color: #cbd5e1;  
-    --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --border-color: rgba(0, 0, 0, 0.08);  
+    --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
 
-    /* --- CAMBIOS DE COLOR (AZULES) --- */
-    --color-destacado: #1e40af; /* Azul Rey Fuerte */
-    --color-precio: #1e3a8a;    /* Azul Marino */
-    --color-titulo: #1e293b;    /* Gris Oscuro */
+    --color-destacado: #d97706;
+    --color-precio: #047857;
+    --color-titulo: #0f172a;
 
-    --color-pendiente: #0369a1; /* Azul Brillante */
-    --border-pendiente: #0ea5e9;
+    --color-pendiente: #b45309;
+    --border-pendiente: #f59e0b;
     
-    /* Ajustes Badges para fondo blanco */
-    --bg-success: #dcfce7; --color-success: #15803d;
-    --bg-danger: #fee2e2; --color-danger: #b91c1c;
+    --bg-success: #d1fae5; 
+    --color-success: #065f46;
+    --bg-danger: #ffe4e6; 
+    --color-danger: #9f1239;
 }
 
 /* --- RESET & BASICS --- */
@@ -638,23 +636,12 @@ body.light-mode input[type="date"]::-webkit-calendar-picker-indicator {
 /* --- ESTILO DEL ITEM DEL CARRITO (FIX ALINEACIÓN Y COLORES) --- */
 
 .carrito-item {
-    /* Usamos GRID para columnas perfectas, adiós al efecto escalonado */
-    display: grid;
-    /* Definimos 4 columnas: 
-       1. Nombre (ocupa todo el espacio sobrante) 
-       2. Botones Cantidad (ancho automático)
-       3. Precio (ancho automático)
-       4. Basura (ancho automático) */
-    grid-template-columns: 1fr auto auto auto; 
-    gap: 15px; /* Espacio constante entre columnas */
-    align-items: center; /* Centrado vertical perfecto */
-    
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 12px;
-    margin-bottom: 8px; /* Separación entre items */
-}
+        padding: 4px 8px !important;
+        margin-bottom: 4px !important;
+        background: rgba(255, 255, 255, 0.04) !important;
+        border-radius: 6px !important;
+        font-size: 12px !important;
+    }
 
 /* Columna 1: Información del nombre */
 .carrito-item-info {
@@ -1753,18 +1740,18 @@ body.light-mode .mobile-menu-header h2 {
     /* 2. BARRA DE COBRO FIJA ABAJO (Colapsada a su contenido exacto) */
     .pos-right {
         position: fixed !important;
-        top: auto !important;          /* ⬅️ CLAVE: Evita que se estire hacia el techo */
+        top: auto !important;
         bottom: 0 !important;
         left: 0 !important;
         right: 0 !important;
         width: 100% !important;
-        height: auto !important;       /* ⬅️ CLAVE: Mide estrictamente lo que ocupan los botones */
-        min-height: auto !important;
+        max-height: 52vh !important; /* Permite crecer hasta la mitad de la pantalla */
+        overflow-y: auto !important;  /* Habilita scroll interno para que NUNCA se corte nada */
         background: #151f38 !important;
         border-top: 2px solid #f59e0b !important;
         border-radius: 18px 18px 0 0 !important;
-        padding: 12px 14px 16px 14px !important;
-        box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.6) !important;
+        padding: 10px 14px 18px 14px !important;
+        box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.7) !important;
         z-index: 1000 !important;
         box-sizing: border-box !important;
     }
@@ -1790,7 +1777,10 @@ body.light-mode .mobile-menu-header h2 {
 
     /* Ocultar items detallados para no inflar la barra en móvil */
     .carrito-items {
-        display: none !important;
+        display: block !important;    /* Vuelven a ser visibles los botones + y - */
+        max-height: 95px !important;  /* Altura controlada para no tapar toda la pantalla */
+        overflow-y: auto !important;
+        margin-bottom: 8px !important;
     }
 
     /* Selector de Métodos de Pago */

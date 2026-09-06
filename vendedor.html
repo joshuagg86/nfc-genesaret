@@ -410,7 +410,7 @@ function showError(message) {
         let authInitialized = false;
         let productosGlobales = [];
         let categoriaActiva = 'Todo';
-        let metodoPagoActual = 'efectivo'; 
+        let metodoPagoActual = 'nfc'; 
         let estadoTransferencia = 'pagado';
         let unsubscribeTransacciones = null;
 
@@ -455,7 +455,7 @@ function showError(message) {
             cargarPulseras();
             loadMyTransactions(); 
             cargarPendientes(); 
-            cambiarMetodoPago('efectivo');
+            cambiarMetodoPago('nfc');
 
             // 5. ANIMACIÓN DE SALIDA (NUEVO) ✨
             // Esperamos 1.5 segundos para que se vea el saludo y luego quitamos la pantalla
@@ -466,6 +466,40 @@ function showError(message) {
 
             unsubscribe();
         });
+        // --- CONTROL ANTI-DOBLE COBRO Y FEEDBACK HÁPTICO/AUDITIVO ---
+        let isProcessingPayment = false;
+
+        // Pitido estilo terminal POS mediante Web Audio API (no requiere archivos externos)
+        function reproducirBeepExito() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime); // Tono alto agradable (La5)
+                osc.frequency.exponentialRampToValueAtTime(1760, audioCtx.currentTime + 0.12);
+
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.15);
+            } catch (e) {
+                console.log("AudioContext no disponible o bloqueado por el navegador:", e);
+            }
+        }
+
+        // Vibración háptica nativa en Android
+        function dispararVibracionExito() {
+            if (navigator.vibrate) {
+                // Patrón: vibra 80ms, pausa 40ms, vibra 100ms
+                navigator.vibrate([80, 40, 100]);
+            }
+        }
 
         // --- LOGOUT SEGURO (VENDEDOR) ---
         function logout() {
@@ -802,17 +836,27 @@ function showError(message) {
                 resetScan();
             });
         }
-        function readPulseraData(id) {
+       function readPulseraData(id) {
+            // Si ya hay un cobro en curso, ignora cualquier lectura fantasma del chip
+            if (isProcessingPayment) return;
+
             db.collection('pulseras').where('id', '==', id).get().then(snap => {
-                if (snap.empty) { showError('Pulsera no encontrada'); resetScan(); return; }
+                if (snap.empty) { 
+                    showError('Pulsera no encontrada'); 
+                    resetScan(); 
+                    return; 
+                }
                 
                 const doc = snap.docs[0];
                 const p = doc.data();
-                if (p.bloqueada) { showError('🔒 Pulsera Bloqueada'); resetScan(); return; }
+                if (p.bloqueada) { 
+                    showError('🔒 Pulsera Bloqueada'); 
+                    resetScan(); 
+                    return; 
+                }
 
                 scannedPulsera = { id: doc.id, nombre: p.nombre, saldo: p.saldoActual };
                 
-                // ¡COBRO AUTOMÁTICO INMEDIATO!
                 const total = obtenerTotalCarrito();
                 if (total > 0) {
                     if (scannedPulsera.saldo < total) {
@@ -820,24 +864,56 @@ function showError(message) {
                         resetScan();
                         return;
                     }
-                    // Disparar venta directa
+                    // Disparar cobro directo protegido
                     ejecutarCobroInmediatoNFC();
                 } else {
-                    // Si el carrito está vacío, solo muestra el saldo
                     mostrarPulseraDetectada();
                 }
+            }).catch(err => {
+                console.error("Error leyendo pulsera:", err);
+                isProcessingPayment = false;
             });
         }
         function ejecutarCobroInmediatoNFC() {
+            if (isProcessingPayment) return;
+            isProcessingPayment = true;
+
             const total = obtenerTotalCarrito();
             const eventId = document.getElementById('eventSelect').value;
             const carritoId = Date.now().toString();
             const nuevoSaldo = scannedPulsera.saldo - total;
 
-            // Actualizar pulsera y guardar venta de un solo golpe
+            // Deshabilitar visualmente el botón de cobro para evitar clics accidentales
+            const btnCobro = document.getElementById('btnCobrar');
+            if (btnCobro) {
+                btnCobro.disabled = true;
+                btnCobro.textContent = 'Procesando...';
+            }
+
             db.collection('pulseras').doc(scannedPulsera.id).update({ saldoActual: nuevoSaldo }).then(() => {
+                // Feedback físico inmediato (vibración y sonido)
+                dispararVibracionExito();
+                reproducirBeepExito();
+
                 registrarTransaccion(eventId, scannedPulsera.id, scannedPulsera.nombre, nuevoSaldo, 'nfc', 'pagado', carritoId);
-            }).catch(e => showError(e.message));
+                
+                // Liberar el seguro tras 2.5 segundos para evitar rebotes de lectura
+                setTimeout(() => {
+                    isProcessingPayment = false;
+                    if (btnCobro) {
+                        btnCobro.disabled = false;
+                        btnCobro.textContent = '✓ COBRAR';
+                    }
+                }, 2500);
+
+            }).catch(e => {
+                isProcessingPayment = false;
+                if (btnCobro) {
+                    btnCobro.disabled = false;
+                    btnCobro.textContent = '✓ COBRAR';
+                }
+                showError(e.message);
+            });
         }
         function mostrarPulseraDetectada() {
             document.getElementById('saldoInfo').classList.add('show'); document.getElementById('saldoActual').textContent = scannedPulsera.saldo.toFixed(2);
