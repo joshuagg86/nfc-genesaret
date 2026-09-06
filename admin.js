@@ -71,15 +71,11 @@ function playTone(freq, type, duration) {
     osc.stop(audioCtx.currentTime + duration); 
 }
 
-function playSound(t) { 
-    try { 
-        if(t==='scan')playTone(800,'sine',0.1); 
-        else if(t==='success'){playTone(600,'sine',0.1);setTimeout(()=>playTone(1200,'sine',0.3),100);} 
-        else if(t==='error')playTone(150,'sawtooth',0.4); 
-    } catch(e){} 
+function playSound(t) {
+    // Silenciado temporalmente en pruebas de escritorio
+    return;
 }
 
-// --- AUTENTICACIÓN E INICIALIZACIÓN ---
 // --- AUTENTICACIÓN E INICIALIZACIÓN ---
 let currentUserId = localStorage.getItem('userId'); // Solo una vez
 
@@ -131,6 +127,7 @@ const unsubscribe = auth.onAuthStateChanged(user => {
     try { if(typeof cargarCategorias === 'function') cargarCategorias(); } catch(e) { console.error("Error categorías:", e); }
     try { if(typeof actualizarEstadisticas === 'function') actualizarEstadisticas(); } catch(e) { console.error("Error stats:", e); }
     try { if(typeof cargarDashboard === 'function') cargarDashboard(); } catch(e) { console.error("Error dash:", e); }
+    try { if(typeof cargarSelectoresVendedores === 'function') cargarSelectoresVendedores(); } catch(e) { console.error("Error vendedores:", e); }
 
     // D. Configurar fecha del reporte
     const inputMes = document.getElementById('filtroMesReporte');
@@ -1076,33 +1073,29 @@ function abrirModalEditarArticulo(id) {
     const articulo = articulosGlobales.find(a => a.id === id);
     if (!articulo) return;
 
-    // 1. CARGAR CATEGORÍAS (Esta es la parte que faltaba)
+    // 1. CARGAR CATEGORÍAS
     const selectCat = document.getElementById('editArticuloCategoria');
     
     if (selectCat) {
         let opcionesHTML = '<option value="">Selecciona...</option>';
         
-        // Usamos las categorías que ya cargó el sistema (variable global 'todasLasCategorias')
         if (typeof todasLasCategorias !== 'undefined' && todasLasCategorias.length > 0) {
             todasLasCategorias.forEach(cat => {
-                // El valor debe ser "Emoji + Espacio + Nombre" para que coincida
                 const valor = `${cat.emoji} ${cat.nombre}`;
                 opcionesHTML += `<option value="${valor}">${valor}</option>`;
             });
         } else {
-            // Respaldo básico por si acaso
             opcionesHTML += '<option value="🍔 Comida">🍔 Comida</option>';
             opcionesHTML += '<option value="🥤 Bebidas">🥤 Bebidas</option>';
         }
 
-        // TRUCO: Si el artículo tiene una categoría vieja o borrada, la agregamos para que no se pierda
         const catActual = articulo.categoria || "";
         if (catActual && !opcionesHTML.includes(`"${catActual}"`)) {
              opcionesHTML += `<option value="${catActual}">${catActual} (Categoría actual)</option>`;
         }
         
         selectCat.innerHTML = opcionesHTML;
-        selectCat.value = catActual; // ¡Aquí seleccionamos la categoría correcta!
+        selectCat.value = catActual;
     }
 
     // 2. LLENAR DATOS BÁSICOS
@@ -1114,28 +1107,29 @@ function abrirModalEditarArticulo(id) {
     const inputPrecio = document.getElementById('articuloPrice'); 
     if(inputPrecio) inputPrecio.value = articulo.precio ? articulo.precio : '';
 
-    // 3. LÓGICA DE STOCK (CORREGIDA PARA EVITAR BLOQUEO)
+    // SELECCIONAR VENDEDOR/PUESTO ASIGNADO
+    const selectVendedor = document.getElementById('editArticuloVendedor');
+    if (selectVendedor) {
+        selectVendedor.value = articulo.vendedorAsignadoId || 'todos';
+    }
+
+    // 3. LÓGICA DE STOCK
     const stockActual = articulo.stock || 0;
     
-    // Campo "Stock Actual"
     const inputActual = document.getElementById('artStockActual');
     if(inputActual) {
         inputActual.value = articulo.esInfinito ? "∞" : stockActual;
     }
 
-    // Campo "Sumar" (Siempre empieza vacío y limpio)
     const inputSumar = document.getElementById('artStockSumar');
     if(inputSumar) {
         inputSumar.value = ''; 
-        inputSumar.disabled = false; // <--- IMPORTANTE: Forzamos desbloqueo inicial
+        inputSumar.disabled = false;
     }
 
-    // Checkbox Infinito
     const checkInf = document.getElementById('artInfinito');
     if(checkInf) {
         checkInf.checked = articulo.esInfinito === true;
-        
-        // Ejecutamos la función INMEDIATAMENTE para aplicar el estado correcto
         toggleStockInput();
     }
 
@@ -1144,7 +1138,6 @@ function abrirModalEditarArticulo(id) {
     const titulo = document.getElementById('tituloModalArticulo');
     if(titulo) titulo.textContent = '✏️ Editar / Reabastecer';
     
-    // Truco extra: Poner el cursor automáticamente en "Sumar Cantidad" si no es infinito
     if (!articulo.esInfinito && inputSumar) {
         setTimeout(() => inputSumar.focus(), 100);
     }
@@ -1203,12 +1196,13 @@ function guardarArticuloFinal() {
     }
 
     db.collection('articulos').doc(id).update({
-        nombre: nombre, 
-        precio: parseFloat(document.getElementById('articuloPrice').value),
-        categoria: document.getElementById('editArticuloCategoria').value, 
-        esInfinito: inf, 
-        stock: inf ? 99999 : nuevoStockTotal
-    }).then(() => {
+    nombre: nombre, 
+    precio: parseFloat(document.getElementById('articuloPrice').value),
+    categoria: document.getElementById('editArticuloCategoria').value,
+    vendedorAsignadoId: document.getElementById('editArticuloVendedor').value || 'todos',
+    esInfinito: inf, 
+    stock: inf ? 99999 : nuevoStockTotal
+}).then(() => {
         // ... (resto del código de bitácora igual que tenías) ...
         if (stockSumar !== 0 && !inf) {
             const tipo = stockSumar > 0 ? 'entrada' : 'salida/ajuste'; // Detectamos tipo
@@ -1566,7 +1560,6 @@ function cerrarModalCrearUsuario() {
 }
 
 // --- FUNCIONES DE ACCIÓN ---
-// Asegúrate de actualizar tu función crearCuenta para cerrar el modal al final
 function crearCuenta() {
     const name = document.getElementById('newUserName').value.trim();
     const email = document.getElementById('newUserEmail').value.trim();
@@ -1576,9 +1569,7 @@ function crearCuenta() {
     if (!name || !email || !password) return showError('Completa todos los campos');
     if (password.length < 6) return showError('La contraseña debe tener al menos 6 caracteres');
 
-    showLoading(true);
-
-    // Usamos la app secundaria para no cerrar sesión del admin
+    // Usamos la app secundaria para no desloguear al Admin
     const secondaryApp = firebase.initializeApp(firebase.app().options, 'Secondary');
 
     secondaryApp.auth().createUserWithEmailAndPassword(email, password)
@@ -1594,13 +1585,14 @@ function crearCuenta() {
         .then(() => {
             secondaryApp.delete();
             showSuccess(`✅ Usuario ${name} creado correctamente.`);
-            cerrarModalCrearUsuario(); // <--- IMPORTANTE: Cerrar modal
+            cerrarModalCrearUsuario();
+            // Actualizamos selectores para que aparezca de inmediato al crear artículos
+            if (typeof cargarSelectoresVendedores === 'function') cargarSelectoresVendedores();
         })
         .catch((error) => {
             secondaryApp.delete();
             showError(error.message);
-        })
-        .finally(() => showLoading(false));
+        });
 }
 
 function cambiarEstadoUsuario(id, nuevoEstado) {
@@ -2151,9 +2143,8 @@ function cerrarModalHistorial() {
     document.getElementById('modalHistorialPulsera').classList.remove('active');
 }
 
-// --- GUARDAR NUEVO ARTÍCULO (FUNCIÓN CORREGIDA) ---
 
-// --- GUARDAR NUEVO ARTÍCULO (CORREGIDO CON TUS IDs) ---
+// --- GUARDAR NUEVO ARTÍCULO ---
 
 function guardarNuevoArticulo() {
     // 1. OBTENER VALORES (Usando tus IDs correctos del HTML)
@@ -2183,14 +2174,15 @@ function guardarNuevoArticulo() {
 
     // 4. GUARDAR EN FIREBASE
     const nuevoArticulo = {
-        eventId: eventoVal,
-        categoria: categoriaVal,
-        nombre: nombreVal,
-        precio: precioVal,
-        esInfinito: esInfinito,
-        stock: stockVal,
-        createdAt: new Date()
-    };
+    eventId: eventoVal,
+    categoria: categoriaVal,
+    nombre: nombreVal,
+    precio: precioVal,
+    esInfinito: esInfinito,
+    stock: stockVal,
+    vendedorAsignadoId: document.getElementById('articuloVendedor').value || 'todos', // Si lo dejas vacío, lo pueden vender todos
+    createdAt: new Date()
+};
 
     db.collection('articulos').add(nuevoArticulo)
         .then(() => {
@@ -3262,3 +3254,18 @@ function pedirMontoEfectivo(total, origen) {
         }
     });
 }
+function cargarSelectoresVendedores() {
+    db.collection('usuarios').where('role', '==', 'vendedor').get().then(snap => {
+        let opciones = '<option value="todos">⭐ Disponible para todos los puestos</option>';
+        
+        snap.forEach(doc => {
+            const u = doc.data();
+            opciones += `<option value="${doc.id}">🏪 ${u.name || u.email}</option>`;
+        });
+
+        const s1 = document.getElementById('articuloVendedor');
+        const s2 = document.getElementById('editArticuloVendedor');
+        if (s1) s1.innerHTML = opciones;
+        if (s2) s2.innerHTML = opciones;
+    }).catch(err => console.error("Error cargando lista de vendedores:", err));
+}   

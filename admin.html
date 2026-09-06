@@ -434,13 +434,38 @@
 
             <div class="card art-section active" id="sec-agregar">
                 <h3>➕ Nuevo Artículo</h3>
-                <div class="form-group"><label>Evento</label><select id="articuloEvento" onchange="sincronizarEventos(this.value); cargarArticulos();"></select></div>
-                <div class="form-group"><label>Categoría</label><input type="hidden" id="articuloCategoria"><div id="gridCategorias" class="category-selector-grid"></div></div>
-                <div class="form-group"><label>Nombre</label><input type="text" id="articuloName"></div>
-                <div class="form-group"><label>Precio</label><input type="number" id="artPrecio" onblur="formatearMonedaInput(this)"></div>
+                <div class="form-group">
+                    <label>Evento</label>
+                    <select id="articuloEvento" onchange="sincronizarEventos(this.value); cargarArticulos();"></select>
+                </div>
+                <div class="form-group">
+                    <label>Puesto / Vendedor Asignado</label>
+                    <select id="articuloVendedor">
+                        <option value="todos">⭐ Disponible para todos los puestos</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Categoría</label>
+                    <input type="hidden" id="articuloCategoria">
+                    <div id="gridCategorias" class="category-selector-grid"></div>
+                </div>
+                <div class="form-group">
+                    <label>Nombre</label>
+                    <input type="text" id="articuloName">
+                </div>
+                <div class="form-group">
+                    <label>Precio</label>
+                    <input type="number" id="artPrecio" onblur="formatearMonedaInput(this)">
+                </div>
                 <div class="form-group" style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;">
-                    <div style="display:flex; justify-content:space-between;"><label>Stock Infinito</label><label class="switch"><input type="checkbox" id="newArtInfinito" onchange="toggleNewStockInput()"><span class="slider"></span></label></div>
-                    <div style="margin-top:10px;"><label>Cantidad Inicial</label><input type="number" id="newArtStock"></div>
+                    <div style="display:flex; justify-content:space-between;">
+                        <label>Stock Infinito</label>
+                        <label class="switch"><input type="checkbox" id="newArtInfinito" onchange="toggleNewStockInput()"><span class="slider"></span></label>
+                    </div>
+                    <div style="margin-top:10px;">
+                        <label>Cantidad Inicial</label>
+                        <input type="number" id="newArtStock">
+                    </div>
                 </div>
                 <button class="btn-primary" onclick="guardarNuevoArticulo()" style="width: 100%;">Guardar Artículo</button>
             </div>
@@ -670,38 +695,59 @@
     </div>
 
     <div class="modal-overlay" id="modalArticulo" onclick="cerrarModalArticulo()">
-        <div class="modal-box" onclick="event.stopPropagation()">
-            <div class="modal-header"><h3 id="tituloModalArticulo">📦 Artículo</h3><button class="modal-close" onclick="cerrarModalArticulo()">×</button></div>
-            <div class="modal-body">
-                <input type="hidden" id="editArticuloId">
-                <div class="form-group"><label>Nombre</label><input type="text" id="artNombre"></div>
-                <div class="form-group"><label>Precio</label><input type="number" id="articuloPrice" onblur="formatearMonedaInput(this)"></div>
-                <div class="form-group"><label>Categoría</label><select id="editArticuloCategoria"><option>Comida</option></select></div>
-                <div class="form-group" style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px;">
-                    
-                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                        <label>¿Es Infinito?</label>
-                        <input type="checkbox" id="artInfinito" onchange="toggleStockInput()">
-                    </div>
-
-                    <div style="display: flex; gap: 10px;">
-                        <div style="flex: 1;">
-                            <label style="font-size:11px; color:#94a3b8;">Stock Actual</label>
-                            <input type="number" id="artStockActual" disabled style="background: rgba(0,0,0,0.2); color:#cbd5e1; font-weight:bold;">
-                        </div>
-
-                        <div style="flex: 1;">
-                            <label style="font-size:11px; color:#f59e0b;">+ Sumar / - Restar</label>
-                            <input type="number" id="artStockSumar" placeholder="Ej: -5 para restar" style="border-color: #f59e0b;">
-                        </div>
-                    </div>
-                    
-                    <input type="hidden" id="artStock"> 
-                </div>
+    <div class="modal-box" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3 id="tituloModalArticulo">📦 Artículo</h3>
+            <button class="modal-close" onclick="cerrarModalArticulo()">×</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="editArticuloId">
+            <div class="form-group">
+                <label>Nombre</label>
+                <input type="text" id="artNombre">
             </div>
-            <div class="modal-footer"><button class="btn-primary" onclick="guardarArticuloFinal()">Guardar</button></div>
+            <div class="form-group">
+                <label>Precio</label>
+                <input type="number" id="articuloPrice" onblur="formatearMonedaInput(this)">
+            </div>
+            <div class="form-group">
+                <label>Categoría</label>
+                <select id="editArticuloCategoria">
+                    <option>Comida</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Puesto / Vendedor Asignado</label>
+                <select id="editArticuloVendedor">
+                    <option value="todos">⭐ Disponible para todos los puestos</option>
+                </select>
+            </div>
+            <div class="form-group" style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                    <label>¿Es Infinito?</label>
+                    <input type="checkbox" id="artInfinito" onchange="toggleStockInput()">
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex: 1;">
+                        <label style="font-size:11px; color:#94a3b8;">Stock Actual</label>
+                        <input type="number" id="artStockActual" disabled style="background: rgba(0,0,0,0.2); color:#cbd5e1; font-weight:bold;">
+                    </div>
+
+                    <div style="flex: 1;">
+                        <label style="font-size:11px; color:#f59e0b;">+ Sumar / - Restar</label>
+                        <input type="number" id="artStockSumar" placeholder="Ej: -5 para restar" style="border-color: #f59e0b;">
+                    </div>
+                </div>
+                
+                <input type="hidden" id="artStock"> 
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-primary" onclick="guardarArticuloFinal()">Guardar</button>
         </div>
     </div>
+</div>
 
     <div class="modal-overlay" id="modalHistorialPulsera" onclick="cerrarModalHistorial()">
         <div class="modal-box" onclick="event.stopPropagation()" style="max-width: 600px;">
