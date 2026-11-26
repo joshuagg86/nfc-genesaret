@@ -77,3 +77,28 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .screen-admin .overview-hero{padding:2px 0 6px;gap:12px}.screen-admin .overview-hero h2{font-size:25px;margin:4px 0}.screen-admin .overview-eyebrow{display:none}.screen-admin .overview-status{margin:6px 0 12px}.screen-admin .overview-kpi{padding:14px;gap:5px;border-radius:16px}.screen-admin .overview-kpi i{padding:8px;width:32px;font-size:15px}.screen-admin .overview-kpi strong{font-size:clamp(19px,2.7vw,29px)}.screen-admin .overview-kpis{gap:10px}.screen-admin .overview-panel{padding:16px;border-radius:16px}.screen-admin .overview-panel p{margin-bottom:12px}.screen-admin .overview-ranking,.screen-admin .overview-feed{gap:10px;min-height:0;max-height:220px}.screen-admin .overview-secondary{margin:10px 0;padding:12px;border-radius:16px}.screen-admin .overview-panels{gap:10px;margin-bottom:10px}
 @media(min-width:700px){.screen-admin .overview-panels{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr)}.screen-admin .overview-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}.screen-vendedor .pos-layout{grid-template-columns:minmax(0,1.5fr) minmax(290px,1fr)}}
 @media(max-width:699px){.screen-admin .overview-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.screen-admin .overview-panels,.shell-menu{grid-template-columns:1fr}.dashboard-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))}.screen-admin .overview-secondary{grid-template-columns:1fr}.screen-admin .overview-filter{gap:6px}.screen-admin .overview-filter .btn-primary{display:none}}
+/* ===== FIX: ocultar footer en vistas tipo app ===== */
+.screen-admin footer,
+.screen-vendedor footer,
+.screen-admin .footer,
+.screen-vendedor .footer {
+  display: none !important;
+}
+
+/* Si el footer está fuera del body estructurado o usa otra clase */
+body.screen-admin > footer,
+body.screen-vendedor > footer {
+  display: none !important;
+}
+
+/* Asegurar que la barra inferior quede por encima de todo */
+.native-tabs,
+.screen-vendedor .container > .sub-nav-container {
+  z-index: 9999 !important;
+}
+
+/* Espacio inferior suficiente para que el contenido no choque con la barra */
+.screen-admin .container,
+.screen-vendedor .container {
+  padding-bottom: calc(96px + env(safe-area-inset-bottom)) !important;
+}
