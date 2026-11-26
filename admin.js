@@ -640,89 +640,39 @@ function cargarSelectorRecarga() {
 }
 
 // --- 3. RECARGA CON TICKET VIRTUAL ---
-function recargarSaldo() {
-    const val = document.getElementById('recargaPulsera').value; 
-    const montoStr = document.getElementById('montoRecarga').value;
-    const motivo = document.getElementById('motivoRecarga').value;
-    
-    if(!val || !montoStr) return Swal.fire('Error', 'Selecciona pulsera y monto', 'error');
-    
-    const monto = parseFloat(montoStr);
-    
-    // --- CAMBIO 1: Leemos el 4to valor (eventId) ---
-    // Nota: Esto asume que ya actualizaste cargarPulseras para incluir el ID al final
-    const [pid, saldoAnteriorStr, nom, eventId] = val.split('|');
-    
-    const saldoAnterior = parseFloat(saldoAnteriorStr);
-    const saldoNuevo = saldoAnterior + monto;
-    
-    const fecha = new Date();
-
-    db.collection('pulseras').doc(pid).update({
-        saldoActual: saldoNuevo, 
-        // Opcional: Si quieres llevar registro de cuánto se ha metido en total históricamente:
-        saldoInicial: firebase.firestore.FieldValue.increment(monto) 
-    }).then(() => {
-        
-        // --- CAMBIO 2: Guardar en historial CON EL EVENTO ---
-        db.collection('recargas').add({
-            pulseraId: pid, 
-            pulseraNombre: nom, 
-            monto: monto, 
-            saldoAnterior: saldoAnterior, 
-            saldoNuevo: saldoNuevo, 
-            fecha: fecha, 
-            motivo: motivo || 'Recarga de Saldo', // Texto por defecto si está vacío
-            eventId: eventId, // <--- ESTO ES LO QUE FALTABA
-            realizadoPor: localStorage.getItem('userName') || 'Admin'
+let rechargeBusy = false;
+async function recargarSaldo() {
+    if (rechargeBusy) return;
+    const value = document.getElementById('recargaPulsera').value;
+    const amount = Number(document.getElementById('montoRecarga').value);
+    const reason = document.getElementById('motivoRecarga').value.trim();
+    if (!value || !Number.isFinite(amount) || amount <= 0 || Math.abs(amount*100-Math.round(amount*100)) > 0.000001) return showError('Selecciona una pulsera y un monto positivo válido');
+    const [pid] = value.split('|');
+    const wallet = db.collection('pulseras').doc(pid);
+    const movement = db.collection('recargas').doc();
+    const user = auth.currentUser;
+    if (!user) return showError('Inicia sesión');
+    rechargeBusy = true;
+    try {
+        const result = await db.runTransaction(async tx => {
+            const [doc,profile] = await Promise.all([tx.get(wallet),tx.get(db.collection('usuarios').doc(user.uid))]);
+            if (!profile.exists || profile.data().role !== 'admin' || profile.data().activo === false) throw Error('Sin autorización');
+            if (!doc.exists || doc.data().bloqueada) throw Error('Pulsera inválida o bloqueada');
+            const p = doc.data(), before = Math.round(Number(p.saldoActual)*100), initial = Math.round(Number(p.saldoInicial)*100);
+            if (!Number.isSafeInteger(before) || before < 0 || !Number.isSafeInteger(initial)) throw Error('Saldo inválido');
+            const after = before + Math.round(amount*100);
+            tx.update(wallet,{saldoActual:after/100,saldoInicial:(initial+Math.round(amount*100))/100});
+            tx.set(movement,{pulseraId:pid,pulseraNombre:p.nombre,monto:amount,saldoAnterior:before/100,saldoNuevo:after/100,fecha:new Date(),motivo:reason||'Recarga de Saldo',eventId:p.eventId,realizadoPor:profile.data().name||user.email,realizadoPorId:user.uid});
+            return {after:after/100,before:before/100,name:p.nombre};
         });
-
-        // GENERAR HTML DEL TICKET
-        const ticketHTML = `
-            <div class="ticket-container">
-                <div class="ticket-header">
-                    <strong>GENESARET EVENTOS</strong><br>
-                    <small>${fecha.toLocaleString()}</small>
-                </div>
-                <div class="ticket-row"><span>Cliente:</span> <span>${nom}</span></div>
-                <div class="ticket-row"><span>Saldo Ant:</span> <span>$${saldoAnterior.toFixed(2)}</span></div>
-                <div class="ticket-row"><span>Recarga:</span> <span>$${monto.toFixed(2)}</span></div>
-                <div class="ticket-total">
-                    TOTAL: $${saldoNuevo.toFixed(2)}
-                </div>
-                <div style="text-align:center; margin-top:10px; font-size:12px;">
-                    ¡Gracias por tu recarga! 🥳
-                </div>
-            </div>
-        `;
-
-        // MOSTRAR TICKET CON SWEETALERT
-        Swal.fire({
-            title: '¡Recarga Exitosa!',
-            html: ticketHTML,
-            icon: null, 
-            confirmButtonText: 'Cerrar Ticket',
-            confirmButtonColor: '#22c55e',
-            background: '#1e293b',
-            color: '#fff'
-        });
-
-        // Limpiar formulario
-        document.getElementById('montoRecarga').value = ''; 
-        document.getElementById('motivoRecarga').value = '';
-        document.getElementById('infoSaldoActual').style.display = 'none';
-        
-        // Recargar selector para actualizar saldo visible en la lista
-        if(typeof cargarSelectorRecarga === 'function') {
-            cargarSelectorRecarga(); 
-        } else {
-            // Fallback si usas cargarPulseras
-            cargarPulseras();
-        }
-    }).catch(error => {
-        console.error("Error en recarga: ", error);
-        Swal.fire('Error', 'No se pudo realizar la recarga', 'error');
-    });
+        playSound('success');
+        Swal.fire({title:'Recarga exitosa',text:result.name+' · Saldo anterior $'+result.before.toFixed(2)+' · Recarga $'+amount.toFixed(2)+' · Saldo disponible $'+result.after.toFixed(2),icon:'success',confirmButtonText:'Cerrar'});
+        document.getElementById('montoRecarga').value='';
+        document.getElementById('motivoRecarga').value='';
+        document.getElementById('infoSaldoActual').style.display='none';
+        cargarSelectorRecarga();
+    } catch(error) { showError(error.message); }
+    finally { rechargeBusy = false; }
 }
 
 function verHistorialPulsera(pid, nom) {

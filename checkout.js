@@ -25,7 +25,7 @@
             if (previous.exists) throw Error('Esta venta ya fue registrada');
             let before = 0, after = 0;
             if (walletRef) {
-                if (!wallet.exists || wallet.data().bloqueada) throw Error('Pulsera inválida o bloqueada');
+                if (!wallet.exists || wallet.data().bloqueada || wallet.data().activo === false) throw Error('Pulsera inválida o bloqueada');
                 before = money(wallet.data().saldoActual);
                 if (!Number.isSafeInteger(before) || before < total) throw Error('Saldo insuficiente');
                 after = before - total;

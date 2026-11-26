@@ -20,6 +20,7 @@ function toggleTheme() {
         if (localStorage.getItem('themePreference') === 'light') { document.body.classList.add('light-mode'); }
         updateThemeIcon();
 
+        let allRecargas = null;
         let allTransactions = [], allPulseras = [], allEventos = [], filteredTransactions = [];
         let inventarioData = [], filteredInventario = [], inventarioListenerActivo = false;
         let filteredPulserasReport = []; 
@@ -39,9 +40,16 @@ function toggleTheme() {
             cargarEventos(); 
             cargarTransacciones(); 
             cargarPulseras();
+            cargarRecargasReporte();
             cargarVendedoresFiltro();
         });
 
+        function cargarRecargasReporte() {
+            db.collection('recargas').onSnapshot(snap=>{
+                allRecargas = snap.docs.map(doc=>doc.data());
+                actualizarReportes();
+            },()=>{allRecargas=null;actualizarReportes();});
+        }
         function cargarEventos() {
             db.collection('eventos').get().then(snap => {
                 allEventos = []; 
@@ -81,7 +89,7 @@ function toggleTheme() {
         function cargarPulseras() {
             db.collection('pulseras').onSnapshot(snap => {
                 allPulseras = []; 
-                snap.forEach(d => allPulseras.push({id: d.id, ...d.data()}));
+                snap.forEach(d => allPulseras.push({id: d.id, ...d.data(), docId:d.id}));
                 actualizarReportes();
             });
         }
@@ -96,13 +104,13 @@ function toggleTheme() {
             const fHasta = document.getElementById('fechaHasta').value;
 
             let pulserasF = selectedEventoFilter ? allPulseras.filter(p => p.eventId === selectedEventoFilter) : allPulseras;
-            const pIds = pulserasF.map(p => p.id);
+            const pIds = pulserasF.map(p => p.docId);
 
             let transF = [...allTransactions];
             
             // 1. Filtro por Evento
             if (selectedEventoFilter) {
-                transF = transF.filter(t => t.eventId === selectedEventoFilter || pIds.includes(t.pulseraId));
+                transF = transF.filter(t => t.eventId === selectedEventoFilter || (!t.eventId && pIds.includes(t.pulseraId)));
             }
 
             // 2. Filtro por Vendedor
@@ -388,6 +396,104 @@ function toggleTheme() {
             filteredPulserasReport = lista;
 
             let totalRestante = 0, totalGastado = 0;
+            const ids = new Set(lista.flatMap(p=>[p.docId,p.id]));
+            const byWallet = new Map();
+            allTransactions.forEach(t=>{
+                if(t.metodoPago !== 'nfc' || t.estadoPago === 'pendiente' || (ev && t.eventId !== ev && (t.eventId || !ids.has(t.pulseraId)))) return;
+                byWallet.set(t.pulseraId,(byWallet.get(t.pulseraId)||0)+(Number(t.monto)||0));
+            });
+            const rechargeTotal = allRecargas === null ? null : allRecargas.filter(r=>(!ev||r.eventId===ev||(!r.eventId&&ids.has(r.pulseraId)))&&ids.has(r.pulseraId)).reduce((sum,r)=>sum+(Number(r.monto)||0),0);
+            document.getElementById('pulsRecargasTotal').textContent = rechargeTotal === null ? '—' : '
+            let html = '<table class="table"><thead><tr><th>ID</th><th>Nombre</th><th>Saldo Inicial</th><th>Gastado</th><th>Saldo Actual</th><th>Estado</th></tr></thead><tbody>';
+            
+            if(!lista.length) html='<div style="text-align:center;padding:20px;color:var(--text-muted);">Sin pulseras</div>';
+            else {
+                lista.forEach(p => {
+                    const sIni = p.saldoInicial || 0;
+                    const sAct = p.saldoActual || 0;
+                    const gastado = byWallet.get(p.docId) ?? byWallet.get(p.id) ?? 0;
+                    totalRestante += sAct; totalGastado += gastado;
+                    const estado = p.bloqueada ? '<span class="badge badge-pendiente">Bloqueada</span>' : '<span class="badge badge-success">Activa</span>';
+                    html += `<tr><td>${p.id}</td><td>${p.nombre}</td><td>$${sIni.toFixed(2)}</td><td style="color:#ef4444;">-$${gastado.toFixed(2)}</td><td style="font-weight:bold;">$${sAct.toFixed(2)}</td><td>${estado}</td></tr>`;
+                });
+                html += '</tbody></table>';
+            }
+
+            document.getElementById('reportePulserasList').innerHTML = html;
+            document.getElementById('pulsSaldoRestante').textContent = totalRestante.toFixed(2);
+            document.getElementById('pulsSaldoGastado').textContent = totalGastado.toFixed(2);
+            document.getElementById('pulsTotalCount').textContent = lista.length;
+        }
+
+        function openDownloadModal(){ document.getElementById('downloadModal').style.display='flex'; }
+        function closeDownloadModal(){ document.getElementById('downloadModal').style.display='none'; }
+
+        function downloadExcelReport() {
+            if (typeof XLSX === 'undefined') { alert('⚠️ Error al cargar librería Excel.'); return; }
+            try {
+                const isInv = document.getElementById('rep-inventario').classList.contains('active');
+                const isPuls = document.getElementById('rep-pulseras').classList.contains('active');
+                let dataToExport = [], sheetName = "Reporte", fileName = "Reporte";
+
+                if (isInv) {
+                    sheetName = "Inventario"; fileName = "Inventario";
+                    dataToExport = (filteredInventario.length?filteredInventario:inventarioData).map(i => ({ Producto: i.nombre, Categoria: i.categoria, Precio: i.precio, Stock: i.esInfinito?'Infinito':i.stock, Valor: i.esInfinito?0:(i.stock*i.precio) }));
+                } else if (isPuls) {
+                    sheetName = "Pulseras"; fileName = "Pulseras";
+                    dataToExport = (filteredPulserasReport.length?filteredPulserasReport:allPulseras).map(p => ({ ID: p.id, Nombre: p.nombre, 'Saldo Inicial': p.saldoInicial, 'Saldo Actual': p.saldoActual, 'Gastado': (p.saldoInicial||0)-(p.saldoActual||0), Estado: p.bloqueada?'Bloqueada':'Activa' }));
+                } else {
+                    sheetName = "Ventas"; fileName = "Ventas";
+                    dataToExport = (filteredTransactions.length?filteredTransactions:allTransactions).map(t => ({ Fecha: t.fecha?.toDate?t.fecha.toDate().toLocaleString():'', Vendedor: t.vendedor, Cliente: t.pulsera, Producto: t.articulo, Cantidad: t.cantidad||1, Metodo: t.metodoPago, Monto: t.monto }));
+                }
+
+                if(!dataToExport.length) { alert('Sin datos para exportar'); return; }
+                const wb = XLSX.utils.book_new(); const ws = XLSX.utils.json_to_sheet(dataToExport);
+                XLSX.utils.book_append_sheet(wb, ws, sheetName); XLSX.writeFile(wb, `Reporte_${fileName}_${hoy}.xlsx`);
+                closeDownloadModal();
+            } catch(e) { console.error(e); alert('Error generando Excel: '+e.message); }
+        }
+
+        function downloadHTMLReport() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            doc.text("Reporte Genesaret", 14, 15);
+            doc.setFontSize(10);
+            doc.text(`Fecha impresión: ${new Date().toLocaleDateString()}`, 14, 22);
+
+            let head = [], body = [];
+            
+            if(document.getElementById('rep-inventario').classList.contains('active')) {
+                head = [['Producto', 'Categoría', 'Stock', 'Valor']];
+                body = (filteredInventario.length ? filteredInventario : inventarioData).map(i => [
+                    i.nombre, 
+                    i.categoria, 
+                    i.esInfinito ? 'Inf' : i.stock, 
+                    i.esInfinito ? '-' : `$${(i.stock*i.precio).toFixed(2)}`
+                ]);
+            } else {
+                head = [['Fecha', 'Vendedor', 'Producto', 'Cant', 'Método', 'Monto']];
+                body = (filteredTransactions.length ? filteredTransactions : allTransactions).map(t => [
+                    t.fecha?.toDate ? t.fecha.toDate().toLocaleDateString() : '-',
+                    t.vendedor || 'Sistema',
+                    t.articulo,
+                    t.cantidad || 1,
+                    t.metodoPago,
+                    `$${t.monto.toFixed(2)}`
+                ]);
+            }
+
+            doc.autoTable({
+                head: head,
+                body: body,
+                startY: 30,
+                theme: 'grid'
+            });
+
+            doc.save('Reporte_Genesaret.pdf');
+            closeDownloadModal();
+        }
++rechargeTotal.toFixed(2);
             let html = '<table class="table"><thead><tr><th>ID</th><th>Nombre</th><th>Saldo Inicial</th><th>Gastado</th><th>Saldo Actual</th><th>Estado</th></tr></thead><tbody>';
             
             if(!lista.length) html='<div style="text-align:center;padding:20px;color:var(--text-muted);">Sin pulseras</div>';

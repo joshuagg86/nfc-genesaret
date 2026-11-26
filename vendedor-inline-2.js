@@ -423,7 +423,7 @@ function cargarProductosPorEvento() {
     renderizarCarrito();
 }
         function eliminarDelCarrito(idx) { if (isProcessingPayment) return; carrito.splice(idx, 1); renderizarCarrito(); }
-        function vaciarCarrito() { carrito = []; renderizarCarrito(); }
+        function vaciarCarrito(force = false) { if (isProcessingPayment && !force) return; carrito = []; renderizarCarrito(); }
         
         function renderizarCarrito() {
             const cont = document.getElementById('carritoItems'); 
@@ -533,7 +533,7 @@ function cargarProductosPorEvento() {
             });
         }
         function ejecutarCobroInmediatoNFC() {
-    if (isProcessingPayment || !scannedPulsera || !carrito.length) return;
+    if (isProcessingPayment || !scannedPulsera || !carrito.length || metodoPagoActual !== 'nfc') return;
     const eventId = document.getElementById('eventSelect').value;
     registrarTransaccion(eventId, scannedPulsera.id, scannedPulsera.nombre, 0, 'nfc', 'pagado', db.collection('transacciones').doc().id);
 }
@@ -710,13 +710,15 @@ function cargarProductosPorEvento() {
         async function registrarTransaccion(eventId, pulseraId, pulseraNombre, saldoNuevo, metodo, estado, carritoId) {
     if (isProcessingPayment) return;
     isProcessingPayment = true;
+    const eventSelector = document.getElementById('eventSelect');
+    eventSelector.disabled = true;
     const items = carrito.map(i => ({...i}));
     const total = obtenerTotalCarrito();
     try {
         const result = await GenesaretCheckout.commit({db, auth, eventId, items, pulseraId, pulseraNombre, metodo, estado, carritoId});
         if (estado === 'pagado') playSound('success');
         mostrarConfirmacionPago(total, pulseraNombre, result.saldoNuevo, metodo, estado);
-        vaciarCarrito();
+        vaciarCarrito(true);
         if (metodo === 'nfc') resetScan();
         document.getElementById('nombreClienteTransferencia').value = '';
         setEstadoTransferencia('pagado');
@@ -725,6 +727,7 @@ function cargarProductosPorEvento() {
         showError(error.message);
     } finally {
         isProcessingPayment = false;
+        eventSelector.disabled = false;
         const btnNFC = document.getElementById('btnPagarNFC');
         const btnDirecto = document.querySelector('#seccionPagoDirecto button');
         if (btnNFC) btnNFC.disabled = false;
