@@ -54,7 +54,8 @@
             transform: translate(-50%, -50%); 
             z-index: 10;
         ">
-            <button onclick="switchTab('eventos')" class="nav-link active" id="nav-eventos">Eventos</button>
+            <button onclick="switchTab('dashboard')" class="nav-link active" id="nav-dashboard">Inicio</button>
+            <button onclick="switchTab('eventos')" class="nav-link" id="nav-eventos">Eventos</button>
             <button onclick="switchTab('pulseras')" class="nav-link" id="nav-pulseras">Pulseras</button>
             <button onclick="switchTab('articulos')" class="nav-link" id="nav-articulos">Artículos</button>
             <button onclick="switchTab('cuentas')" class="nav-link" id="nav-cuentas">Cuentas</button>
@@ -110,6 +111,7 @@
                     </div>
                 </div>
                 <div class="mobile-menu-items">
+                    <button class="mobile-menu-item" onclick="switchTabMobile('dashboard')"><i class="fas fa-chart-pie"></i> Inicio</button>
                     <button class="mobile-menu-item" onclick="switchTabMobile('eventos')">
                         <i class="fas fa-calendar-alt"></i> Eventos
                     </button>
@@ -142,7 +144,15 @@
         <div class="alert alert-success" id="successAlert"></div>
         <div class="alert alert-error" id="errorAlert"></div>
 
-        <div class="tab-content active" id="eventos">
+        <section class="tab-content active" id="dashboard">
+<div class="overview-hero"><div><span class="overview-eyebrow">GENESARET / ADMINISTRACIÓN</span><h2>Resumen de operaciones</h2><p>Control de ventas, pulseras e inventario.</p></div><div class="overview-filter"><label for="overviewEvent">Evento</label><select id="overviewEvent"><option value="">Todos los eventos</option></select><button class="btn-primary" onclick="abrirPOSAdmin()"><i class="fas fa-cash-register"></i> Nueva venta</button></div></div>
+<p id="overviewStatus" role="status" class="overview-status">Conectando con los datos…</p>
+<div class="overview-kpis"><article class="overview-kpi recargas"><i class="fas fa-wallet"></i><span>Recargas brutas</span><strong id="overview-recargas">—</strong><small>Saldo ingresado</small></article><article class="overview-kpi ventas"><i class="fas fa-cash-register"></i><span>Consumo total</span><strong id="overview-ventas">—</strong><small>Ventas cobradas</small></article><article class="overview-kpi saldo"><i class="fas fa-credit-card"></i><span>Saldo flotante</span><strong id="overview-saldo">—</strong><small>Saldo actual de pulseras</small></article><article class="overview-kpi operaciones"><i class="fas fa-bolt"></i><span>Operaciones</span><strong id="overview-operaciones">—</strong><small>Ventas y recargas</small></article></div>
+<div class="overview-secondary"><div><span>Pulseras registradas</span><strong id="overview-pulseras">—</strong></div><div><span>Consumo NFC / QR</span><strong id="overview-nfc">—</strong></div><div><span>Transferencias pendientes</span><strong id="overview-pendientes">—</strong></div></div>
+<div class="overview-panels"><article class="overview-panel"><h3>Productos más vendidos</h3><p>Unidades cobradas · Top 5</p><div id="overviewRanking" class="overview-ranking"></div></article><article class="overview-panel"><h3>Actividad reciente</h3><p>Últimos movimientos del evento</p><div id="overviewFeed" class="overview-feed"></div></article></div>
+<div class="overview-panels"><article class="overview-panel"><h3>Métodos de pago</h3><p>Distribución de ventas cobradas</p><div id="overviewMethods" class="overview-ranking"></div></article><article class="overview-panel"><h3>Inventario bajo</h3><p>Productos con 5 unidades o menos</p><div id="overviewStock" class="overview-feed"></div><button class="btn-secondary" onclick="switchTab('articulos')">Ver inventario</button></article></div>
+</section>
+<div class="tab-content" id="eventos">
             <div class="grid">
                 <div class="card">
                     <h3>📅 Crear Evento</h3>
@@ -300,24 +310,7 @@
     </div>
 </div>
             </div>
-            <div id="widgetStockAlerta" style="display: none; margin-bottom: 20px;">
-                    <div class="card" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3);">
-                        <h3 style="color: #ef4444; margin: 0 0 10px 0; display: flex; align-items: center; gap: 10px;">
-                            ⚠️ Alerta de Stock Bajo
-                        </h3>
-                        <div id="listaStockBajo" style="display: flex; flex-direction: column; gap: 8px;">
-                            </div>
-                    </div>
-                </div>
-            <div class="card" style="margin-top: 20px;">
-                <h3>📈 Estadísticas Rápidas</h3>
-                <div class="stats-grid">
-                    <div class="stat-box"><div class="stat-value" id="totalPulseras">0</div><div class="stat-label">Pulseras</div></div>
-                    <div class="stat-box"><div class="stat-value" id="totalTransacciones">0</div><div class="stat-label">Ventas</div></div>
-                    <div class="stat-box"><div class="stat-value" id="totalArticulos">0</div><div class="stat-label">Artículos</div></div>
-                </div>
             </div>
-        </div>
 
         <div class="tab-content" id="pulseras">
             <div class="sub-nav-container">
@@ -801,6 +794,7 @@
     <script src="config.js?v=1.4"></script>
     <script src="checkout.js"></script>
     
+    <script src="dashboard.js"></script>
     <script src="admin.js"></script> 
 </body>
 </html>

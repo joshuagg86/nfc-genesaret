@@ -138,7 +138,7 @@ const unsubscribe = auth.onAuthStateChanged(user => {
     }
 
     // E. Restaurar pestaña activa
-    const tab = localStorage.getItem('activeTab') || 'eventos'; 
+    const tab = 'dashboard'; 
     if(typeof switchTab === 'function') switchTab(tab);
 
     // F. FINALMENTE: Quitar pantalla de carga
@@ -1535,47 +1535,8 @@ function borrarUsuario(id, nombre) {
 }
 
 // --- ESTADISTICAS ---
-function actualizarEstadisticas() {
-    db.collection('eventos').get().then(s=>document.getElementById('totalEventos').textContent=s.size);
-    db.collection('pulseras').get().then(s=>document.getElementById('totalPulseras').textContent=s.size);
-    db.collection('transacciones').get().then(s=>document.getElementById('totalTransacciones').textContent=s.size);
-    db.collection('articulos').get().then(s=>document.getElementById('totalArticulos').textContent=s.size);
-}
-
-function cargarDashboard() {
-    // 1. CARGA DE VENTAS DEL DÍA (Tu código original)
-    const hoy = new Date(); hoy.setHours(0,0,0,0);
-    
-    db.collection('transacciones').where('fecha','>=',hoy).onSnapshot(s=>{
-        let tot=0, nfc=0, efe=0, transf=0;
-        s.forEach(d=>{ 
-            const t=d.data(); const m=t.monto||0; 
-            tot+=m; 
-            if(t.metodoPago==='efectivo') efe+=m; 
-            else if(t.metodoPago==='transferencia') transf+=m;
-            else nfc+=m; 
-        });
-        
-        // Verificamos que existan los elementos antes de asignarles valor para evitar errores
-        const elTotal = document.getElementById('dashTotalVentas');
-        if(elTotal) elTotal.textContent='$'+tot.toFixed(2);
-        
-        const elNFC = document.getElementById('dashTotalNFC');
-        if(elNFC) elNFC.textContent='$'+nfc.toFixed(2);
-        
-        const elEfe = document.getElementById('dashTotalEfectivo');
-        if(elEfe) elEfe.textContent='$'+efe.toFixed(2);
-        
-        const elTransf = document.getElementById('dashTotalTransf');
-        if(elTransf) elTransf.textContent='$'+transf.toFixed(2);
-    });
-
-    // 2. NUEVO: ACTIVAR ALERTAS DE STOCK
-    // Llamamos a la función que vigila el inventario
-    if(typeof verificarStockBajo === 'function') {
-        verificarStockBajo();
-    }
-}
+function actualizarEstadisticas() { /* Metrics are owned by the dashboard. */ }
+function cargarDashboard() { GenesaretDashboard.start(db); }
 
 // --- SIMULACIÓN COBRO ---
 function loadSimArticulos() { /* Ya cargado en cargarArticulos */ }
