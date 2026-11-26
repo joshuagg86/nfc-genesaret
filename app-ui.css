@@ -77,28 +77,50 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .screen-admin .overview-hero{padding:2px 0 6px;gap:12px}.screen-admin .overview-hero h2{font-size:25px;margin:4px 0}.screen-admin .overview-eyebrow{display:none}.screen-admin .overview-status{margin:6px 0 12px}.screen-admin .overview-kpi{padding:14px;gap:5px;border-radius:16px}.screen-admin .overview-kpi i{padding:8px;width:32px;font-size:15px}.screen-admin .overview-kpi strong{font-size:clamp(19px,2.7vw,29px)}.screen-admin .overview-kpis{gap:10px}.screen-admin .overview-panel{padding:16px;border-radius:16px}.screen-admin .overview-panel p{margin-bottom:12px}.screen-admin .overview-ranking,.screen-admin .overview-feed{gap:10px;min-height:0;max-height:220px}.screen-admin .overview-secondary{margin:10px 0;padding:12px;border-radius:16px}.screen-admin .overview-panels{gap:10px;margin-bottom:10px}
 @media(min-width:700px){.screen-admin .overview-panels{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr)}.screen-admin .overview-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}.screen-vendedor .pos-layout{grid-template-columns:minmax(0,1.5fr) minmax(290px,1fr)}}
 @media(max-width:699px){.screen-admin .overview-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.screen-admin .overview-panels,.shell-menu{grid-template-columns:1fr}.dashboard-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))}.screen-admin .overview-secondary{grid-template-columns:1fr}.screen-admin .overview-filter{gap:6px}.screen-admin .overview-filter .btn-primary{display:none}}
-/* ===== FIX: ocultar footer en vistas tipo app ===== */
-.screen-admin footer,
-.screen-vendedor footer,
-.screen-admin .footer,
-.screen-vendedor .footer {
-  display: none !important;
-}
 
-/* Si el footer está fuera del body estructurado o usa otra clase */
-body.screen-admin > footer,
-body.screen-vendedor > footer {
-  display: none !important;
+/* Alabanza-inspired shared app theme. Keep the tab bar below dialogs. */
+.screen-admin,.screen-vendedor{padding:0!important;min-height:100dvh}
+.screen-admin footer,.screen-vendedor footer{display:none!important}
+.screen-admin:not(.light-mode),.screen-vendedor:not(.light-mode){
+ --bg-body:radial-gradient(ellipse at 12% 0%,#074365 0%,#092b40 32%,#081a29 68%,#080f1b 100%);
+ --bg-card:#102437;--bg-header:#0b2b40;--bg-input:#0c2030;--bg-item-list:#102b40;--bg-th:#0b2234;
+ --border-color:#23445b;--text-main:#f1f8ff;--text-muted:#a9c3d6;--text-label:#c0d6e7;--color-titulo:#eaf7ff;--color-precio:#57caff;--color-destacado:#39b9ff;
+ --app-accent:#23baff;--app-gradient:linear-gradient(135deg,#00c4f5 0%,#008ff1 52%,#0865e5 100%);
 }
-
-/* Asegurar que la barra inferior quede por encima de todo */
-.native-tabs,
-.screen-vendedor .container > .sub-nav-container {
-  z-index: 9999 !important;
+.screen-admin.light-mode,.screen-vendedor.light-mode{--app-accent:#0066bc;--app-gradient:linear-gradient(135deg,#008fc8,#0064d7)}
+.screen-admin .container,.screen-vendedor .container{padding-top:calc(72px + env(safe-area-inset-top))!important;padding-bottom:calc(112px + env(safe-area-inset-bottom))!important}
+.screen-admin .container>header,.screen-vendedor .container>header{height:calc(60px + env(safe-area-inset-top))!important;padding-top:env(safe-area-inset-top)!important;border-bottom:0!important;background:var(--bg-header);box-shadow:none!important}
+.screen-admin:not(.light-mode) .container>header,.screen-vendedor:not(.light-mode) .container>header{background:linear-gradient(110deg,#0a334b,#092336)}
+.shell-brand strong{font-size:16px;letter-spacing:-.02em}.shell-brand small{color:var(--text-muted)}
+.native-tabs,.screen-vendedor .container>.sub-nav-container{
+ position:fixed!important;left:50%!important;right:auto!important;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom))!important;
+ width:min(680px,calc(100% - 24px));max-width:none!important;z-index:950!important;
+ background:var(--bg-header);border:1px solid var(--border-color)!important;border-radius:25px!important;padding:7px!important;gap:4px;overflow:visible!important;box-shadow:0 12px 34px #0006
 }
-
-/* Espacio inferior suficiente para que el contenido no choque con la barra */
-.screen-admin .container,
-.screen-vendedor .container {
-  padding-bottom: calc(96px + env(safe-area-inset-bottom)) !important;
-}
+.native-tabs button,.screen-vendedor .container>.sub-nav-container>.sub-tab-btn{min-width:0;min-height:60px;max-width:none;font-size:11px!important;border-radius:18px!important;gap:5px;padding:7px 2px!important}
+.native-tabs button i,.screen-vendedor .container>.sub-nav-container>.sub-tab-btn i{font-size:22px}
+.native-tabs button[aria-current=page],.screen-vendedor .container>.sub-nav-container>.sub-tab-btn.active{background:var(--app-gradient)!important;color:white!important;box-shadow:0 6px 16px #008cff38!important}
+.screen-admin:not(.light-mode) .card,.screen-admin:not(.light-mode) .overview-panel,.screen-admin:not(.light-mode) .overview-secondary,.screen-vendedor:not(.light-mode) .card,.screen-vendedor:not(.light-mode) .pos-right{background:linear-gradient(145deg,#102b40,#111d2c);border-color:#24445d;border-radius:22px;box-shadow:0 8px 24px #0002}
+.screen-admin:not(.light-mode) .overview-kpi{background:linear-gradient(150deg,#103650,#102235);border-color:#235076;border-radius:20px}
+.screen-admin:not(.light-mode) .overview-kpi.ventas{background:linear-gradient(140deg,#0761b8,#008acb);border-color:#39b9ff66;color:#fff}
+.screen-admin:not(.light-mode) .overview-kpi.ventas span,.screen-admin:not(.light-mode) .overview-kpi.ventas small{color:#e1f4ff}
+.screen-admin:not(.light-mode) .overview-kpi.ventas i{color:white;background:#ffffff26}
+.screen-admin .overview-kpi:before{display:none}
+.screen-admin .overview-kpi i{border-radius:12px}
+.screen-admin .overview-hero h2,.shell-heading h2{font-weight:800;letter-spacing:-.035em;font-size:clamp(25px,3vw,34px)}
+.screen-admin .overview-panel h3{font-weight:800;color:var(--app-accent);font-size:15px}
+.screen-admin .overview-bar b{background:var(--app-gradient)}
+.screen-admin .overview-panels{align-items:start}
+.screen-admin .overview-panel{min-height:0}
+.screen-admin .overview-row{padding:9px 10px;border-radius:12px;background:var(--bg-item-list);border:1px solid var(--border-color)}
+.screen-admin .shell-shortcuts button,.screen-admin .shell-menu button{border-radius:18px;background:var(--bg-item-list)}
+.screen-admin .shell-shortcuts button:first-child{background:var(--app-gradient);color:white;border-color:transparent}
+.screen-admin .shell-shortcuts button:first-child i,.screen-admin .shell-shortcuts button:first-child small{color:white}
+.screen-admin .shell-shortcuts i,.screen-admin .shell-menu button>i:first-child{color:var(--app-accent)}
+.screen-admin .btn-primary,.screen-vendedor .btn-primary,.screen-admin .sub-tab-btn.active,.screen-vendedor .sub-tab-btn.active{background:var(--app-gradient);color:#fff;border-color:transparent}
+.screen-admin .btn-primary,.screen-vendedor .btn-primary,.screen-admin .btn-success,.screen-vendedor .btn-success{border-radius:15px}
+.screen-vendedor:not(.light-mode) .producto-card,.screen-admin:not(.light-mode) .producto-card{background:linear-gradient(145deg,#11334a,#102538);border-color:#28516e;border-radius:18px}
+.screen-admin .prod-precio,.screen-vendedor .prod-precio{color:var(--color-precio)}
+.screen-admin .modal-overlay,.screen-vendedor .modal-overlay{z-index:2000}
+@media(min-width:700px) and (max-width:1050px) and (orientation:portrait){.screen-admin .overview-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:400px){.native-tabs button,.screen-vendedor .container>.sub-nav-container>.sub-tab-btn{font-size:10px!important}.native-tabs button i,.screen-vendedor .container>.sub-nav-container>.sub-tab-btn i{font-size:20px}}
