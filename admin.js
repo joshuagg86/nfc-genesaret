@@ -1199,6 +1199,7 @@ function filtroArticulos(m, b) {
         cargarArticulosTabla(); // <--- ESTO ES LO QUE FALTABA
     }
 
+    if (m === 'insumos' || m === 'recetas') GenesaretInventory.open(m);
     if (m === 'bitacora') {
         cargarBitacora();
     }
