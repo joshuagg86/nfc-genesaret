@@ -4,7 +4,8 @@
     async function commit({db, auth, eventId, items, pulseraId, pulseraNombre, metodo, estado, carritoId}) {
         const user = auth.currentUser;
         if (!user || !eventId || !items.length || !carritoId) throw Error('Datos de venta incompletos');
-        if (!['nfc','efectivo','transferencia'].includes(metodo) || !['pagado','pendiente'].includes(estado) || (estado === 'pendiente' && metodo !== 'transferencia')) throw Error('Método o estado inválido');
+        if (!['nfc','efectivo','transferencia'].includes(metodo) || !['pagado','pendiente'].includes(estado) || (estado === 'pendiente' && metodo === 'nfc')) throw Error('Método o estado inválido');
+        if (estado === 'pendiente' && (typeof pulseraNombre !== 'string' || !pulseraNombre.trim())) throw Error('Nombre del cliente obligatorio');
         const unique = new Set();
         for (const i of items) {
             if (!i.id || unique.has(i.id) || !Number.isSafeInteger(i.cantidad) || i.cantidad <= 0 || !Number.isFinite(Number(i.precio)) || Number(i.precio) <= 0) throw Error('Producto inválido');
@@ -39,7 +40,7 @@
             products.forEach((doc,index) => {
                 const i = items[index], p = doc.data();
                 if (!p.esInfinito) tx.update(refs[index],{stock:Number(p.stock)-i.cantidad});
-                tx.set(sales[index],{eventId,pulseraId,pulsera:wallet ? wallet.data().nombre : pulseraNombre,articulo:p.nombre,articuloId:i.id,cantidad:i.cantidad,precioUnitario:money(p.precio)/100,monto:money(p.precio)*i.cantidad/100,saldoAnterior:before/100,saldoNuevo:after/100,vendedor:profile.data().name || user.email || 'Vendedor',vendedorId:user.uid,fecha:new Date(),metodoPago:metodo,estadoPago:estado,carritoId,ventaFueraDePuesto:!!(p.vendedorAsignadoId && p.vendedorAsignadoId !== 'todos' && p.vendedorAsignadoId !== user.uid)});
+                tx.set(sales[index],{eventId,pulseraId,pulsera:wallet ? wallet.data().nombre : pulseraNombre,articulo:p.nombre,articuloId:i.id,cantidad:i.cantidad,precioUnitario:money(p.precio)/100,monto:money(p.precio)*i.cantidad/100,saldoAnterior:before/100,saldoNuevo:after/100,vendedor:profile.data().name || user.email || 'Vendedor',vendedorId:user.uid,fecha:new Date(),fechaVenta:new Date(),fechaPago:estado==='pagado'?new Date():null,metodoPago:metodo,estadoPago:estado,carritoId,ventaFueraDePuesto:!!(p.vendedorAsignadoId && p.vendedorAsignadoId !== 'todos' && p.vendedorAsignadoId !== user.uid)});
             });
             return {saldoNuevo:after/100};
         });

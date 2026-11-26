@@ -231,11 +231,16 @@ function showError(message) {
             if (metodo === 'nfc') { seccionNFC.style.display = 'block'; seccionDirecto.style.display = 'none'; } 
             else {
                 seccionNFC.style.display = 'none'; seccionDirecto.style.display = 'block';
-                inputsTransf.style.display = (metodo === 'transferencia') ? 'block' : 'none';
+                inputsTransf.style.display = 'block';
+                setEstadoTransferencia('pagado');
             }
         }
         function setEstadoTransferencia(estado) {
             estadoTransferencia = estado;
+            const showName = estado === 'pendiente' || metodoPagoActual === 'transferencia';
+            document.getElementById('nombreClienteTransferencia').style.display = showName ? 'block' : 'none';
+            document.getElementById('directCustomerLabel').style.display = showName ? 'block' : 'none';
+            document.getElementById('btnPagarDirecto').textContent = estado === 'pendiente' ? 'Registrar venta fiada' : 'Registrar venta';
             document.getElementById('btnStatusPagado').className = 'status-btn ' + (estado==='pagado' ? 'active-pagado' : '');
             document.getElementById('btnStatusPendiente').className = 'status-btn ' + (estado==='pendiente' ? 'active-pendiente' : '');
         }
@@ -644,7 +649,7 @@ function cargarProductosPorEvento() {
             if (audioCtx.state === 'suspended') audioCtx.resume();
             
             const btnNFC = document.getElementById('btnPagarNFC');
-            const btnDirecto = document.querySelector('#seccionPagoDirecto button'); // El botón verde de registrar
+            const btnDirecto = document.getElementById('btnPagarDirecto'); // El botón verde de registrar
             
             // Deshabilitar botones para evitar doble venta
             if(btnNFC) btnNFC.disabled = true;
@@ -671,38 +676,19 @@ function cargarProductosPorEvento() {
             // --- LÓGICA DE PAGO DIRECTO (Efectivo / Transferencia) ---
             } else {
                 
-                // 1. NUEVO: SI ES EFECTIVO, ABRIMOS CALCULADORA Y PARAMOS AQUÍ
-                if (metodoPagoActual === 'efectivo') {
+                if (metodoPagoActual === 'efectivo' && estadoTransferencia === 'pagado') {
                     pedirMontoEfectivo(total);
-                    return; // ¡Importante! Detiene la función para esperar a la calculadora
+                    return;
                 }
-
-                // 2. LÓGICA PARA TRANSFERENCIA (Se mantiene igual)
-                let nombreCliente = 'Venta Mostrador'; 
-                let idCliente = 'pago_transferencia'; 
-                let estado = 'pagado';
-
-                if (metodoPagoActual === 'transferencia') {
-                    // Obtenemos el nombre escrito
-                    let inputNombre = document.getElementById('nombreClienteTransferencia').value.trim();
-                    
-                    // Validación de FIAR
-                    if (estadoTransferencia === 'pendiente' && !inputNombre) {
-                        showError('⚠️ Para FIAR debes escribir el nombre del cliente');
-                        if(btnDirecto) btnDirecto.disabled = false; 
-                        return; 
-                    }
-
-                    if (!inputNombre) {
-                        inputNombre = "Cliente Transferencia";
-                    }
-
-                    nombreCliente = inputNombre + ' (Transferencia)'; 
-                    idCliente = 'transf_' + carritoId; 
-                    estado = estadoTransferencia;
-                } 
-                
-                // Procedemos a registrar (Solo llegará aquí si es Transferencia)
+                const estado = estadoTransferencia;
+                const inputNombre = document.getElementById('nombreClienteTransferencia').value.trim();
+                if (estado === 'pendiente' && !inputNombre) {
+                    showError('Escribe el nombre del cliente para fiar');
+                    if (btnDirecto) btnDirecto.disabled = false;
+                    return;
+                }
+                const nombreCliente = inputNombre || 'Cliente Transferencia';
+                const idCliente = (metodoPagoActual === 'efectivo' ? 'efectivo_' : 'transf_') + carritoId;
                 registrarTransaccion(eventId, idCliente, nombreCliente, 0, metodoPagoActual, estado, carritoId);
             }
         }
@@ -729,7 +715,7 @@ function cargarProductosPorEvento() {
         isProcessingPayment = false;
         eventSelector.disabled = false;
         const btnNFC = document.getElementById('btnPagarNFC');
-        const btnDirecto = document.querySelector('#seccionPagoDirecto button');
+        const btnDirecto = document.getElementById('btnPagarDirecto');
         if (btnNFC) btnNFC.disabled = false;
         if (btnDirecto) btnDirecto.disabled = false;
     }
@@ -737,6 +723,7 @@ function cargarProductosPorEvento() {
         
         let interval;
         function mostrarConfirmacionPago(total, cliente, saldo, metodo, estado) {
+            document.getElementById('sellerPaymentTitle').textContent = estado === 'pendiente' ? 'Venta fiada registrada' : '¡Pago Exitoso!';
             document.getElementById('confirmarMonto').textContent = '$'+total.toFixed(2);
             document.getElementById('confirmarProducto').textContent = `Carrito (${carrito.length} items)`;
             document.getElementById('confirmarCliente').textContent = cliente;
@@ -751,110 +738,53 @@ function cargarProductosPorEvento() {
         }
         function cerrarConfirmacion() { document.getElementById('pagoConfirmadoOverlay').classList.remove('active'); if(interval) clearInterval(interval); }
 
+        let pendingUnsubscribe = null;
         function cargarPendientes() {
-            if(!currentUserId) return;
-            db.collection('transacciones').where('vendedorId', '==', currentUserId).where('estadoPago', '==', 'pendiente').onSnapshot(snapshot => {
-                  const lista = document.getElementById('listaPendientesContainer');
-                  const badge = document.getElementById('tabBadgePendientes');
-                  if (snapshot.empty) {
-                      lista.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding:20px;">No hay cuentas pendientes por cobrar</p>';
-                      badge.style.display = 'none'; return;
-                  }
-                  const grupos = {};
-                  snapshot.forEach(doc => {
-                      const t = doc.data(); const key = t.carritoId || doc.id; 
-                      if (!grupos[key]) grupos[key] = { nombre: t.pulsera.replace(' (Transferencia)', ''), montoTotal: 0, items: [], ids: [], fecha: t.fecha };
-                      grupos[key].montoTotal += t.monto; grupos[key].items.push(`${t.cantidad}x ${t.articulo}`); grupos[key].ids.push(doc.id);
-                  });
-                  badge.textContent = Object.keys(grupos).length; badge.style.display = 'inline-block';
-                  let html = '';
-                  Object.values(grupos).sort((a, b) => b.fecha.toDate() - a.fecha.toDate()).forEach(grupo => {
-                      const hora = grupo.fecha.toDate().toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'});
-                      const idsString = JSON.stringify(grupo.ids).replace(/"/g, '&quot;');
-                      html += `
-                        <div class="pendiente-item">
-                            <div class="pendiente-info" style="flex: 1; padding-right: 10px;">
-                                <h4>${grupo.nombre}</h4>
-                                <p>${grupo.items.join(', ')}</p>
-                                <div style="display:flex; justify-content: space-between; align-items: center; margin-top:5px;">
-                                    <small style="color:#64748b;">${hora}</small>
-                                    <strong style="color:#eab308;">$${grupo.montoTotal.toFixed(2)}</strong>
-                                </div>
-                            </div>
-                            <button class="btn-cobrar-pendiente" onclick="confirmarPagoPendiente(this, '${idsString}', ${grupo.montoTotal}, '${grupo.nombre}')">✅ Cobrar</button>
-                        </div>`;
-                  });
-                  lista.innerHTML = html;
-              });
-        }
-        function confirmarPagoPendiente(btn, idsString, monto, nombre) {
-            // DISEÑO PRO: Usamos SweetAlert interactivo en lugar de confirm() aburrido
-            Swal.fire({
-                title: '¿Confirmar cobro?',
-                html: `
-                    <div style="text-align: center;">
-                        <p style="color: #94a3b8; font-size: 14px; margin-bottom: 5px;">Estás cobrando a:</p>
-                        <h3 style="color: #3b82f6; font-size: 24px; margin: 0;">${nombre}</h3>
-                        <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; margin-top: 20px;">
-                            <span style="display: block; font-size: 12px; color: #cbd5e1;">Monto Total</span>
-                            <span style="display: block; font-size: 32px; font-weight: 800; color: #ffffff;">$${monto.toFixed(2)}</span>
-                        </div>
-                    </div>
-                `,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#3b82f6', // Tu color naranja de marca
-                cancelButtonColor: '#334155',  // Un gris azulado para cancelar (más elegante que rojo)
-                confirmButtonText: 'Sí, cobrar ahora',
-                cancelButtonText: 'Cancelar',
-                background: '#1e293b', // Fondo oscuro del tema
-                color: '#ffffff',
-                reverseButtons: true, // Pone el botón de confirmar a la derecha (estándar UX)
-                focusConfirm: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // --- LÓGICA DE COBRO (IDÉNTICA A LA QUE TENÍAS) ---
-                    btn.disabled = true; 
-                    btn.textContent = 'Procesando...';
-                    
-                    if (audioCtx.state === 'suspended') audioCtx.resume();
-
-                    const ids = JSON.parse(idsString); 
-                    const batch = db.batch();
-                    
-                    ids.forEach(id => { 
-                        const ref = db.collection('transacciones').doc(id); 
-                        batch.update(ref, { 
-                            estadoPago: 'pagado',
-                            fecha: new Date() // Actualizamos fecha al momento del pago real
-                        }); 
-                    });
-
-                    batch.commit().then(() => { 
-                        playSound('success'); 
-                        
-                        // ALERTA DE ÉXITO (TICKET)
-                        Swal.fire({
-                            title: '¡Cobro Exitoso!',
-                            text: `Se han recuperado $${monto.toFixed(2)}`,
-                            icon: 'success',
-                            background: '#1e293b',
-                            color: '#ffffff',
-                            confirmButtonColor: '#22c55e', // Verde de éxito
-                            timer: 2000,
-                            showConfirmButton: false
-                        });
-
-                        loadMyTransactions(); 
-                        cargarPendientes(); // Recargamos la lista para que desaparezca el cobrado
-                        
-                    }).catch(e => { 
-                        showError(e.message); 
-                        btn.disabled = false; 
-                        btn.textContent = '✅ Cobrar'; 
-                    });
+            if (!currentUserId) return;
+            if (pendingUnsubscribe) pendingUnsubscribe();
+            pendingUnsubscribe = db.collection('transacciones').where('vendedorId','==',currentUserId).onSnapshot(snapshot => {
+                const lista = document.getElementById('listaPendientesContainer');
+                const badge = document.getElementById('tabBadgePendientes');
+                lista.replaceChildren();
+                const grupos = new Map();
+                snapshot.forEach(doc => {
+                    const t = doc.data();
+                    if (t.estadoPago !== 'pendiente') return;
+                    const key = t.carritoId || doc.id;
+                    if (!grupos.has(key)) grupos.set(key,{nombre:String(t.pulsera||'Cliente').replace(/ \\(Transferencia\\)$/,''), monto:0, items:[], ids:[], metodo:t.metodoPago});
+                    const g = grupos.get(key);
+                    g.monto += Number(t.monto)||0; g.items.push((t.cantidad||1)+' × '+(t.articulo||'Producto'));g.ids.push(doc.id);
+                });
+                badge.textContent = grupos.size;
+                badge.style.display = grupos.size ? 'inline-block' : 'none';
+                if (!grupos.size) {lista.textContent='No hay cuentas pendientes por cobrar';return;}
+                for (const g of grupos.values()) {
+                    const card=document.createElement('div');card.className='pendiente-item';
+                    const info=document.createElement('div');info.className='pendiente-info';
+                    for (const [tag,value] of [['h4',g.nombre],['p',g.items.join(', ')],['p',g.metodo==='efectivo'?'Efectivo':'Transferencia'],['strong','$'+g.monto.toFixed(2)]]) {
+                        const node=document.createElement(tag);node.textContent=value;info.append(node);
+                    }
+                    const btn=document.createElement('button');btn.className='btn-cobrar-pendiente';btn.textContent='Cobrar';btn.onclick=()=>confirmarPagoPendiente(btn,g);
+                    card.append(info,btn);lista.append(card);
                 }
-            });
+            },error=>showError(error.message));
+        }
+        async function confirmarPagoPendiente(btn,g) {
+            btn.disabled=true;
+            try {
+                const result=await Swal.fire({title:'¿Confirmar cobro?',text:g.nombre+' · $'+g.monto.toFixed(2)+' · '+(g.metodo==='efectivo'?'Efectivo':'Transferencia'),icon:'question',showCancelButton:true,confirmButtonText:'Confirmar dinero recibido',cancelButtonText:'Cancelar',background:'#102437',color:'#fff'});
+                if (!result.isConfirmed) return;
+                await db.runTransaction(async tx=>{
+                    const refs=g.ids.map(id=>db.collection('transacciones').doc(id));
+                    const docs=await Promise.all(refs.map(ref=>tx.get(ref)));
+                    if(docs.some(doc=>!doc.exists||doc.data().estadoPago!=='pendiente'||doc.data().vendedorId!==auth.currentUser?.uid)) throw Error('La cuenta cambió o ya fue cobrada');
+                    const amount=docs.reduce((sum,doc)=>sum+Math.round(Number(doc.data().monto)*100),0);
+                    if(amount!==Math.round(g.monto*100)) throw Error('El importe cambió');
+                    const now=new Date();
+                    refs.forEach((ref,i)=>tx.update(ref,{estadoPago:'pagado',fechaVenta:docs[i].data().fechaVenta||docs[i].data().fecha||now,fecha:now,fechaPago:now}));
+                });
+                playSound('success');showSuccess('Cobro registrado');loadMyTransactions();
+            } catch(error){showError(error.message);} finally{btn.disabled=false;}
         }
 
         // --- DASHBOARD ---
@@ -897,12 +827,13 @@ function loadMyTransactions() {
             
             trans.forEach(t => {
                 const m = parseFloat(t.monto) || 0;
-                total += m;
-                if (t.metodoPago === 'efectivo') subEfe += m;
-                else if (t.metodoPago === 'transferencia') {
-                    if (t.estadoPago === 'pendiente') subPend += m;
-                    else subTrans += m;
-                } else subNFC += m;
+                if (t.estadoPago === 'pendiente') subPend += m;
+                else if (!['cancelado','anulado'].includes(t.estadoPago)) {
+                    total += m;
+                    if (t.metodoPago === 'efectivo') subEfe += m;
+                    else if (t.metodoPago === 'transferencia') subTrans += m;
+                    else subNFC += m;
+                }
 
                 if (t.articulo) {
                     articulosConteo[t.articulo] = (articulosConteo[t.articulo] || 0) + (t.cantidad || 1);
@@ -912,10 +843,10 @@ function loadMyTransactions() {
             // Actualizar tarjetas
             document.getElementById('totalVentas').textContent = total.toFixed(2);
             document.getElementById('ventasCount').textContent = trans.length;
-            document.getElementById('totalNFC').textContent = subNFC.toFixed(0);
-            document.getElementById('totalEfectivo').textContent = subEfe.toFixed(0);
-            document.getElementById('totalTransf').textContent = subTrans.toFixed(0);
-            document.getElementById('totalPendiente').textContent = subPend.toFixed(0);
+            document.getElementById('totalNFC').textContent = subNFC.toFixed(2);
+            document.getElementById('totalEfectivo').textContent = subEfe.toFixed(2);
+            document.getElementById('totalTransf').textContent = subTrans.toFixed(2);
+            document.getElementById('totalPendiente').textContent = subPend.toFixed(2);
 
             // Renderizar lista
             const listCont = document.getElementById('transactionsList');
@@ -972,7 +903,7 @@ function loadMyTransactions() {
                 e.preventDefault(); 
                 if (metodoPagoActual === 'nfc') startNFCRead();
                 else {
-                    const btnDirecto = document.querySelector('#seccionPagoDirecto button');
+                    const btnDirecto = document.getElementById('btnPagarDirecto');
                     if(btnDirecto && !btnDirecto.disabled) btnDirecto.click();
                 }
             }
@@ -1114,8 +1045,8 @@ function pedirMontoEfectivo(total) {
                     
                     // Llamamos directo a registrarTransaccion con los datos de efectivo
                     registrarTransaccion(eventId, 'pago_efectivo', 'Venta Mostrador (Efectivo)', 0, 'efectivo', 'pagado', carritoId);
-                } else { document.querySelector('#seccionPagoDirecto button').disabled = false; }
+                } else { document.getElementById('btnPagarDirecto').disabled = false; }
             });
-        } else { document.querySelector('#seccionPagoDirecto button').disabled = false; }
+        } else { document.getElementById('btnPagarDirecto').disabled = false; }
     });
 }

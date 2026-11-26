@@ -124,3 +124,18 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .screen-admin .modal-overlay,.screen-vendedor .modal-overlay{z-index:2000}
 @media(min-width:700px) and (max-width:1050px) and (orientation:portrait){.screen-admin .overview-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:400px){.native-tabs button,.screen-vendedor .container>.sub-nav-container>.sub-tab-btn{font-size:10px!important}.native-tabs button i,.screen-vendedor .container>.sub-nav-container>.sub-tab-btn i{font-size:20px}}
+
+/* Wider native dock and adaptive administration tiles. */
+.native-tabs,.screen-vendedor .container>.sub-nav-container{width:calc(100% - clamp(24px,5vw,72px));max-width:1380px!important;gap:clamp(4px,1vw,12px)}
+.native-tabs button,.screen-vendedor .container>.sub-nav-container>.sub-tab-btn{min-height:64px;font-size:12px!important}
+.shell-menu{grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:16px}
+.shell-menu button{min-height:142px;padding:22px;flex-direction:column;align-items:flex-start;justify-content:center;gap:12px;position:relative;border-radius:22px!important}
+.shell-menu button>i:first-child{font-size:24px;padding:12px;background:#1b8ccd20;border-radius:14px}
+.shell-menu button>i:last-child{position:absolute;right:20px;top:24px}
+.shell-menu button strong{font-size:16px}.shell-menu button small{font-size:13px}
+@media(min-width:700px){.shell-menu{grid-template-columns:repeat(3,minmax(0,1fr))}.shell-menu button{min-height:156px}}
+@media(min-width:1150px){.shell-menu{grid-template-columns:repeat(3,minmax(0,1fr))}.shell-menu button{min-height:170px}}
+@media(max-width:699px){.shell-menu{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.shell-menu button{min-height:132px;padding:14px}.shell-menu button strong{font-size:14px}.shell-menu button small{font-size:11px}.native-tabs button,.screen-vendedor .container>.sub-nav-container>.sub-tab-btn{font-size:10px!important}}
+.screen-vendedor #inputsTransferencia .transfer-status-group{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+.screen-vendedor #inputsTransferencia .status-btn{min-height:46px;border-radius:12px}
+.screen-vendedor #directCustomerLabel{font-size:12px;color:var(--text-muted);margin-top:8px}

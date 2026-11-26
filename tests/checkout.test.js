@@ -19,5 +19,14 @@ const makeDb = () => {
  data.get('pulseras/p').saldoActual=10;
  await assert.rejects(GenesaretCheckout.commit({...opts,carritoId:'four'}),/Saldo insuficiente/);
  assert.equal(data.get('articulos/a').stock,1);
+ const credit=makeDb();
+ const creditOpts={...opts,db:credit.db,metodo:'efectivo',estado:'pendiente',pulseraId:'efectivo_credit',pulseraNombre:'Cliente',carritoId:'credit'};
+ await GenesaretCheckout.commit(creditOpts);
+ assert.equal(credit.data.get('transacciones/credit_0').estadoPago,'pendiente');
+ assert.equal(credit.data.get('transacciones/credit_0').metodoPago,'efectivo');
+ assert.equal(credit.data.get('pulseras/p').saldoActual,100);
+ assert.equal(credit.data.get('articulos/a').stock,1);
+ await assert.rejects(GenesaretCheckout.commit({...creditOpts,carritoId:'empty',pulseraNombre:''}),/Nombre/);
+ await assert.rejects(GenesaretCheckout.commit({...opts,db:credit.db,carritoId:'nfc-credit',estado:'pendiente'}),/Método/);
  console.log('Checkout: OK');
 })().catch(e=>{console.error(e);process.exitCode=1;});

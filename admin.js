@@ -1600,6 +1600,7 @@ function cargarReporteMensual() {
                 const monto = data.monto || 0;
                 const metodo = data.metodoPago || 'nfc';
 
+                if (['pendiente','cancelado','anulado'].includes(data.estadoPago)) return;
                 total += monto;
                 if (metodo === 'efectivo') efectivo += monto;
                 else if (metodo === 'transferencia') transf += monto;

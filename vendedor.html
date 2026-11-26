@@ -12,7 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="style.css">
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-    <link rel="stylesheet" href="app-ui.css?v=alabanza-blue-3">
+    <link rel="stylesheet" href="app-ui.css?v=alabanza-blue-4">
 </head>
 <body class="screen-vendedor">
     <div id="loadingOverlay">
@@ -153,14 +153,14 @@
 
                         <div id="seccionPagoDirecto" style="display: none;">
                             <div id="inputsTransferencia" style="display: none; margin-bottom: 8px;">
-                                <input type="text" id="nombreClienteTransferencia" placeholder="Nombre del cliente..." style="font-size: 12px; margin-bottom: 5px;">
+                                <label for="nombreClienteTransferencia" id="directCustomerLabel" style="display:none">Nombre del cliente</label><input type="text" id="nombreClienteTransferencia" placeholder="Nombre del cliente..." maxlength="100" style="font-size: 14px; margin: 8px 0; display:none;">
                                 <div class="transfer-status-group">
                                     <button type="button" class="status-btn active-pagado" id="btnStatusPagado" onclick="setEstadoTransferencia('pagado')">Pagado</button>
                                     <button type="button" class="status-btn" id="btnStatusPendiente" onclick="setEstadoTransferencia('pendiente')">Fiar</button>
                                 </div>
                             </div>
 
-                            <button class="btn-success" onclick="procesarPago()" style="width: 100%; height: 40px; font-size: 14px;">
+                            <button class="btn-success" id="btnPagarDirecto" onclick="procesarPago()" style="width: 100%; min-height: 48px; font-size: 14px;">
                                 ✓ REGISTRAR VENTA
                             </button>
                         </div>
@@ -222,7 +222,7 @@
                     </div>
                     <div class="stat-box">
                         <div class="number">$<span id="totalVentas">0.00</span></div>
-                        <div class="label">Total Global</div>
+                        <div class="label">Total cobrado</div>
                     </div>
                 </div>
                  <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 5px;">
@@ -262,7 +262,7 @@
     <div class="pago-confirmado-overlay" id="pagoConfirmadoOverlay" onclick="cerrarConfirmacion()">
         <div class="pago-confirmado-content" onclick="event.stopPropagation()">
             <div class="pago-check">✅</div>
-            <h1 class="pago-titulo">¡Pago Exitoso!</h1>
+            <h1 class="pago-titulo" id="sellerPaymentTitle">¡Pago Exitoso!</h1>
             <p style="color: #94a3b8; margin-bottom: 20px;">La transacción se completó correctamente</p>
             <div class="pago-monto" id="confirmarMonto">$0.00</div>
             <div style="background: rgba(30,41,59,0.8); padding: 15px; border-radius: 8px; text-align: left; margin-bottom: 20px;">
