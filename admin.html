@@ -16,7 +16,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-    <link rel="stylesheet" href="app-ui.css?v=inventory-5">
+    <link rel="stylesheet" href="app-ui.css?v=inventory-6">
 </head>
 <body class="screen-admin">
     <div id="loadingOverlay">
@@ -524,7 +524,7 @@
 </section>
 <section class="art-section" id="sec-recetas" style="display:none">
 <div class="shell-heading"><h2>Recetas</h2><p>Define ingredientes y cantidades por producto. Vista previa: todavía no descuenta ingredientes al cobrar.</p></div>
-<div class="card"><div class="inventory-toolbar"><label>Evento <select id="recipeEvent"></select></label><label>Producto <select id="recipeProduct"></select></label></div><div id="recipeStatus" role="status"></div><div id="recipeLines"></div><button class="btn-secondary" id="recipeAdd">Añadir ingrediente</button><div class="smart-kpis" id="recipeSummary"></div><button class="btn-primary" id="recipeSave">Guardar receta borrador</button></div>
+<div class="card"><div class="inventory-toolbar"><label>Evento <select id="recipeEvent"></select></label><label>Producto <select id="recipeProduct"></select></label></div><div id="recipeStatus" role="status"></div><h3>Receta base</h3><p class="recipe-help">El precio de venta se configura en el artículo, independientemente del costo de sus ingredientes.</p><div id="recipeLines"></div><div class="smart-actions"><button class="btn-secondary" id="recipeAdd">Añadir ingrediente</button><button class="btn-primary" id="recipeCreateSupply">Crear insumo</button></div><h3 class="recipe-section-title">Extras opcionales</h3><p class="recipe-help">Define la cantidad y el precio de cada extra para este producto. Puedes cambiar el precio sugerido del insumo.</p><div id="recipeExtras"></div><button class="btn-secondary" id="recipeExtraAdd">Añadir extra</button><div class="smart-kpis" id="recipeSummary"></div><button class="btn-primary" id="recipeSave">Guardar receta borrador</button></div>
 </section>
 <div class="card art-section" id="sec-bitacora" style="display: none;">
                 <h3>📜 Historial de Movimientos de Stock</h3>
@@ -801,7 +801,7 @@
     <script src="checkout.js"></script>
     
     <script src="dashboard.js"></script>
-    <script src="inventory-smart.js?v=5"></script>
+    <script src="inventory-smart.js?v=6"></script>
     <script src="admin.js"></script> 
 </body>
 </html>
