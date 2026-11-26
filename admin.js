@@ -182,6 +182,16 @@ function actualizarSaludo() {
 // --- NAVEGACIÓN ---
 function switchTab(tab) {
     
+    if (!document.getElementById(tab)) tab = 'dashboard';
+    const group = ['eventos','cuentas','reportes','mas'].includes(tab) ? 'mas' : tab;
+    document.querySelectorAll('[data-shell-tab]').forEach(button => {
+        if (button.dataset.shellTab === group) button.setAttribute('aria-current','page');
+        else button.removeAttribute('aria-current');
+    });
+    const names = {dashboard:'Inicio',ventas:'Ventas',pulseras:'Pulseras',articulos:'Inventario',mas:'Más',eventos:'Eventos',cuentas:'Vendedores y cuentas',reportes:'Reportes'};
+    const title = document.getElementById('shellTitle');
+    if (title) title.textContent = names[tab] || tab;
+    window.scrollTo(0,0);
     // Guardar pestaña actual
     localStorage.setItem('activeTab', tab);
 

@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Admin - Genesaret</title>
     <link rel="manifest" href="manifest.json">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -44,7 +44,7 @@
     ">
     
         <div style="display: flex; align-items: center; gap: 15px; z-index: 20; position: relative;">
-            <img src="logo.png" alt="Logo" class="logo-header" style="height: 40px; width: 40px; object-fit: contain;">
+            <img src="logo.png" alt="Logo" class="logo-header" style="height: 40px; width: 40px; object-fit: contain;"><div class="shell-brand"><strong>Genesaret POS</strong><small id="shellTitle">Inicio</small></div>
         </div>
 
         <nav class="desktop-nav" style="
@@ -144,11 +144,14 @@
         <div class="alert alert-success" id="successAlert"></div>
         <div class="alert alert-error" id="errorAlert"></div>
 
-        <section class="tab-content active" id="dashboard">
+        <nav class="native-tabs" aria-label="Navegación principal"><button type="button" data-shell-tab="dashboard" onclick="switchTab('dashboard')" aria-current="page"><i class="fas fa-house" aria-hidden="true"></i><span>Inicio</span></button><button type="button" data-shell-tab="ventas" onclick="switchTab('ventas')" ><i class="fas fa-cash-register" aria-hidden="true"></i><span>Ventas</span></button><button type="button" data-shell-tab="pulseras" onclick="switchTab('pulseras')" ><i class="fas fa-credit-card" aria-hidden="true"></i><span>Pulseras</span></button><button type="button" data-shell-tab="articulos" onclick="switchTab('articulos')" ><i class="fas fa-boxes-stacked" aria-hidden="true"></i><span>Inventario</span></button><button type="button" data-shell-tab="mas" onclick="switchTab('mas')" ><i class="fas fa-ellipsis" aria-hidden="true"></i><span>Más</span></button></nav>
+<section class="tab-content" id="ventas"><div class="shell-heading"><h2>Ventas</h2><p>Registra un pedido o consulta el corte de caja.</p></div><div class="shell-shortcuts"><button onclick="abrirPOSAdmin()"><i class="fas fa-cash-register"></i><strong>Abrir punto de venta</strong><small>Catálogo y cobros</small></button><button onclick="abrirPOSAdmin();switchPOSTab('pendientes')"><i class="fas fa-clock"></i><strong>Pagos pendientes</strong><small>Consultar y cobrar</small></button><button onclick="abrirPOSAdmin();switchPOSTab('corte')"><i class="fas fa-wallet"></i><strong>Mi corte</strong><small>Resumen de sesión</small></button></div></section>
+<section class="tab-content" id="mas"><div class="shell-heading"><h2>Más</h2><p>Administración de la cafetería y eventos.</p></div><div class="shell-menu"><button onclick="switchTab('eventos')"><i class="fas fa-calendar-days"></i><span><strong>Eventos</strong><small>Crear y administrar eventos</small></span><i class="fas fa-chevron-right"></i></button><button onclick="switchTab('cuentas')"><i class="fas fa-users"></i><span><strong>Vendedores y cuentas</strong><small>Usuarios y permisos</small></span><i class="fas fa-chevron-right"></i></button><button onclick="switchTab('reportes')"><i class="fas fa-chart-column"></i><span><strong>Reportes</strong><small>Consultar resultados</small></span><i class="fas fa-chevron-right"></i></button><button onclick="toggleTheme()"><i class="fas fa-circle-half-stroke"></i><span><strong>Apariencia</strong><small>Cambiar tema</small></span><i class="fas fa-chevron-right"></i></button><button onclick="logout()"><i class="fas fa-right-from-bracket"></i><span><strong>Cerrar sesión</strong><small>Salir de la cuenta</small></span><i class="fas fa-chevron-right"></i></button></div></section>
+<section class="tab-content active" id="dashboard">
 <div class="overview-hero"><div><span class="overview-eyebrow">GENESARET / ADMINISTRACIÓN</span><h2>Resumen de operaciones</h2><p>Control de ventas, pulseras e inventario.</p></div><div class="overview-filter"><label for="overviewEvent">Evento</label><select id="overviewEvent"><option value="">Todos los eventos</option></select><button class="btn-primary" onclick="abrirPOSAdmin()"><i class="fas fa-cash-register"></i> Nueva venta</button></div></div>
 <p id="overviewStatus" role="status" class="overview-status">Conectando con los datos…</p>
 <div class="overview-kpis"><article class="overview-kpi recargas"><i class="fas fa-wallet"></i><span>Recargas brutas</span><strong id="overview-recargas">—</strong><small>Saldo ingresado</small></article><article class="overview-kpi ventas"><i class="fas fa-cash-register"></i><span>Consumo total</span><strong id="overview-ventas">—</strong><small>Ventas cobradas</small></article><article class="overview-kpi saldo"><i class="fas fa-credit-card"></i><span>Saldo flotante</span><strong id="overview-saldo">—</strong><small>Saldo actual de pulseras</small></article><article class="overview-kpi operaciones"><i class="fas fa-bolt"></i><span>Operaciones</span><strong id="overview-operaciones">—</strong><small>Ventas y recargas</small></article></div>
-<div class="overview-secondary"><div><span>Pulseras registradas</span><strong id="overview-pulseras">—</strong></div><div><span>Consumo NFC / QR</span><strong id="overview-nfc">—</strong></div><div><span>Transferencias pendientes</span><strong id="overview-pendientes">—</strong></div></div>
+<div class="shell-shortcuts dashboard-shortcuts"><button onclick="switchTab('ventas');abrirPOSAdmin()"><i class="fas fa-cart-plus"></i><strong>Nueva venta</strong></button><button onclick="switchTab('pulseras');document.querySelector('#pulseras button[onclick*=recargar]').click()"><i class="fas fa-wallet"></i><strong>Recargar</strong></button><button onclick="switchTab('articulos')"><i class="fas fa-box"></i><strong>Inventario</strong></button><button onclick="switchTab('reportes')"><i class="fas fa-chart-column"></i><strong>Reportes</strong></button></div><div class="overview-secondary"><div><span>Pulseras registradas</span><strong id="overview-pulseras">—</strong></div><div><span>Consumo NFC / QR</span><strong id="overview-nfc">—</strong></div><div><span>Transferencias pendientes</span><strong id="overview-pendientes">—</strong></div></div>
 <div class="overview-panels"><article class="overview-panel"><h3>Productos más vendidos</h3><p>Unidades cobradas · Top 5</p><div id="overviewRanking" class="overview-ranking"></div></article><article class="overview-panel"><h3>Actividad reciente</h3><p>Últimos movimientos del evento</p><div id="overviewFeed" class="overview-feed"></div></article></div>
 <div class="overview-panels"><article class="overview-panel"><h3>Métodos de pago</h3><p>Distribución de ventas cobradas</p><div id="overviewMethods" class="overview-ranking"></div></article><article class="overview-panel"><h3>Inventario bajo</h3><p>Productos con 5 unidades o menos</p><div id="overviewStock" class="overview-feed"></div><button class="btn-secondary" onclick="switchTab('articulos')">Ver inventario</button></article></div>
 </section>
@@ -168,7 +171,7 @@
                     <div class="table-container"><div id="eventsList"></div></div>
                 </div>
                 
-                <button onclick="abrirPOSAdmin()" style="
+                <button class="legacy-pos-fab" onclick="abrirPOSAdmin()" style="
                     position: fixed; bottom: 80px; right: 20px; 
                     width: 60px; height: 60px; border-radius: 50%; 
                     background: #3b82f6; color: white; font-size: 24px; 

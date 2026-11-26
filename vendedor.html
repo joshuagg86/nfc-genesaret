@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Vendedor - NFC Genesaret</title>
     
     <link rel="manifest" href="manifest.json">
@@ -52,12 +52,12 @@
         <div class="alert alert-error" id="errorAlert"></div>
 
         <div class="sub-nav-container">
-            <button class="sub-tab-btn active" onclick="cambiarPestana('venta', this)">🛒 Venta</button>
+            <button class="sub-tab-btn active" onclick="cambiarPestana('venta', this)"><i class="fas fa-cash-register"></i><span>Venta</span></button>
             <button class="sub-tab-btn" onclick="cambiarPestana('pendientes', this)">
-                ⏳ Pendientes <span id="tabBadgePendientes" class="tab-badge">0</span>
+                <i class="fas fa-clock"></i><span>Pendientes</span> <span id="tabBadgePendientes" class="tab-badge">0</span>
             </button>
-            <button class="sub-tab-btn" onclick="cambiarPestana('saldo', this)">🔍 Saldo</button>
-            <button class="sub-tab-btn" onclick="cambiarPestana('corte', this)">📊 Mi Corte</button>
+            <button class="sub-tab-btn" onclick="cambiarPestana('saldo', this)"><i class="fas fa-credit-card"></i><span>Saldo</span></button>
+            <button class="sub-tab-btn" onclick="cambiarPestana('corte', this)"><i class="fas fa-wallet"></i><span>Mi caja</span></button>
         </div>
 
         <div id="tab-venta" class="tab-content active">
