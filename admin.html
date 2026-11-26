@@ -16,23 +16,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <link rel="stylesheet" href="app-ui.css">
 </head>
-<body>
+<body class="screen-admin">
     <div id="loadingOverlay">
         <h1 class="loading-text">¡Hola, <span id="loadingUserName" class="loading-name">...</span>! 👋</h1>
         <img src="logo.png" alt="Logo" class="loading-logo-img">
     </div>
-    <script>
-        // Control de Versión para forzar recarga si hay cambios
-        (function() {
-            const APP_VERSION = '5.1.FULL'; 
-            const savedVersion = localStorage.getItem('app_version');
-            if (savedVersion !== APP_VERSION) {
-                localStorage.setItem('app_version', APP_VERSION);
-                if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(r => r.forEach(reg => reg.unregister()));
-            }
-        })();
-    </script>
+    <script src="admin-inline-1.js"></script>
 
     <div class="container">
         <header style="
@@ -112,7 +103,7 @@
                     <div id="mobileAvatarContainer" style="flex-shrink: 0;"></div>
                     
                     <div style="display: flex; flex-direction: column; align-items: flex-start;">
-                        <h2 style="margin: 0; font-size: 18px; line-height: 1.2; color: #f59e0b;">ADMIN</h2>
+                        <h2 style="margin: 0; font-size: 18px; line-height: 1.2; color: #3b82f6;">ADMIN</h2>
                         <div class="user-info" style="font-size: 13px; color: #cbd5e1;">
                             Hola, <strong id="userNameMobile" style="color: #fff;">...</strong>
                         </div>
@@ -170,8 +161,8 @@
                 <button onclick="abrirPOSAdmin()" style="
                     position: fixed; bottom: 80px; right: 20px; 
                     width: 60px; height: 60px; border-radius: 50%; 
-                    background: #f59e0b; color: white; font-size: 24px; 
-                    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.5); 
+                    background: #3b82f6; color: white; font-size: 24px; 
+                    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.5); 
                     border: none; z-index: 990; cursor: pointer; display: flex; align-items: center; justify-content: center;
                     transition: transform 0.2s;"
                     onmouseover="this.style.transform='scale(1.1)'" 
@@ -185,7 +176,7 @@
         
         <div class="modal-header" style="padding: 15px; border-bottom: 1px solid var(--border-color); background: var(--bg-header); display: flex; align-items: center; justify-content: space-between;">
             <div style="display: flex; gap: 15px; align-items: center;">
-                <h3 style="margin:0; color: #f59e0b;">⚡ Admin POS</h3>
+                <h3 style="margin:0; color: #3b82f6;">⚡ Admin POS</h3>
                 
                 <div class="sub-nav-container" style="margin: 0; padding: 3px; background: rgba(255,255,255,0.05);">
                     <button class="sub-tab-btn active" onclick="switchPOSTab('venta', this)">🛒 Venta</button>
@@ -231,7 +222,7 @@
             <div class="pos-right" style="flex: 1; min-width: 320px; max-width: 380px; display: flex; flex-direction: column; background: var(--bg-card); border-left: 1px solid var(--border-color);">
                 
                 <div class="carrito-header">
-                    <h4><i class="fas fa-shopping-cart" style="color:#f59e0b;"></i> Carrito</h4>
+                    <h4><i class="fas fa-shopping-cart" style="color:#3b82f6;"></i> Carrito</h4>
                     <div style="display: flex; align-items: center;">
                         <span id="posAdminTotalBadge" class="total-badge" style="font-size: 18px;">$0.00</span>
                         <button onclick="limpiarCarritoPOS()" class="btn-vaciar"><i class="fas fa-trash"></i></button>
@@ -285,9 +276,9 @@
                                 🧪 Simular (Sin Pulsera)
                             </button>
                         </div>
-                        <div id="adminSaldoInfo" style="display: none; background: rgba(245,158,11,0.1); padding: 8px; border-radius: 6px; margin-bottom: 10px;">
+                        <div id="adminSaldoInfo" style="display: none; background: rgba(59, 130, 246,0.1); padding: 8px; border-radius: 6px; margin-bottom: 10px;">
                             <small>Cliente:</small> <strong id="adminClienteNFC">-</strong><br>
-                            <small>Saldo:</small> <strong id="adminSaldoNFC" style="color: #f59e0b;">$0.00</strong>
+                            <small>Saldo:</small> <strong id="adminSaldoNFC" style="color: #3b82f6;">$0.00</strong>
                         </div>
                         <button class="btn-success" onclick="procesarCobroAdmin()" id="btnAdminCobrarNFC" disabled style="width: 100%;">
                             ✓ CONFIRMAR PAGO NFC
@@ -367,7 +358,7 @@
                         </div>
                     </div>
                     <div class="form-group"><label>Pulsera</label><select id="recargaPulsera" onchange="mostrarSaldoActual()"></select></div>
-                    <div id="infoSaldoActual" style="display:none; padding:10px; background:rgba(245,158,11,0.1); border-left:3px solid #f59e0b; margin-bottom:10px;">Saldo Actual: $<span id="saldoActualRecarga">0.00</span></div>
+                    <div id="infoSaldoActual" style="display:none; padding:10px; background:rgba(59, 130, 246,0.1); border-left:3px solid #3b82f6; margin-bottom:10px;">Saldo Actual: $<span id="saldoActualRecarga">0.00</span></div>
                     <div class="form-group"><label>Monto a Recargar ($)</label><input type="number" id="montoRecarga" placeholder="0.00"></div>
                     <div class="form-group"><label>Motivo</label><input type="text" id="motivoRecarga" placeholder="Opcional"></div>
                     <button class="btn-primary" onclick="recargarSaldo()" style="width: 100%;">Aplicar Recarga</button>
@@ -592,7 +583,7 @@
                 <p style="color: var(--text-muted); margin-bottom: 20px; font-size: 14px;">
                     ¿Necesitas ver inventarios, gráficas detalladas o reportes por rango de fechas?
                 </p>
-                <button class="btn-primary" onclick="irAReportes()" style="font-size: 15px; padding: 12px 30px; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);">
+                <button class="btn-primary" onclick="irAReportes()" style="font-size: 15px; padding: 12px 30px; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);">
                     🔎 Ir a Reportes Avanzados
                 </button>
             </div>
@@ -625,7 +616,7 @@
                         <div class="stat-label">Ventas Totales</div>
                     </div>
                     <div class="stat-box">
-                        <div class="stat-value" id="repMesNFC" style="color: #f59e0b;">$0.00</div>
+                        <div class="stat-value" id="repMesNFC" style="color: #3b82f6;">$0.00</div>
                         <div class="stat-label">Ventas NFC</div>
                     </div>
                     <div class="stat-box">
@@ -735,8 +726,8 @@
                     </div>
 
                     <div style="flex: 1;">
-                        <label style="font-size:11px; color:#f59e0b;">+ Sumar / - Restar</label>
-                        <input type="number" id="artStockSumar" placeholder="Ej: -5 para restar" style="border-color: #f59e0b;">
+                        <label style="font-size:11px; color:#3b82f6;">+ Sumar / - Restar</label>
+                        <input type="number" id="artStockSumar" placeholder="Ej: -5 para restar" style="border-color: #3b82f6;">
                     </div>
                 </div>
                 
@@ -753,7 +744,7 @@
         <div class="modal-box" onclick="event.stopPropagation()" style="max-width: 600px;">
             <div class="modal-header"><h3>📜 Historial Compras</h3><button class="modal-close" onclick="cerrarModalHistorial()">×</button></div>
             <div class="modal-body">
-                <h4 id="historialPulseraNombre" style="color:#f59e0b; margin-bottom:10px;"></h4>
+                <h4 id="historialPulseraNombre" style="color:#3b82f6; margin-bottom:10px;"></h4>
                 <div class="table-container"><div id="historialPulseraLista"></div></div>
             </div>
         </div>
@@ -808,6 +799,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
     <script src="config.js?v=1.4"></script>
+    <script src="checkout.js"></script>
     
     <script src="admin.js"></script> 
 </body>

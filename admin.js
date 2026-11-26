@@ -498,7 +498,7 @@ function renderizarTablaPulseras() {
                         <strong style="font-size:14px; color:var(--text-main);">${p.nombre}</strong>
                     </td>
                     <td data-label="Saldo" style="vertical-align: middle;">
-                        <span style="font-weight:700; color:${p.saldoActual > 0 ? '#f59e0b' : '#94a3b8'}">$${p.saldoActual.toFixed(2)}</span>
+                        <span style="font-weight:700; color:${p.saldoActual > 0 ? '#3b82f6' : '#94a3b8'}">$${p.saldoActual.toFixed(2)}</span>
                     </td>
                     <td data-label="Estado" style="vertical-align: middle;">${estadoBadge}</td>
                     <td class="actions-cell" style="vertical-align: middle; text-align: right;">
@@ -857,7 +857,7 @@ function cargarHistorialRecargas() {
             // Badges (Etiquetas)
             let badge = '';
             if(item.etiqueta === 'Recarga') badge = '<span class="badge" style="background:rgba(34,197,94,0.1); color:#22c55e;">💰 Recarga</span>';
-            else if(item.etiqueta === 'Creación') badge = '<span class="badge" style="background:rgba(245,158,11,0.1); color:#f59e0b;">✨ Creación</span>';
+            else if(item.etiqueta === 'Creación') badge = '<span class="badge" style="background:rgba(59, 130, 246,0.1); color:#3b82f6;">✨ Creación</span>';
             else badge = '<span class="badge" style="background:rgba(239,68,68,0.1); color:#ef4444;">🛒 Compra</span>';
 
             html += `
@@ -989,7 +989,7 @@ function renderizarTablaArticulos() {
             } else {
                 const stock = a.stock || 0;
                 if (stock <= 0) stockBadge = '<span class="badge" style="background:rgba(239,68,68,0.1); color:#ef4444;">Agotado</span>';
-                else if (stock < 10) stockBadge = `<span class="badge" style="background:rgba(245,158,11,0.1); color:#f59e0b;">⚠️ Bajo (${stock})</span>`;
+                else if (stock < 10) stockBadge = `<span class="badge" style="background:rgba(59, 130, 246,0.1); color:#3b82f6;">⚠️ Bajo (${stock})</span>`;
                 else stockBadge = `<span class="badge" style="background:rgba(34,197,94,0.1); color:#4ade80;">${stock} un.</span>`;
             }
 
@@ -1009,7 +1009,7 @@ function renderizarTablaArticulos() {
                         ${a.categoria || 'General'}
                     </td>
                     <td data-label="Precio" style="vertical-align: middle;">
-                        <span style="font-weight:700; color:#f59e0b;">$${(parseFloat(a.precio) || 0).toFixed(2)}</span>
+                        <span style="font-weight:700; color:#3b82f6;">$${(parseFloat(a.precio) || 0).toFixed(2)}</span>
                     </td>
                     <td data-label="Stock" style="vertical-align: middle;">${stockBadge}</td>
                     <td class="actions-cell" style="vertical-align: middle; text-align: right;">
@@ -1726,7 +1726,7 @@ function descargarPDFMensual() {
     const mesTxt = document.getElementById('filtroMesReporte').value;
 
     doc.setFontSize(18);
-    doc.setTextColor(245, 158, 11);
+    doc.setTextColor(59, 130, 246);
     doc.text("Reporte Mensual - Genesaret", 14, 22);
     
     doc.setFontSize(11);
@@ -1882,8 +1882,8 @@ async function startNFCReadAdmin() {
                     Swal.fire({
                         icon: 'warning',
                         title: '¡Pulsera ya registrada!',
-                        html: `Este chip pertenece a: <br><strong style="font-size:18px; color:#f59e0b;">${existente.nombre}</strong><br>Saldo actual: <strong>$${(existente.saldoActual || 0).toFixed(2)}</strong><br><small style="color:#94a3b8;">Si deseas recargarle saldo, ve a la pestaña "Recargar".</small>`,
-                        confirmButtonColor: '#f59e0b',
+                        html: `Este chip pertenece a: <br><strong style="font-size:18px; color:#3b82f6;">${existente.nombre}</strong><br>Saldo actual: <strong>$${(existente.saldoActual || 0).toFixed(2)}</strong><br><small style="color:#94a3b8;">Si deseas recargarle saldo, ve a la pestaña "Recargar".</small>`,
+                        confirmButtonColor: '#3b82f6',
                         background: '#1e293b',
                         color: '#ffffff'
                     });
@@ -2026,7 +2026,7 @@ function resetPass(email) {
         text: `Se enviará un correo a ${email} para que el usuario cree una nueva clave.`,
         icon: 'question',
         showCancelButton: true,
-        confirmButtonColor: '#f59e0b',
+        confirmButtonColor: '#3b82f6',
         cancelButtonColor: '#334155',
         confirmButtonText: 'Sí, enviar correo',
         background: '#1e293b',
@@ -2107,8 +2107,8 @@ function cargarGraficaVentas() {
                     datasets: [{
                         label: 'Ventas ($)',
                         data: valores,
-                        backgroundColor: 'rgba(245, 158, 11, 0.6)', // Tu naranja semi-transparente
-                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(59, 130, 246, 0.6)', // Tu naranja semi-transparente
+                        borderColor: '#3b82f6',
                         borderWidth: 1,
                         borderRadius: 4
                     }]
@@ -2329,7 +2329,7 @@ function verificarStockBajo() {
 
             if (stock <= 5) { 
                 hayAlertas = true;
-                const color = stock === 0 ? '#ef4444' : '#f59e0b'; 
+                const color = stock === 0 ? '#ef4444' : '#3b82f6'; 
                 const texto = stock === 0 ? 'AGOTADO' : `Quedan ${stock}`;
                 const icono = prod.categoria ? prod.categoria.split(' ')[0] : '📦';
 
@@ -2399,7 +2399,7 @@ function cargarGraficaPopulares() {
                 datasets: [{
                     data: data,
                     backgroundColor: [
-                        '#f59e0b', '#ef4444', '#3b82f6', '#10b981', '#8b5cf6'
+                        '#3b82f6', '#ef4444', '#3b82f6', '#10b981', '#8b5cf6'
                     ],
                     borderWidth: 0
                 }]
@@ -2542,7 +2542,7 @@ function renderPOSGrid(lista) {
              style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:10px; padding:10px; cursor:pointer; text-align:center; transition:transform 0.1s; position:relative; overflow:hidden;">
             <div style="font-size:24px; margin-bottom:5px;">${emoji}</div>
             <div style="font-size:11px; font-weight:600; line-height:1.2; height:2.4em; overflow:hidden;">${p.nombre}</div>
-            <div style="font-size:13px; color:#f59e0b; font-weight:bold; margin-top:5px;">$${precio.toFixed(2)}</div>
+            <div style="font-size:13px; color:#3b82f6; font-weight:bold; margin-top:5px;">$${precio.toFixed(2)}</div>
             <div style="position:absolute; top:5px; right:5px; font-size:10px; color:${stockColor}; background:rgba(0,0,0,0.3); padding:2px 5px; border-radius:4px;">${stockTexto}</div>
         </div>`;
     });
@@ -2650,7 +2650,7 @@ function pedirMontoEfectivo(total, origen) {
         inputAttributes: { min: total, step: '0.50' },
         showCancelButton: true,
         confirmButtonText: 'Calcular Cambio',
-        confirmButtonColor: '#f59e0b',
+        confirmButtonColor: '#3b82f6',
         background: '#1e293b', color: '#fff',
         inputValidator: (value) => {
             if (!value) return 'Escribe una cantidad';
@@ -2832,7 +2832,7 @@ function renderPOSGrid(lista) {
         
         // Badge visual
         let badge = '';
-        if(p.esInfinito) badge = '<span style="font-size:10px; background:rgba(245,158,11,0.2); color:#f59e0b; padding:2px 5px; border-radius:4px;">♾️ Infinito</span>';
+        if(p.esInfinito) badge = '<span style="font-size:10px; background:rgba(59, 130, 246,0.2); color:#3b82f6; padding:2px 5px; border-radius:4px;">♾️ Infinito</span>';
         else if(sinStock) badge = '<span style="font-size:10px; background:#334155; color:#cbd5e1; padding:2px 5px; border-radius:4px;">AGOTADO</span>';
         else badge = `<span style="font-size:10px; background:rgba(34,197,94,0.1); color:#4ade80; padding:2px 5px; border-radius:4px;">${stock} disp.</span>`;
 
@@ -2844,7 +2844,7 @@ function renderPOSGrid(lista) {
         <div style="background:var(--bg-input); border:1px solid var(--border-color); border-radius:10px; padding:10px; text-align:center; position:relative; transition:transform 0.1s; ${estiloCard}" ${accion}>
             <div style="font-size:28px; margin-bottom:5px;">${emoji}</div>
             <div style="font-size:12px; font-weight:600; line-height:1.2; height:2.4em; overflow:hidden; margin-bottom:5px;">${p.nombre}</div>
-            <div style="font-size:14px; color:#f59e0b; font-weight:bold;">$${precio.toFixed(2)}</div>
+            <div style="font-size:14px; color:#3b82f6; font-weight:bold;">$${precio.toFixed(2)}</div>
             <div style="position:absolute; top:5px; right:5px;">${badge}</div>
         </div>`;
     });
@@ -3065,54 +3065,25 @@ function procesarCobroAdmin() {
         
         const nuevoSaldo = adminScannedPulsera.saldoActual - total;
         
-        db.collection('pulseras').doc(adminScannedPulsera.docId).update({ saldoActual: nuevoSaldo }).then(() => {
-            finalizarVentaAdmin(total, adminScannedPulsera.docId, adminScannedPulsera.nombre, nuevoSaldo, 'nfc', 'pagado', carritoId);
-        }).catch(e => showError(e.message));
+        finalizarVentaAdmin(total, adminScannedPulsera.docId, adminScannedPulsera.nombre, nuevoSaldo, 'nfc', 'pagado', carritoId);
     }
 }
 
-function finalizarVentaAdmin(total, pulseraId, nombre, saldoNuevo, metodo, estado, carritoId) {
-    const batch = db.batch();
-    const fecha = new Date();
-    const vendedor = localStorage.getItem('userName') || 'Admin';
-    const vendedorId = localStorage.getItem('userId');
-
-    adminCarrito.forEach(item => {
-        const refVenta = db.collection('transacciones').doc();
-        batch.set(refVenta, {
-            articulo: item.nombre,
-            monto: item.precio * item.cantidad,
-            cantidad: item.cantidad,
-            precioUnitario: item.precio,
-            fecha: fecha,
-            metodoPago: metodo,
-            estadoPago: estado,
-            vendedor: vendedor,
-            vendedorId: vendedorId,
-            pulsera: nombre,
-            pulseraId: pulseraId,
-            saldoNuevo: saldoNuevo,
-            carritoId: carritoId,
-            eventId: adminEventoActivo // <--- IMPORTANTE: AQUÍ GUARDAMOS EL EVENTO
-        });
-
-        if(!item.esInfinito) {
-            batch.update(db.collection('articulos').doc(item.id), {
-                stock: firebase.firestore.FieldValue.increment(-item.cantidad)
-            });
-        }
-    });
-
-    batch.commit().then(() => {
-        playSound('success');
+let adminCheckoutBusy = false;
+async function finalizarVentaAdmin(total, pulseraId, nombre, saldoNuevo, metodo, estado, carritoId) {
+    if (adminCheckoutBusy) return;
+    adminCheckoutBusy = true;
+    try {
+        await GenesaretCheckout.commit({db, auth, eventId: adminEventoActivo, items: adminCarrito.map(i => ({...i})), pulseraId, pulseraNombre: nombre, metodo, estado, carritoId: db.collection('transacciones').doc().id});
+        if (estado === 'pagado') playSound('success');
         document.getElementById('adminConfMonto').textContent = '$' + total.toFixed(2);
         document.getElementById('adminPagoOverlay').classList.add('active');
-        
         limpiarCarritoPOS();
         document.getElementById('adminClienteTransf').value = '';
         setAdminTransfStatus('pagado');
-        cargarCorteAdmin(); 
-    }).catch(e => showError(e.message));
+        cargarCorteAdmin();
+    } catch (error) { showError(error.message); }
+    finally { adminCheckoutBusy = false; }
 }
 function simularNFCAdmin() {
     Swal.fire({
@@ -3178,7 +3149,7 @@ function cargarPendientesAdmin() {
                 html += `
                 <div style="background:var(--bg-input); border:1px solid var(--border-color); border-radius:10px; padding:12px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
                     <div style="flex:1;">
-                        <div style="font-weight:bold; color:#f59e0b; font-size:14px;">${g.nombre}</div>
+                        <div style="font-weight:bold; color:#3b82f6; font-size:14px;">${g.nombre}</div>
                         <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">${g.items.join(', ')}</div>
                     </div>
                     <div style="text-align:right; margin-left:10px;">
@@ -3256,8 +3227,8 @@ function cargarCorteAdmin() {
                 let estiloMonto = 'font-weight:bold; color:#fff;';
                 
                 if (t.estadoPago === 'pendiente') {
-                    estiloMonto = 'font-weight:bold; color:#f59e0b;';
-                    montoDisplay += ' <span style="font-size:9px; border:1px solid #f59e0b; padding:1px 3px; border-radius:3px;">PENDIENTE</span>';
+                    estiloMonto = 'font-weight:bold; color:#3b82f6;';
+                    montoDisplay += ' <span style="font-size:9px; border:1px solid #3b82f6; padding:1px 3px; border-radius:3px;">PENDIENTE</span>';
                 }
 
                 htmlList += `<tr>
@@ -3279,7 +3250,7 @@ function cargarCorteAdmin() {
                     <div style="font-size:11px; color:var(--text-muted);">Cobrado</div>
                 </div>
                 <div class="stat-box" style="background:var(--bg-input); padding:10px; border-radius:8px; text-align:center; border:1px solid var(--border-color);">
-                    <div style="font-size:20px; font-weight:bold; color:#f59e0b;">$${totalPendiente.toFixed(2)}</div>
+                    <div style="font-size:20px; font-weight:bold; color:#3b82f6;">$${totalPendiente.toFixed(2)}</div>
                     <div style="font-size:11px; color:var(--text-muted);">Pendiente</div>
                 </div>
                 <div class="stat-box" style="background:var(--bg-input); padding:10px; border-radius:8px; text-align:center; border:1px solid var(--border-color);">
@@ -3331,7 +3302,7 @@ function pedirMontoEfectivo(total, origen) {
             Swal.fire({
                 title: '¡Cobro Exitoso!',
                 html: `<div style="font-size:20px; margin-bottom:10px;">Cambio a entregar:</div>
-                       <div style="font-size:42px; font-weight:bold; color:#f59e0b;">$${cambio.toFixed(2)}</div>`,
+                       <div style="font-size:42px; font-weight:bold; color:#3b82f6;">$${cambio.toFixed(2)}</div>`,
                 icon: 'success',
                 confirmButtonText: 'Aceptar',
                 background: '#1e293b', color: '#fff'
