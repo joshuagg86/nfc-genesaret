@@ -39,5 +39,22 @@ async function cancelSale(id){
  tx.set(audit,{eventId:initial.eventId||null,carritoId:key||id,transacciones:refs.map(r=>r.id),monto:total/100,metodo:initial.metodoPago||null,estadoAnterior:initial.estadoPago,recuperarStock:restore.isConfirmed,usuarioId:uid,motivo:result.value.trim(),fecha:now});
  });return true;
 }
-root.GenesaretReversals={cancelSale};
+let salesStop=null,rows=[],events=[];
+function renderSales(){
+ const target=document.getElementById('saleHistoryList'),ev=document.getElementById('saleHistoryEvent').value,q=document.getElementById('saleHistorySearch').value.toLowerCase();
+ target.replaceChildren();const groups=new Map();
+ for(const t of rows){if(ev&&t.eventId!==ev)continue;const id=t.carritoId||t.id;let g=groups.get(id);if(!g){g={id,first:t,items:[],total:0};groups.set(id,g);}g.items.push(t);g.total+=Number(t.monto)||0;}
+ const visible=[...groups.values()].filter(g=>[g.id,g.first.numeroPedido,g.first.pulsera,g.first.vendedor,...g.items.map(t=>t.articulo)].join(' ').toLowerCase().includes(q)).sort((a,b)=>(b.first.fechaVenta?.toMillis?.()||b.first.fecha?.toMillis?.()||0)-(a.first.fechaVenta?.toMillis?.()||a.first.fecha?.toMillis?.()||0));
+ const n=(tag,txt,cls)=>{const e=document.createElement(tag);e.textContent=txt;if(cls)e.className=cls;return e;};
+ for(const g of visible.slice(0,100)){const t=g.first,card=n('article','','smart-card');card.append(n('h3',t.numeroPedido?'Pedido '+t.numeroPedido:'Venta '+g.id.slice(-6)),n('strong',new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(g.total),'smart-amount'),n('small',g.items.map(x=>x.cantidad+' × '+x.articulo).join(' · ')),n('small',(t.metodoPago||'Sin método')+' · '+(t.estadoPago||'Histórica')+' · '+(t.vendedor||'')));
+ if(g.items.every(x=>['pagado','pendiente'].includes(x.estadoPago))){const b=n('button','Cancelar venta','btn-danger');b.type='button';b.onclick=async()=>{b.disabled=true;try{if(await cancelSale(t.id))showSuccess('Venta cancelada');}catch(e){showError(e.message);}finally{b.disabled=false;}};card.append(b);}target.append(card);}
+ if(!target.children.length)target.append(n('p','Sin ventas para mostrar'));document.getElementById('saleHistoryCount').textContent=visible.length+' ventas · mostrando hasta 100';
+}
+async function open(){
+ if(salesStop)return;
+ const sel=document.getElementById('saleHistoryEvent');try{const snap=await db.collection('eventos').get();sel.replaceChildren(new Option('Todos los eventos',''));for(const d of snap.docs)sel.add(new Option(d.data().nombre||'Evento',d.id));sel.onchange=renderSales;document.getElementById('saleHistorySearch').oninput=renderSales;
+ salesStop=db.collection('transacciones').onSnapshot(snap=>{rows=snap.docs.map(d=>({...d.data(),id:d.id}));renderSales();},e=>{document.getElementById('saleHistoryList').textContent=e.message;salesStop=null;});
+ }catch(e){showError(e.message);}
+}
+root.GenesaretReversals={cancelSale,open};
 })(globalThis);
