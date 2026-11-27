@@ -17,6 +17,22 @@
         const notes=recipe.lines.filter(l=>removed.includes(l.id)).map(l=>'Sin '+l.nombre).concat(recipe.extras.filter(l=>extra.includes(l.id)).map(l=>'Extra '+l.nombre));
         return {price:money(p.precio)+recipe.extras.filter(l=>extra.includes(l.id)).reduce((a,l)=>a+money(l.price),0),usage,notes};
     }
+    // Experimental admin catalog generator. Only trusted administrators may publish it.
+    function buildIntegrityCatalog(p) {
+        const r=p.recetaActiva;
+        if(!r)return null;
+        if(p.produccionPorLotes||r.lines.length>4||r.extras.length>2)throw Error('Receta fuera del alcance de las reglas experimentales');
+        const subsets=ids=>ids.reduce((all,id)=>all.concat(all.map(a=>a.concat(id))),[[]]);
+        const variants={};
+        for(const removed of subsets(r.lines.filter(x=>x.removable).map(x=>x.id)))
+        for(const extra of subsets(r.extras.map(x=>x.id))){
+            if(extra.some(id=>removed.includes(id)))continue;
+            const selection={removed:[...removed].sort(),extra:[...extra].sort()};
+            const detail=resolveRecipe(p,selection);
+            variants[JSON.stringify([selection.removed,selection.extra])]={selection,price:detail.price/100,usage:detail.usage.map(x=>({id:x.id,amount:x.amount}))};
+        }
+        return {recipe:r,price:p.precio,variants};
+    }
     function foodIcon(name,fallback='🍽️'){
         const n=String(name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
         for(const [pattern,icon] of [[/aguacate/,'🥑'],[/queso/,'🧀'],[/carne|hamburguesa/,'🍔'],[/sandwich|chapata|torta/,'🥪'],[/jitomate|tomate/,'🍅'],[/cebolla/,'🧅'],[/lechuga|verdura/,'🥬'],[/jamon|tocino/,'🥓'],[/pollo/,'🍗'],[/huevo/,'🥚'],[/pan dulce|dona/,'🍩'],[/pan/,'🍞'],[/agua/,'🧴'],[/cafe/,'☕'],[/refresco|jugo/,'🥤'],[/papa/,'🍟'],[/chocolate/,'🍫']])if(pattern.test(n))return icon;
@@ -189,5 +205,5 @@
         return Promise.all([...groups.values()].map(ref=>tx.get(ref)));
     }
     function markPendingKitchenPaid(tx,rows){for(const d of rows)if(d.exists&&d.data().estado==='activo')tx.update(d.ref,{pagoPendiente:false});}
-    root.GenesaretCheckout = {readPendingKitchen,markPendingKitchenPaid,commit,customize,variantKey,escapeHtml,resolveRecipe,foodIcon,ingredientAvailability};
+    root.GenesaretCheckout = {readPendingKitchen,markPendingKitchenPaid,commit,customize,variantKey,escapeHtml,resolveRecipe,buildIntegrityCatalog,foodIcon,ingredientAvailability};
 })(globalThis);
