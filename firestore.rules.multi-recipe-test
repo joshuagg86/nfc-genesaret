@@ -54,12 +54,12 @@ service cloud.firestore {
       removable.hasAll(sel.removed) && extras.hasAll(sel.extra) && !sel.removed.hasAny(sel.extra) &&
       l.descuentoInsumos==usage && closeMoney(l.precioUnitario,p.precio+extraPrice) &&
       closeMoney(l.monto,l.precioUnitario*l.cantidad) &&
-      (usage.size()<=0 || supplyTouched(usage[0].id,id)) &&
-      (usage.size()<=1 || usage[1].id==usage[0].id || supplyTouched(usage[1].id,id)) &&
-      (usage.size()<=2 || usage[2].id==usage[0].id || usage[2].id==usage[1].id || supplyTouched(usage[2].id,id)) &&
-      (usage.size()<=3 || usage[3].id==usage[0].id || usage[3].id==usage[1].id || usage[3].id==usage[2].id || supplyTouched(usage[3].id,id)) &&
-      (usage.size()<=4 || usage[4].id==usage[0].id || usage[4].id==usage[1].id || usage[4].id==usage[2].id || usage[4].id==usage[3].id || supplyTouched(usage[4].id,id)) &&
-      (usage.size()<=5 || usage[5].id==usage[0].id || usage[5].id==usage[1].id || usage[5].id==usage[2].id || usage[5].id==usage[3].id || usage[5].id==usage[4].id || supplyTouched(usage[5].id,id));
+      (r.lines.size()<=0 || r.lines[0].id in sel.removed || supplyTouched(r.lines[0].id,id)) &&
+      (r.lines.size()<=1 || r.lines[1].id in sel.removed || supplyTouched(r.lines[1].id,id)) &&
+      (r.lines.size()<=2 || r.lines[2].id in sel.removed || supplyTouched(r.lines[2].id,id)) &&
+      (r.lines.size()<=3 || r.lines[3].id in sel.removed || supplyTouched(r.lines[3].id,id)) &&
+      (r.extras.size()<=0 || !(r.extras[0].id in sel.extra) || supplyTouched(r.extras[0].id,id)) &&
+      (r.extras.size()<=1 || !(r.extras[1].id in sel.extra) || supplyTouched(r.extras[1].id,id));
   }
   function linkedSupply(i) {
     let id=request.resource.data.ultimaVentaId;
@@ -79,7 +79,7 @@ service cloud.firestore {
       m.delta==q.stock-p.stock && m.stockFinal==q.stock;
   }
   function validLine(s,id,lid) {
-    let l=getAfter(linePath(lid)).data;
+    let l=request.resource.data;
     let p=get(productPath(l.articuloId)).data;
     return !exists(linePath(lid)) && l.carritoId==id && l.lineasVenta==s.lineas && l.vendedorId==uid() && l.eventId==s.eventId && l.metodoPago==s.metodoPago && l.estadoPago==s.estadoPago && !(l.estadoPago=='pendiente' && l.metodoPago=='nfc') && l.pulseraId==s.pulseraId && l.cantidad is int && l.cantidad>0 && l.cantidad<=100 && p.eventId==s.eventId && (p.get('recetaActiva',null)==null ? (closeMoney(l.precioUnitario,p.precio) && closeMoney(l.monto,p.precio*l.cantidad) && l.descuentoInsumos.size()==0) : recipeValid(p,l,id,s)) && l.monto>0 && (p.get('esInfinito',false)==true ? l.descuentoProducto==0 : (l.descuentoProducto==l.cantidad && getAfter(productPath(l.articuloId)).data.stock==p.stock-l.cantidad && getAfter(productPath(l.articuloId)).data.ultimaVentaId==id));
   }
