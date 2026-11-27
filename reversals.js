@@ -34,7 +34,9 @@ async function cancelSale(id){
  const cashRefund=initial.estadoPago==='pagado'&&initial.metodoPago==='efectivo'&&initial.turnoCajaId;
  const refundShift=cashRefund?await tx.get(db.collection('turnos_caja').doc(initial.turnoCajaId)):null;
  if(cashRefund&&(!refundShift.exists||refundShift.data().estado!=='abierto'||rows.some(t=>t.turnoCajaId!==initial.turnoCajaId)))throw Error('El turno original está cerrado. La devolución requiere conciliación administrativa; no se modificó la venta.');
+ const kitchenOrder=key&&initial.eventId?await tx.get(db.collection('eventos').doc(initial.eventId).collection('pedidos_cocina').doc(key)):null;
  const now=firebase.firestore.FieldValue.serverTimestamp();
+ if(kitchenOrder?.exists)tx.update(kitchenOrder.ref,{estado:'cancelado'});
  if(refundShift)tx.update(refundShift.ref,{efectivoVentas:firebase.firestore.FieldValue.increment(-total)});
  if(wallet)tx.update(wallet.ref,{saldoActual:(cents(wallet.data().saldoActual)+total)/100});
  for(const {d,n} of stock)tx.update(d.ref,{stock:Number(d.data().stock)+n});
