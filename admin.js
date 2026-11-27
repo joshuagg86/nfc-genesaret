@@ -1484,6 +1484,7 @@ function crearCuenta() {
 
     // Usamos la app secundaria para no desloguear al Admin
     const secondaryApp = firebase.initializeApp(firebase.app().options, 'Secondary');
+    if(window.GenesaretLocalTest) secondaryApp.auth().useEmulator('http://127.0.0.1:9099');
 
     secondaryApp.auth().createUserWithEmailAndPassword(email, password)
         .then((cred) => {
@@ -2980,7 +2981,7 @@ async function finalizarVentaAdmin(total, pulseraId, nombre, saldoNuevo, metodo,
     if (adminCheckoutBusy) return;
     adminCheckoutBusy = true;
     try {
-        const result = await GenesaretCheckout.commit({db, auth, eventId: adminEventoActivo, items: adminCarrito.map(i => ({...i})), pulseraId, pulseraNombre: nombre, metodo, estado, carritoId: db.collection('transacciones').doc().id,selfOrderId:adminSelfOrderId});
+        const result = await GenesaretCheckout.commit({experimentalIntegrity:window.GenesaretLocalTest===true,db, auth, eventId: adminEventoActivo, items: adminCarrito.map(i => ({...i})), pulseraId, pulseraNombre: nombre, metodo, estado, carritoId: db.collection('transacciones').doc().id,selfOrderId:adminSelfOrderId});
         if (estado === 'pagado') playSound('success');
         document.getElementById('adminConfMonto').textContent = '$' + total.toFixed(2);
         const folio = document.getElementById('adminConfPedido'); if(folio) folio.textContent = result.numeroPedido ? 'Pedido ' + result.numeroPedido : 'Venta sin folio de pedido';
