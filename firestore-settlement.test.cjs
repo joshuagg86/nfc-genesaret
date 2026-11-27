@@ -364,9 +364,11 @@ const firebase=require('firebase/compat/app');require('firebase/compat/firestore
  assert.equal((await data(admin,'turnos_caja/shift2')).efectivoVentas,c);
  });
  await test('Fiado transferencia y liquidación de dos partidas con cocina',async()=>{
+ await admin.doc('articulos/sandwich').update({requiereCocina:true});
+ assert.equal((await data(admin,'articulos/sandwich')).requiereCocina,true);
  const c=(await data(admin,'turnos_caja/shift2')).efectivoVentas,p=(await data(admin,'articulos/sandwich')).stock;
  await assertSucceeds(checkout('debtTransfer','transferencia',[{id:'sandwich',cantidad:1,precio:35},{id:'agua',cantidad:1,precio:10}],{estado:'pendiente'}));
- assert.equal((await data(admin,'eventos/cafe/pedidos_cocina/debtTransfer')).pagoPendiente,true);
+ const kitchenBefore=await data(admin,'eventos/cafe/pedidos_cocina/debtTransfer');assert.ok(kitchenBefore,'El pedido debe existir en cocina');assert.equal(kitchenBefore.items.length,1);assert.equal(kitchenBefore.pagoPendiente,true);
  await assertSucceeds(settle(['debtTransfer_0','debtTransfer_1'],45));
  assert.equal((await data(admin,'eventos/cafe/pedidos_cocina/debtTransfer')).pagoPendiente,false);
  assert.equal((await data(admin,'articulos/sandwich')).stock,p-1);
