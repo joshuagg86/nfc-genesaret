@@ -181,6 +181,8 @@ function actualizarSaludo() {
 
 // --- NAVEGACIÓN ---
 function switchTab(tab) {
+    if(adminCheckoutBusy)return;
+    if(tab!=='ventas'&&document.getElementById('ventas').classList.contains('active'))stopAdminSaleView();
     
     if (!document.getElementById(tab)) tab = 'dashboard';
     const group = ['eventos','cuentas','reportes','mas','dispositivos'].includes(tab) ? 'mas' : tab;
@@ -216,7 +218,7 @@ function switchTab(tab) {
     // --- AQUÍ ESTABA EL ERROR ---
     // Usamos 'tab' en lugar de 'tabId' y agrupamos las cargas:
     if(tab==='dispositivos')GenesaretStations.open();
-    if(tab==='ventas')GenesaretReversals.open();
+    if(tab==='ventas')switchPOSTab('historial');
     if (tab === 'reportes') {
         cargarReporteMensual();
         cargarGraficaVentas();
@@ -2657,19 +2659,19 @@ let adminInventarioPOS = []; // ✅ Variable 100% independiente para el POS
 let adminSelfOrderId=null,adminQueue=null;
 function startAdminQueue(event){
  if(adminQueue)adminQueue.close();
- adminQueue=GenesaretStations.queue({container:'adminStationQueue',eventId:event,canLoad:()=>document.getElementById('modalPOSAdmin').classList.contains('active')&&!adminCarrito.length&&!adminCheckoutBusy&&!adminCustomizing&&!document.getElementById('adminPagoOverlay').classList.contains('active')&&!Swal.isVisible(),load:async(id,station)=>{
+ adminQueue=GenesaretStations.queue({container:'adminStationQueue',eventId:event,canLoad:()=>(document.getElementById('ventas').classList.contains('active')&&document.getElementById('pos-tab-venta').style.display==='block'&&document.getElementById('modalPOSAdmin').classList.contains('active'))&&!adminCarrito.length&&!adminCheckoutBusy&&!adminCustomizing&&!document.getElementById('adminPagoOverlay').classList.contains('active')&&!Swal.isVisible(),load:async(id,station)=>{
  const doc=await db.collection('pedidos_autoservicio').doc(id).get({source:'server'}),o=doc.data();
  if(!doc.exists||o.estado!=='pendiente'||o.eventId!==event||o.estacionId!==station||o.vendedorId!==auth.currentUser.uid)throw Error('Pedido no disponible');
  const items=await Promise.all(o.items.map(async i=>{const d=await db.collection('articulos').doc(i.id).get({source:'server'}),p=d.data();if(!d.exists||p.eventId!==event)throw Error('Producto no disponible');const detail=GenesaretCheckout.resolveRecipe(p,i.selection);if(detail.price!==Math.round(i.precio*100))throw Error('El precio cambió');return {...i,nombre:p.nombre,notes:detail.notes,esInfinito:p.esInfinito};}));
- if(adminCarrito.length||adminEventoActivo!==event||adminCheckoutBusy||adminCustomizing||!document.getElementById('modalPOSAdmin').classList.contains('active'))return false;
+ if(adminCarrito.length||adminEventoActivo!==event||adminCheckoutBusy||adminCustomizing||!(document.getElementById('ventas').classList.contains('active')&&document.getElementById('pos-tab-venta').style.display==='block'&&document.getElementById('modalPOSAdmin').classList.contains('active')))return false;
  adminCarrito=items;adminSelfOrderId=id;actualizarAdminCarritoUI();showSuccess('Pedido de Autoservicio recibido');return true;
  },cancel:async(id,station)=>{try{if(adminCheckoutBusy)return;if(await GenesaretStations.cancel(id,station)){if(adminSelfOrderId===id)limpiarCarritoPOS(true);adminQueue?.next();}}catch(e){showError(e.message);}},onError:showError});
 }
 let adminCatalogStop=null,adminCatalogVersion=0;
 async function abrirPOSAdmin() {
     const posModal=document.getElementById('modalPOSAdmin');
-    if(posModal.parentElement!==document.body)document.body.appendChild(posModal);
-    posModal.classList.add('active');
+    if(!document.getElementById('ventas').classList.contains('active'))switchTab('ventas');
+    switchPOSTab('venta');
     const token=++adminCatalogVersion,select=document.getElementById('adminPOSEvent');
     if(adminCatalogStop){adminCatalogStop();adminCatalogStop=null;}
     document.getElementById('posGrid').textContent='Cargando catálogo…';
@@ -2685,7 +2687,7 @@ async function abrirPOSAdmin() {
         select.onchange=()=>cargarCatalogoAdminEvento();
         cargarCatalogoAdminEvento();
     }catch(e){document.getElementById('posGrid').textContent='No se pudo cargar el catálogo';showError(e.message);}
-    actualizarAdminCarritoUI();cambiarMetodoPOS('efectivo');switchPOSTab('venta');
+    actualizarAdminCarritoUI();
 }
 function cargarCatalogoAdminEvento(){
     if(adminCatalogStop){adminCatalogStop();adminCatalogStop=null;}
@@ -2701,10 +2703,18 @@ function cargarCatalogoAdminEvento(){
     },e=>{if(adminEventoActivo===id){adminInventarioPOS=[];renderPOSGrid([]);showError(e.message);}});
 }
 
-function cerrarPOSAdmin() {
-    if(adminCheckoutBusy)return;if(adminQueue){adminQueue.close();adminQueue=null;}
-    document.getElementById('modalPOSAdmin').classList.remove('active');
-    if(window.html5QrcodeScanner) window.cerrarScannerQR();
+function cerrarPOSAdmin(){abrirSeccionVentas('historial');}
+function stopAdminSaleView(){
+ ++adminCatalogVersion;
+ if(adminQueue){adminQueue.close();adminQueue=null;}
+ if(adminCatalogStop){adminCatalogStop();adminCatalogStop=null;}
+ document.getElementById('modalPOSAdmin').classList.remove('active');
+}
+function abrirSeccionVentas(tab){
+ if(adminCheckoutBusy)return;
+ if(!document.getElementById('ventas').classList.contains('active'))switchTab('ventas');
+ if(tab==='venta')return abrirPOSAdmin();
+ switchPOSTab(tab);
 }
 
 // --- 1. RENDERIZADO DEL GRID ---
@@ -2810,17 +2820,18 @@ function limpiarCarritoPOS(force=false) {
 }
 
 // --- 3. PESTAÑAS (VENTA | PENDIENTES | CORTE) ---
-function switchPOSTab(tabName, btn) {
-    document.getElementById('pos-tab-venta').style.display = 'none';
-    document.getElementById('pos-tab-pendientes').style.display = 'none';
-    document.getElementById('pos-tab-corte').style.display = 'none';
-    document.getElementById('pos-tab-' + tabName).style.display = 'block';
-
-    const tabs = Array.from(document.querySelectorAll('#modalPOSAdmin .sub-tab-btn'));
-    const selected = btn || tabs.find(b => (b.getAttribute('onclick') || '').includes("'" + tabName + "'"));
-    tabs.forEach(b => b.classList.toggle('active', b === selected));
-    if(tabName === 'pendientes') cargarPendientesAdmin();
-    if(tabName === 'corte') cargarCorteAdmin();
+function switchPOSTab(tabName){
+ if(adminCheckoutBusy)return;
+ if(!['historial','venta','pendientes','corte'].includes(tabName))return;
+ if(tabName!=='venta')stopAdminSaleView();
+ const pos=document.getElementById('modalPOSAdmin');
+ pos.classList.toggle('active',tabName!=='historial');
+ document.querySelector('.admin-sale-grid').style.display=tabName==='venta'?'grid':'none';
+ for(const t of ['historial','venta','pendientes','corte'])document.getElementById('pos-tab-'+t).style.display=t===tabName?'block':'none';
+ document.querySelectorAll('[data-pos-tab]').forEach(b=>{b.classList.toggle('active',b.dataset.posTab===tabName);b.setAttribute('aria-pressed',String(b.dataset.posTab===tabName));});
+ if(tabName==='historial')GenesaretReversals.open();
+ if(tabName==='pendientes')cargarPendientesAdmin();
+ if(tabName==='corte')cargarCorteAdmin();
 }
 
 // --- 4. MÉTODOS DE PAGO Y FLUJO ---
