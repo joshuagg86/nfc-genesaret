@@ -34,6 +34,7 @@ const firebase=require('firebase/compat/app');require('firebase/compat/firestore
  await test('No se permite venta inventada a precio manipulado',()=>assertFails(cashier.doc('transacciones/fake').set({eventId:'cafe',vendedorId:'seller1',articuloId:'sandwich',cantidad:1,precioUnitario:1,monto:1,estadoPago:'pagado',metodoPago:'efectivo',carritoId:'fake'})));
  await test('No se permite bajar saldo NFC sin venta',()=>assertFails(cashier.doc('pulseras/wallet').update({saldoActual:0})));
  await test('No se permite bajar stock sin venta',()=>assertFails(cashier.doc('articulos/agua').update({stock:0})));
+ await test('No se permite manifiesto sin partidas de venta',()=>assertFails(cashier.doc('ventas_integridad/orphan').set({vendedorId:'seller1',eventId:'cafe',metodoPago:'efectivo',estadoPago:'pagado',pulseraId:null,lineas:1,total:35})));
  console.log('Resultado: '+passed+' correctas, '+failed+' fallidas. Las fallidas requieren corrección antes de publicar.');
  if(failed)process.exitCode=1;
  }finally{await env.cleanup();}
