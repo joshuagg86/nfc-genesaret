@@ -1,3 +1,4 @@
+const rolePages={admin:'admin.html',vendedor:'vendedor.html',cocina:'cocina.html',tv:'tv-pedidos.html',autoservicio:'autoservicio.html'};
 // Utilidades UI
         const showError = (msg) => {
             const el = document.getElementById('error');
@@ -45,7 +46,7 @@
                 return db.collection('usuarios').doc(userCredential.user.uid).get();
             })
             .then((doc) => {
-                if (doc.exists) {
+                if (doc.exists && doc.data().activo!==false && rolePages[doc.data().role]) {
                     const role = doc.data().role;
                     const name = doc.data().name;
                     
@@ -55,11 +56,7 @@
                     localStorage.setItem('userId', doc.id);
 
                     // Redirigir
-                    if (role === 'admin') {
-                        window.location.href = 'admin.html';
-                    } else {
-                        window.location.href = 'vendedor.html';
-                    }
+                    window.location.href=rolePages[role];
                 } else {
                     throw new Error("Usuario sin rol asignado.");
                 }
@@ -95,7 +92,7 @@
             localStorage.setItem('userName', name);
             
             setTimeout(() => {
-                window.location.href = role === 'admin' ? 'admin.html' : 'vendedor.html';
+                window.location.href = rolePages[role]||'index.html';
             }, 500);
         }
 
@@ -169,7 +166,7 @@
                 // En lugar de leer localStorage (que puede estar viejo),
                 // consultamos el rol REAL en la base de datos.
                 db.collection('usuarios').doc(user.uid).get().then(doc => {
-                    if (doc.exists) {
+                    if (doc.exists && doc.data().activo!==false && rolePages[doc.data().role]) {
                         const realRole = doc.data().role;
                         
                         // Actualizamos la memoria para corregir cualquier error
@@ -177,11 +174,7 @@
                         localStorage.setItem('userId', user.uid);
                         
                         // Redirigimos basándonos EXCLUSIVAMENTE en la base de datos
-                        if (realRole === 'admin') {
-                            window.location.replace('admin.html');
-                        } else if (realRole === 'vendedor') {
-                            window.location.replace('vendedor.html');
-                        }
+                        window.location.replace(rolePages[realRole]);
                     } else {
                         // Si el usuario no existe en la BD (error raro), cerramos sesión por seguridad
                         console.error("Usuario autenticado pero no encontrado en BD");
