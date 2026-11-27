@@ -129,31 +129,31 @@ function showError(message) {
             unsubscribe();
         });
         // --- CONTROL ANTI-DOBLE COBRO Y FEEDBACK HÁPTICO/AUDITIVO ---
-        let selfOrderId=null;
-        async function loadSelfOrder(raw){
-            if(isProcessingPayment||customizingProduct)return;
-            const id=String(raw||'').trim().replace(/^GENESARET:PEDIDO:/,'');
-            if(!/^[A-Za-z0-9]{20}$/.test(id))return showError('Código de pedido inválido');
-            if(carrito.length)return showError('Vacía el carrito antes de cargar un pedido');
+        let selfOrderId=null,sellerQueue=null,sellerQueueEvent='';
+        function startSellerQueue(event){
+            if(sellerQueueEvent===event&&sellerQueue)return;
+            if(sellerQueue)sellerQueue.close();sellerQueueEvent=event;
+            sellerQueue=GenesaretStations.queue({container:'sellerStationQueue',eventId:event,canLoad:()=>!carrito.length&&!isProcessingPayment&&!customizingProduct&&!document.getElementById('pagoConfirmadoOverlay').classList.contains('active')&&!Swal.isVisible(),load:loadSelfOrder,cancel:async(id,station)=>{try{if(isProcessingPayment)return;if(await GenesaretStations.cancel(id,station)){if(selfOrderId===id)vaciarCarrito(true);sellerQueue?.next();}}catch(e){showError(e.message);}},onError:showError});
+        }
+        async function loadSelfOrder(id,stationId){
+            if(isProcessingPayment||customizingProduct||carrito.length)return false;
             const event=document.getElementById('eventSelect').value;
             try{
-                const doc=await db.collection('pedidos_autoservicio').doc(id).get();
-                if(!doc.exists||doc.data().estado!=='pendiente'||doc.data().eventId!==event)throw Error('Pedido no disponible para este evento');
+                const doc=await db.collection('pedidos_autoservicio').doc(id).get({source:'server'});
+                if(!doc.exists||doc.data().estado!=='pendiente'||doc.data().eventId!==event||doc.data().estacionId!==stationId||doc.data().vendedorId!==auth.currentUser.uid)throw Error('Pedido no disponible para esta estación');
                 const order=doc.data(),items=[];
                 for(const i of order.items){
-                    const pdoc=await db.collection('articulos').doc(i.id).get();
+                    const pdoc=await db.collection('articulos').doc(i.id).get({source:'server'});
                     if(!pdoc.exists||pdoc.data().eventId!==event)throw Error('Producto no disponible');
                     const p=pdoc.data(),detail=GenesaretCheckout.resolveRecipe(p,i.selection);
                     if(detail.price!==Math.round(i.precio*100))throw Error('El precio del pedido cambió');
                     items.push({...i,nombre:p.nombre,notes:detail.notes,stock:p.stock,esInfinito:p.esInfinito});
                 }
-                if(carrito.length||event!==document.getElementById('eventSelect').value||isProcessingPayment)return;
-                carrito=items;selfOrderId=id;renderizarCarrito();showSuccess('Pedido cargado. Registra su pago.');
-            }catch(e){showError(e.message);}
-        }
-        async function buscarPedidoAutoservicio(){
-            const result=await Swal.fire({title:'Cargar pedido de Autoservicio',input:'text',inputLabel:'Código de pedido',showCancelButton:true,confirmButtonText:'Cargar',cancelButtonText:'Cancelar',customClass:{popup:'genesaret-smart-modal'}});
-            if(result.isConfirmed)loadSelfOrder(result.value);
+                if(carrito.length||event!==document.getElementById('eventSelect').value||isProcessingPayment||customizingProduct)return false;
+                carrito=items;selfOrderId=id;renderizarCarrito();showSuccess('Pedido de Autoservicio recibido');
+                try{playTone(660,'sine',.15);}catch(e){}
+                return true;
+            }catch(e){showError(e.message);return false;}
         }
         let isProcessingPayment = false;
 
@@ -310,6 +310,7 @@ function toggleCatalogScope() {
 }
 function cargarProductosPorEvento() {
     const eventId = document.getElementById('eventSelect').value;
+    startSellerQueue(eventId);
     const container = document.getElementById('contenedorProductos');
     const tabs = document.getElementById('categoryTabs');
     if (catalogUnsubscribe) { catalogUnsubscribe(); catalogUnsubscribe = null; }
@@ -451,7 +452,7 @@ function cargarProductosPorEvento() {
     renderizarCarrito();
 }
         function eliminarDelCarrito(idx) { if(selfOrderId)return showError('Vacía el carrito para liberar el pedido'); if (isProcessingPayment) return; carrito.splice(idx, 1); renderizarCarrito(); }
-        function vaciarCarrito(force = false) { if (isProcessingPayment && !force) return; carrito = []; selfOrderId=null; renderizarCarrito(); }
+        function vaciarCarrito(force = false) { if (isProcessingPayment && !force) return; if(selfOrderId&&!force)sellerQueue?.pause(); carrito = []; selfOrderId=null; renderizarCarrito(); if(!force)sellerQueue?.next(); }
         
         function renderizarCarrito() {
             const cont = document.getElementById('carritoItems'); 
@@ -759,7 +760,7 @@ function cargarProductosPorEvento() {
             let s = 4; document.getElementById('contadorCierre').textContent = s;
             interval = setInterval(() => { s--; document.getElementById('contadorCierre').textContent = s; if(s<=0) cerrarConfirmacion(); }, 1000);
         }
-        function cerrarConfirmacion() { document.getElementById('pagoConfirmadoOverlay').classList.remove('active'); if(interval) clearInterval(interval); }
+        function cerrarConfirmacion() { document.getElementById('pagoConfirmadoOverlay').classList.remove('active'); if(interval) clearInterval(interval); sellerQueue?.next(); }
 
         let pendingUnsubscribe = null;
         function cargarPendientes() {
@@ -987,9 +988,7 @@ window.iniciarEscanerQR = function(modo) {
         playSound('scan');
 
         // Lógica según el modo
-        if(id.startsWith('GENESARET:PEDIDO:')){loadSelfOrder(id);}
-        else if(modo==='pedido_autoservicio'){loadSelfOrder(id);}
-        else if (modo === 'cobro_nfc') {
+        if (modo === 'cobro_nfc') {
             readPulseraData(id); 
         } 
         else if (modo === 'identificar_cliente') {
