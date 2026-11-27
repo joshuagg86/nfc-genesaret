@@ -364,3 +364,25 @@ button:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:480px){.screen-admin #dispositivos .station-create-form{grid-template-columns:1fr}.station-config-card{padding:16px}}
 
 .station-connections{display:grid;gap:8px}.station-connection{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px}.connection-state{font-size:11px;color:var(--text-muted)}.connection-state.online{color:#0aa77a}.connection-state:before{content:'●';margin-right:5px}.screen-admin:not(.light-mode) .connection-state.online{color:#68dfb4}.station-config-actions>*{flex-basis:130px}
+
+/* Compact cash reconciliation in both cashier interfaces. */
+#sellerCashTurn,#adminCashTurn{margin-bottom:20px;min-width:0}
+.cash-turn-status{margin:8px 0 14px;color:var(--text-muted)}
+.cash-turn-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;margin:0 0 16px}
+.cash-turn-grid .cash-metric{grid-column:span 3;min-width:0;display:flex;flex-direction:column;gap:6px;padding:14px 16px;border-radius:16px;margin:0}
+.cash-turn-grid .cash-metric:nth-child(n+5){grid-column:span 4}
+.cash-turn-grid .cash-metric:last-child:nth-child(5){grid-column:1/-1}
+.cash-turn-grid .cash-metric small{font-size:13px;line-height:1.4}
+.cash-turn-grid .cash-metric .smart-amount{font-size:clamp(19px,2.3vw,29px);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+body .cash-turn-grid .cash-expected{background:linear-gradient(135deg,#075bb8,#008bc9)!important;border-color:#168dea!important;color:white!important}
+body .cash-turn-grid .cash-expected :is(small,strong){color:white!important}
+.cash-turn-grid .balanced strong{color:#68dfb4!important}
+.cash-turn-grid .shortage strong{color:#ff9292!important}
+.cash-turn-grid .surplus strong{color:#ffd166!important}
+body.light-mode .cash-turn-grid .balanced strong{color:#087452!important}
+body.light-mode .cash-turn-grid .shortage strong{color:#ae163c!important}
+body.light-mode .cash-turn-grid .surplus strong{color:#925500!important}
+.cash-actions{display:flex;flex-wrap:wrap;gap:10px}
+.cash-actions button{flex:1 1 120px;min-height:44px;margin:0}
+@media(max-width:700px){.cash-turn-grid .cash-metric,.cash-turn-grid .cash-metric:nth-child(n+5){grid-column:span 6}.cash-turn-grid .cash-metric:last-child:nth-child(odd){grid-column:1/-1}}
+@media(max-width:360px){.cash-turn-grid{gap:7px}.cash-turn-grid .cash-metric{padding:10px}.cash-turn-grid .cash-metric small{font-size:12px}}
