@@ -524,7 +524,7 @@
 <div class="card smart-history"><h3>Últimos movimientos de insumos</h3><div id="smartHistory"></div></div>
 </section>
 <section class="art-section" id="sec-recetas" style="display:none">
-<div class="shell-heading"><h2>Recetas</h2><p>Define ingredientes y cantidades por producto. Vista previa: todavía no descuenta ingredientes al cobrar.</p></div>
+<div class="shell-heading"><h2>Recetas</h2><p>Define ingredientes y cantidades por producto. Activa la receta para personalizar pedidos y descontar insumos al registrar ventas.</p></div>
 <div class="card"><div class="inventory-toolbar"><label>Evento <select id="recipeEvent"></select></label><label>Producto <select id="recipeProduct"></select></label></div><div id="recipeStatus" role="status"></div><h3>Receta base</h3><p class="recipe-help">El precio de venta se configura en el artículo, independientemente del costo de sus ingredientes.</p><div id="recipeLines"></div><div class="smart-actions"><button class="btn-secondary" id="recipeAdd">Añadir ingrediente</button><button class="btn-primary" id="recipeCreateSupply">Crear insumo</button></div><h3 class="recipe-section-title">Extras opcionales</h3><p class="recipe-help">Define la cantidad y el precio de cada extra para este producto. Puedes cambiar el precio sugerido del insumo.</p><div id="recipeExtras"></div><button class="btn-secondary" id="recipeExtraAdd">Añadir extra</button><div class="smart-kpis" id="recipeSummary"></div><p id="recipeState" role="status">Sin receta</p><div class="smart-actions"><button class="btn-secondary" id="recipeSave">Guardar borrador</button><button class="btn-primary" id="recipeActivate">Activar receta</button></div></div>
 </section>
 <div class="card art-section" id="sec-bitacora" style="display: none;">
@@ -799,10 +799,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
     <script src="config.js?v=1.4"></script>
-    <script src="checkout.js?v=3"></script>
+    <script src="checkout.js?v=4"></script>
     
     <script src="dashboard.js?v=dashboard-7"></script>
-    <script src="inventory-smart.js?v=7"></script>
-    <script src="admin.js?v=dashboard-10"></script> 
+    <script src="inventory-smart.js?v=8"></script>
+    <script src="admin.js?v=dashboard-11"></script> 
 </body>
 </html>
