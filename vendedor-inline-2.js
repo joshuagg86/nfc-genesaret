@@ -129,6 +129,32 @@ function showError(message) {
             unsubscribe();
         });
         // --- CONTROL ANTI-DOBLE COBRO Y FEEDBACK HÁPTICO/AUDITIVO ---
+        let selfOrderId=null;
+        async function loadSelfOrder(raw){
+            if(isProcessingPayment||customizingProduct)return;
+            const id=String(raw||'').trim().replace(/^GENESARET:PEDIDO:/,'');
+            if(!/^[A-Za-z0-9]{20}$/.test(id))return showError('Código de pedido inválido');
+            if(carrito.length)return showError('Vacía el carrito antes de cargar un pedido');
+            const event=document.getElementById('eventSelect').value;
+            try{
+                const doc=await db.collection('pedidos_autoservicio').doc(id).get();
+                if(!doc.exists||doc.data().estado!=='pendiente'||doc.data().eventId!==event)throw Error('Pedido no disponible para este evento');
+                const order=doc.data(),items=[];
+                for(const i of order.items){
+                    const pdoc=await db.collection('articulos').doc(i.id).get();
+                    if(!pdoc.exists||pdoc.data().eventId!==event)throw Error('Producto no disponible');
+                    const p=pdoc.data(),detail=GenesaretCheckout.resolveRecipe(p,i.selection);
+                    if(detail.price!==Math.round(i.precio*100))throw Error('El precio del pedido cambió');
+                    items.push({...i,nombre:p.nombre,notes:detail.notes,stock:p.stock,esInfinito:p.esInfinito});
+                }
+                if(carrito.length||event!==document.getElementById('eventSelect').value||isProcessingPayment)return;
+                carrito=items;selfOrderId=id;renderizarCarrito();showSuccess('Pedido cargado. Registra su pago.');
+            }catch(e){showError(e.message);}
+        }
+        async function buscarPedidoAutoservicio(){
+            const result=await Swal.fire({title:'Cargar pedido de Autoservicio',input:'text',inputLabel:'Código de pedido',showCancelButton:true,confirmButtonText:'Cargar',cancelButtonText:'Cancelar',customClass:{popup:'genesaret-smart-modal'}});
+            if(result.isConfirmed)loadSelfOrder(result.value);
+        }
         let isProcessingPayment = false;
 
         // Pitido estilo terminal POS mediante Web Audio API (no requiere archivos externos)
@@ -397,6 +423,7 @@ function cargarProductosPorEvento() {
 
         let customizingProduct=false;
         async function agregarDirecto(id) {
+            if (selfOrderId) return showError('Vacía el pedido cargado para agregar otros productos');
             if (isProcessingPayment||customizingProduct) return;
             const p=productosGlobales.find(p=>p.id===id);if(!p)return;
             const event=document.getElementById('eventSelect').value;
@@ -413,6 +440,7 @@ function cargarProductosPorEvento() {
             }catch(e){showError(e.message);}finally{customizingProduct=false;}
         }
         function cambiarCantidad(idx, d) {
+    if(selfOrderId)return showError('El pedido de Autoservicio no se puede modificar en Caja');
     if (isProcessingPayment || !carrito[idx]) return;
     const item = carrito[idx];
     const product = productosGlobales.find(p => p.id === item.id);
@@ -422,8 +450,8 @@ function cargarProductosPorEvento() {
     if (item.cantidad <= 0) carrito.splice(idx, 1);
     renderizarCarrito();
 }
-        function eliminarDelCarrito(idx) { if (isProcessingPayment) return; carrito.splice(idx, 1); renderizarCarrito(); }
-        function vaciarCarrito(force = false) { if (isProcessingPayment && !force) return; carrito = []; renderizarCarrito(); }
+        function eliminarDelCarrito(idx) { if(selfOrderId)return showError('Vacía el carrito para liberar el pedido'); if (isProcessingPayment) return; carrito.splice(idx, 1); renderizarCarrito(); }
+        function vaciarCarrito(force = false) { if (isProcessingPayment && !force) return; carrito = []; selfOrderId=null; renderizarCarrito(); }
         
         function renderizarCarrito() {
             const cont = document.getElementById('carritoItems'); 
@@ -696,7 +724,7 @@ function cargarProductosPorEvento() {
     const items = carrito.map(i => ({...i}));
     const total = obtenerTotalCarrito();
     try {
-        const result = await GenesaretCheckout.commit({db, auth, eventId, items, pulseraId, pulseraNombre, metodo, estado, carritoId});
+        const result = await GenesaretCheckout.commit({db, auth, eventId, items, pulseraId, pulseraNombre, metodo, estado, carritoId,selfOrderId});
         if (estado === 'pagado') playSound('success');
         mostrarConfirmacionPago(total, pulseraNombre, result.saldoNuevo, metodo, estado, result.numeroPedido);
         vaciarCarrito(true);
@@ -959,7 +987,9 @@ window.iniciarEscanerQR = function(modo) {
         playSound('scan');
 
         // Lógica según el modo
-        if (modo === 'cobro_nfc') {
+        if(id.startsWith('GENESARET:PEDIDO:')){loadSelfOrder(id);}
+        else if(modo==='pedido_autoservicio'){loadSelfOrder(id);}
+        else if (modo === 'cobro_nfc') {
             readPulseraData(id); 
         } 
         else if (modo === 'identificar_cliente') {
