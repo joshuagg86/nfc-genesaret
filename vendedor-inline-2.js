@@ -395,34 +395,29 @@ function cargarProductosPorEvento() {
             container.innerHTML = html + '</div>';
         }
 
-        function agregarDirecto(id) {
-            if (isProcessingPayment) return;
-            const productoReal = productosGlobales.find(p => p.id === id);
-            if (!productoReal) return;
-            const itemEnCarrito = carrito.find(x => x.id === id);
-            const cantidadEnCarrito = itemEnCarrito ? itemEnCarrito.cantidad : 0;
-            if (!productoReal.esInfinito && (cantidadEnCarrito + 1 > productoReal.stock)) {
-                showError('⚠️ Stock insuficiente');
-                return;
-            }
-            if (itemEnCarrito) { itemEnCarrito.cantidad++; } else {
-                carrito.push({ id: id, nombre: productoReal.nombre, precio: parseFloat(productoReal.precio), cantidad: 1, esInfinito: productoReal.esInfinito, stock: productoReal.stock });
-            }
-            renderizarCarrito(); 
-            if (navigator.vibrate) navigator.vibrate(50);
-            const btnCobrar = document.querySelector('.btn-success:not([style*="display: none"])') || document.querySelector('.btn-success');
-            if(btnCobrar) {
-                btnCobrar.style.transition = "transform 0.1s";
-                btnCobrar.style.transform = "scale(1.05)";
-                setTimeout(() => btnCobrar.style.transform = "scale(1)", 150);
-            }
+        let customizingProduct=false;
+        async function agregarDirecto(id) {
+            if (isProcessingPayment||customizingProduct) return;
+            const p=productosGlobales.find(p=>p.id===id);if(!p)return;
+            const event=document.getElementById('eventSelect').value;
+            customizingProduct=true;
+            try {
+                const detail=await GenesaretCheckout.customize(p);
+                if(!detail||isProcessingPayment||event!==document.getElementById('eventSelect').value)return;
+                const qty=carrito.filter(x=>x.id===id).reduce((a,x)=>a+x.cantidad,0);
+                if(!p.esInfinito&&qty+1>p.stock)return showError('Stock insuficiente');
+                const key=GenesaretCheckout.variantKey(id,detail.selection);
+                const item=carrito.find(x=>GenesaretCheckout.variantKey(x.id,x.selection)===key);
+                if(item)item.cantidad++;else carrito.push({id,nombre:p.nombre,precio:detail.price/100,cantidad:1,esInfinito:p.esInfinito,stock:p.stock,selection:detail.selection,notes:detail.notes});
+                renderizarCarrito();
+            }catch(e){showError(e.message);}finally{customizingProduct=false;}
         }
         function cambiarCantidad(idx, d) {
     if (isProcessingPayment || !carrito[idx]) return;
     const item = carrito[idx];
     const product = productosGlobales.find(p => p.id === item.id);
     const limit = product ? product.stock : item.stock;
-    if (d > 0 && !item.esInfinito && item.cantidad + d > limit) return showError('Stock insuficiente');
+    if (d > 0 && !item.esInfinito && carrito.filter(x=>x.id===item.id).reduce((a,x)=>a+x.cantidad,0) + d > limit) return showError('Stock insuficiente');
     item.cantidad += d;
     if (item.cantidad <= 0) carrito.splice(idx, 1);
     renderizarCarrito();
@@ -446,7 +441,7 @@ function cargarProductosPorEvento() {
                 html += `
                     <div class="carrito-item">
                         <div class="carrito-item-info">
-                            <div class="carrito-item-nombre">${it.nombre}</div>
+                            <div class="carrito-item-nombre">${GenesaretCheckout.escapeHtml(it.nombre)}</div>${(it.notes||[]).map(n=>`<small style="display:block;color:var(--text-muted)">${GenesaretCheckout.escapeHtml(n)}</small>`).join("")}
                             <div class="carrito-item-precio">$${it.precio.toFixed(2)} c/u</div>
                         </div>
                         <div class="carrito-item-cantidad">
