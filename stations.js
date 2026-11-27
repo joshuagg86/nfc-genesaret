@@ -31,11 +31,19 @@ async function open(){
  $('stationCreate').onclick=createStation;
  function renderStations(snap){
  const list=$('stationList');list.replaceChildren();
- for(const d of snap.docs){const s=d.data(),card=node('article',null,'smart-card');card.append(node('h3',s.nombre),node('strong',d.id,'smart-amount'),node('small',(events.docs.find(x=>x.id===s.eventId)?.data().nombre||'Evento')+' · '+(users.docs.find(x=>x.id===s.vendedorId)?.data().name||'Caja')),node('small',s.activo?'Habilitada':'Deshabilitada'));
- const auto=node('div',null,'station-autoservice');auto.append(node('h3','Autoservicio · '+s.nombre),node('small','Acceso independiente para esta estación'));
- const url='autoservicio.html?estacion='+encodeURIComponent(d.id)+'&evento='+encodeURIComponent(s.eventId);
- const launch=node('a','Abrir Autoservicio','btn-primary');launch.href=url;launch.target='_blank';launch.rel='noopener';launch.style.cssText='display:block;text-align:center;text-decoration:none;padding:12px;border-radius:12px';if(s.activo){auto.append(launch,btn('Copiar enlace',async()=>{try{await navigator.clipboard.writeText(new URL(url,location.href).href);showSuccess('Enlace copiado');}catch(e){await Swal.fire({title:'Enlace de Autoservicio',text:new URL(url,location.href).href});}}));}else auto.append(node('small','Estación deshabilitada'));card.append(auto);
- card.append(btn(s.activo?'Deshabilitar':'Habilitar',async()=>{try{await d.ref.update({activo:!s.activo});}catch(e){showError(e.message);}}));list.append(card);}
+ for(const d of [...snap.docs].sort((a,b)=>String(a.data().nombre).localeCompare(String(b.data().nombre),'es',{numeric:true}))){
+ const s=d.data(),card=node('article',null,'station-config-card');
+ const header=node('div',null,'station-config-head'),icon=node('span',null,'station-config-icon');
+ const glyph=node('i',null,'fas fa-cash-register');glyph.setAttribute('aria-hidden','true');icon.append(glyph);
+ const title=node('div',null,'station-config-title');title.append(node('h3',s.nombre||'Caja'),node('small',events.docs.find(x=>x.id===s.eventId)?.data().nombre||'Evento no activo'));
+ header.append(icon,title,node('span',s.activo?'Habilitada':'Deshabilitada','station-config-state '+(s.activo?'enabled':'disabled')));card.append(header);
+ const seller=users.docs.find(x=>x.id===s.vendedorId)?.data(),account=node('div',null,'station-config-account');
+ account.append(node('small','Vendedor asignado'),node('strong',seller?.name||seller?.nombre||'Cuenta no disponible'));if(seller?.email)account.append(node('small',seller.email));card.append(account);
+ const code=node('div',null,'station-config-code');code.append(node('small','Código de vinculación'),node('strong',d.id),node('small','Introdúcelo en la tablet de Autoservicio'));card.append(code);
+ const actions=node('div',null,'station-config-actions');
+ if(s.activo){const launch=node('a','Vista previa', 'btn-secondary');launch.href='autoservicio.html?estacion='+encodeURIComponent(d.id)+'&evento='+encodeURIComponent(s.eventId);launch.target='_blank';launch.rel='noopener';launch.title='Probar como administrador';actions.append(launch);}
+ const toggle=btn(s.activo?'Deshabilitar':'Habilitar',async()=>{const result=await Swal.fire({title:s.activo?'¿Deshabilitar estación?':'¿Habilitar estación?',text:s.activo?'La estación dejará de recibir pedidos. Revisa antes que no haya pedidos pendientes.':'La estación podrá recibir pedidos nuevamente.',showCancelButton:true,confirmButtonText:s.activo?'Deshabilitar':'Habilitar',cancelButtonText:'Volver'});if(!result.isConfirmed)return;try{if(s.activo){const orders=await db.collection('pedidos_autoservicio').where('estacionId','==',d.id).get({source:'server'});if(orders.docs.some(o=>o.data().estado==='pendiente'))throw Error('Cobra o cancela los pedidos pendientes antes de deshabilitar la estación');}await d.ref.update({activo:!s.activo});}catch(e){showError(e.message);}});actions.append(toggle);card.append(actions);list.append(card);
+ }
  if(!list.children.length)list.append(node('p','Crea tu primera estación.'));
  }
  stop=db.collection('estaciones_venta').onSnapshot(snap=>{stationSnapshot=snap;renderStations(snap);},e=>{$('stationList').textContent=e.message;stop=null;if(stopUsers){stopUsers();stopUsers=null;}});
