@@ -455,7 +455,7 @@
                         <input type="number" id="newArtStock">
                     </div>
                 </div>
-                <button class="btn-primary" onclick="guardarNuevoArticulo()" style="width: 100%;">Guardar Artículo</button>
+                <div class="form-group"><label style="display:flex;align-items:center;gap:10px"><input type="checkbox" id="newArtCocina" style="width:auto"> Requiere preparación en cocina</label><small style="color:var(--text-muted)">Enviar este producto a Cocina y mostrar su pedido en TV.</small></div><button class="btn-primary" onclick="guardarNuevoArticulo()" style="width: 100%;">Guardar Artículo</button>
             </div>
 
             <div class="card art-section" id="sec-lista" style="display: none;">
@@ -713,7 +713,7 @@
                     <option value="todos">⭐ Disponible para todos los puestos</option>
                 </select>
             </div>
-            <div class="form-group" style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px;">
+            <div class="form-group"><label style="display:flex;align-items:center;gap:10px"><input type="checkbox" id="artCocina" style="width:auto"> Requiere preparación en cocina</label><small style="color:var(--text-muted)">Enviar este producto a Cocina y mostrar su pedido en TV.</small></div><div class="form-group" style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px;">
                 <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
                     <label>¿Es Infinito?</label>
                     <input type="checkbox" id="artInfinito" onchange="toggleStockInput()">
@@ -799,10 +799,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
     <script src="config.js?v=1.4"></script>
-    <script src="checkout.js?v=2"></script>
+    <script src="checkout.js?v=3"></script>
     
     <script src="dashboard.js?v=dashboard-7"></script>
     <script src="inventory-smart.js?v=6"></script>
-    <script src="admin.js?v=dashboard-9"></script> 
+    <script src="admin.js?v=dashboard-10"></script> 
 </body>
 </html>
