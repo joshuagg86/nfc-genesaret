@@ -145,7 +145,7 @@
         <div class="alert alert-error" id="errorAlert"></div>
 
         <nav class="native-tabs" aria-label="Navegación principal"><button type="button" data-shell-tab="dashboard" onclick="switchTab('dashboard')" aria-current="page"><i class="fas fa-house" aria-hidden="true"></i><span>Inicio</span></button><button type="button" data-shell-tab="ventas" onclick="switchTab('ventas')" ><i class="fas fa-cash-register" aria-hidden="true"></i><span>Ventas</span></button><button type="button" data-shell-tab="pulseras" onclick="switchTab('pulseras')" ><i class="fas fa-credit-card" aria-hidden="true"></i><span>Pulseras</span></button><button type="button" data-shell-tab="articulos" onclick="switchTab('articulos')" ><i class="fas fa-boxes-stacked" aria-hidden="true"></i><span>Inventario</span></button><button type="button" data-shell-tab="mas" onclick="switchTab('mas')" ><i class="fas fa-ellipsis" aria-hidden="true"></i><span>Más</span></button></nav>
-<section class="tab-content" id="ventas"><div class="shell-heading"><h2>Ventas</h2><p>Registra ventas, consulta adeudos y revisa tu corte.</p></div><nav class="admin-sales-tabs" aria-label="Secciones de ventas"><button type="button" data-pos-tab="historial" onclick="abrirSeccionVentas('historial')"><i class="fas fa-list"></i> Historial</button><button type="button" data-pos-tab="venta" onclick="abrirPOSAdmin()"><i class="fas fa-cash-register"></i> Nueva venta</button><button type="button" data-pos-tab="pendientes" onclick="abrirSeccionVentas('pendientes')"><i class="fas fa-clock"></i> Pendientes</button><button type="button" data-pos-tab="corte" onclick="abrirSeccionVentas('corte')"><i class="fas fa-wallet"></i> Mi corte</button></nav><div id="pos-tab-historial"><div class="card" style="margin-top:20px"><h3>Historial de ventas</h3><div class="inventory-toolbar"><label>Evento<select id="saleHistoryEvent"></select></label><label>Buscar<input id="saleHistorySearch" placeholder="Pedido, producto o vendedor"></label></div><p id="saleHistoryCount" role="status"></p><div id="saleHistoryList" class="smart-grid"></div></div></div><div id="modalPOSAdmin" class="admin-inline-pos"><div class="admin-sale-grid"><div id="pos-tab-venta" style="display: block;">
+<section class="tab-content" id="ventas"><div class="shell-heading"><h2>Ventas</h2><p>Registra ventas, consulta adeudos y revisa tu corte.</p></div><nav class="admin-sales-tabs" aria-label="Secciones de ventas"><button type="button" data-pos-tab="historial" class="active" aria-pressed="true" onclick="abrirSeccionVentas('historial')"><i class="fas fa-list"></i> Historial</button><button type="button" data-pos-tab="venta" onclick="abrirPOSAdmin()"><i class="fas fa-cash-register"></i> Nueva venta</button><button type="button" data-pos-tab="pendientes" onclick="abrirSeccionVentas('pendientes')"><i class="fas fa-clock"></i> Pendientes</button><button type="button" data-pos-tab="corte" onclick="abrirSeccionVentas('corte')"><i class="fas fa-wallet"></i> Mi corte</button></nav><div id="pos-tab-historial"><div class="card" style="margin-top:20px"><h3>Historial de ventas</h3><div class="inventory-toolbar"><label>Evento<select id="saleHistoryEvent"></select></label><label>Buscar<input id="saleHistorySearch" placeholder="Pedido, producto o vendedor"></label></div><p id="saleHistoryCount" role="status"></p><div id="saleHistoryList" class="smart-grid"></div></div></div><div id="modalPOSAdmin" class="admin-inline-pos"><div class="admin-sale-grid"><div id="pos-tab-venta" style="display: block;">
                     <label for="adminPOSEvent" style="display:block;font-size:12px;margin-bottom:5px;color:var(--text-muted)">Evento de venta</label><select id="adminPOSEvent" style="width:100%;margin-bottom:10px" disabled></select><input type="text" id="posSearch" placeholder="🔍 Buscar producto..." onkeyup="filtrarPOS()" style="margin-bottom: 15px; padding: 12px; width: 100%;">
                     <div id="adminStationQueue" class="station-queue"></div><div id="posGrid" class="productos-grid"></div>
                 </div>
@@ -277,14 +277,7 @@
                     <i class="fas fa-cash-register"></i>
                 </button>
 
-                <div class="pago-confirmado-overlay" id="adminPagoOverlay" onclick="cerrarConfirmacionAdmin()">
-    <div class="pago-confirmado-content" onclick="event.stopPropagation()">
-        <div class="pago-check">✅</div>
-        <h1 class="pago-titulo">¡Venta Registrada!</h1>
-        <div class="pago-monto" id="adminConfMonto">$0.00</div><p id="adminConfPedido" style="font-size:22px;font-weight:800"></p>
-        <button class="pago-cerrar-btn" onclick="cerrarConfirmacionAdmin()">Continuar</button>
-    </div>
-</div>
+                
             </div>
             </div>
 
@@ -767,7 +760,15 @@
             </div>
         </div>
     </div>
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <div class="pago-confirmado-overlay" id="adminPagoOverlay" onclick="cerrarConfirmacionAdmin()">
+    <div class="pago-confirmado-content" onclick="event.stopPropagation()">
+        <div class="pago-check">✅</div>
+        <h1 class="pago-titulo">¡Venta Registrada!</h1>
+        <div class="pago-monto" id="adminConfMonto">$0.00</div><p id="adminConfPedido" style="font-size:22px;font-weight:800"></p>
+        <button class="pago-cerrar-btn" onclick="cerrarConfirmacionAdmin()">Continuar</button>
+    </div>
+</div>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
     <script src="config.js?v=1.4"></script>
