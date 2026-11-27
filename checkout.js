@@ -17,44 +17,60 @@
         const notes=recipe.lines.filter(l=>removed.includes(l.id)).map(l=>'Sin '+l.nombre).concat(recipe.extras.filter(l=>extra.includes(l.id)).map(l=>'Extra '+l.nombre));
         return {price:money(p.precio)+recipe.extras.filter(l=>extra.includes(l.id)).reduce((a,l)=>a+money(l.price),0),usage,notes};
     }
+    function foodIcon(name,fallback='🍽️'){
+        const n=String(name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+        for(const [pattern,icon] of [[/aguacate/,'🥑'],[/queso/,'🧀'],[/carne|hamburguesa/,'🍔'],[/sandwich|chapata|torta/,'🥪'],[/jitomate|tomate/,'🍅'],[/cebolla/,'🧅'],[/lechuga|verdura/,'🥬'],[/jamon|tocino/,'🥓'],[/pollo/,'🍗'],[/huevo/,'🥚'],[/pan dulce|dona/,'🍩'],[/pan/,'🍞'],[/agua/,'💧'],[/cafe/,'☕'],[/refresco|jugo/,'🥤'],[/papa/,'🍟'],[/chocolate/,'🍫']])if(pattern.test(n))return icon;
+        return fallback;
+    }
     async function customize(p) {
         const recipe=p.recetaActiva, selection={removed:[],extra:[]};
         if(!recipe)return {...resolveRecipe(p),selection};
-        const form=document.createElement('div');form.className='smart-modal-form';
-        const total=document.createElement('strong');
-        const baseBoxes=new Map(),extraBoxes=new Map();
-        function row(l,kind){
-            const label=document.createElement('label');
-            label.className='smart-modal-check';
-            label.style.cssText='display:flex;align-items:center;gap:12px;padding:10px;text-align:left';
-            const box=document.createElement('input');box.type='checkbox';box.style.width='auto';box.checked=kind==='removed';
-            (kind==='removed'?baseBoxes:extraBoxes).set(l.id,box);
-            const name=document.createElement('span');
-            name.textContent=l.nombre+(kind==='extra'?' · '+(money(l.price)?String.fromCharCode(36)+(money(l.price)/100).toFixed(2):'Sin costo'):'');
-            box.onchange=()=>{
-                selection[kind]=selection[kind].filter(id=>id!==l.id);
-                if(kind==='removed'?!box.checked:box.checked)selection[kind].push(l.id);
-                if(kind==='extra'&&box.checked&&selection.removed.includes(l.id)){
-                    selection.removed=selection.removed.filter(id=>id!==l.id);
-                    selection.extra=selection.extra.filter(id=>id!==l.id);
-                    baseBoxes.get(l.id).checked=true;
-                    box.checked=false;
-                }else if(kind==='removed'&&!box.checked&&selection.extra.includes(l.id)){
-                    selection.extra=selection.extra.filter(id=>id!==l.id);
-                    selection.removed=selection.removed.filter(id=>id!==l.id);
-                    extraBoxes.get(l.id).checked=false;
-                    box.checked=true;
-                }
-                total.textContent='Total: '+String.fromCharCode(36)+(resolveRecipe(p,selection).price/100).toFixed(2);
-            };
-            label.append(box,name);form.append(label);
+        const el=(tag,cls,txt)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(txt!=null)n.textContent=txt;return n;};
+        const fmt=n=>new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(n/100);
+        const form=el('div','modifier-form');
+        const hero=el('div','modifier-hero');
+        const heroText=el('div');heroText.append(el('strong','','A tu gusto'),el('small','','Personaliza tu pedido'));
+        hero.append(el('span','modifier-hero-icon',foodIcon(p.nombre)),heroText,el('strong','modifier-base-price',fmt(money(p.precio))));form.append(hero);
+        const rows=[];
+        const summary=el('div','modifier-summary');
+        const breakdown=el('small','',''),total=el('strong','','');const copy=el('div');copy.append(el('small','','Total del producto'),total);summary.append(copy,breakdown);
+        function refresh(){
+            for(const {l,kind,b,marker,detail} of rows){
+                const isBase=kind==='removed', restored=!isBase&&selection.removed.includes(l.id);
+                const selected=isBase?!selection.removed.includes(l.id):selection.extra.includes(l.id);
+                b.setAttribute('aria-pressed',String(selected));b.classList.toggle('is-selected',selected);
+                marker.textContent=isBase?(selected?'✓':'+'):(selected?'✓':'+');
+                detail.textContent=isBase?(selected?'Incluido':'Sin ingrediente'):(restored?'Reincorporar · sin costo':money(l.price)?'+'+fmt(money(l.price)):'Sin costo');
+            }
+            const d=resolveRecipe(p,selection);total.textContent=fmt(d.price);
+            breakdown.textContent=d.price===money(p.precio)?'Precio base': 'Base '+fmt(money(p.precio))+' · Extras '+fmt(d.price-money(p.precio));
         }
-        const heading=t=>{const e=document.createElement('h4');e.textContent=t;form.append(e);};
-        heading('Ingredientes incluidos');
-        for(const l of recipe.lines){if(l.removable)row(l,'removed');else{const e=document.createElement('p');e.textContent=l.nombre;form.append(e);}}
-        if(recipe.extras.length){heading('Extras opcionales');for(const l of recipe.extras)row(l,'extra');}
-        total.textContent='Total: '+String.fromCharCode(36)+(money(p.precio)/100).toFixed(2);form.append(total);
-        const res=await Swal.fire({titleText:p.nombre,html:form,customClass:{popup:'genesaret-smart-modal'},showCancelButton:true,confirmButtonText:'Agregar al carrito',cancelButtonText:'Cancelar'});
+        function section(title,hint,lines,kind){
+            const section=el('section','modifier-section');section.append(el('h3','',title),el('p','modifier-hint',hint));
+            const grid=el('div','modifier-grid');
+            for(const l of lines){
+                const b=el('button','modifier-option');b.type='button';
+                const icon=el('span','modifier-food-icon',foodIcon(l.nombre,'🍴'));icon.setAttribute('aria-hidden','true');
+                const info=el('span','modifier-info');const detail=el('small');info.append(el('strong','',l.nombre),detail);
+                const marker=el('span','modifier-marker');marker.setAttribute('aria-hidden','true');b.append(icon,info,marker);
+                if(kind==='removed'&&!l.removable){b.disabled=true;b.classList.add('is-required');}
+                rows.push({l,kind,b,marker,detail});
+                b.onclick=()=>{
+                    const list=selection[kind];
+                    if(list.includes(l.id))selection[kind]=list.filter(id=>id!==l.id);else selection[kind]=[...list,l.id];
+                    if(selection.removed.includes(l.id)&&selection.extra.includes(l.id)){
+                        selection.removed=selection.removed.filter(id=>id!==l.id);
+                        selection.extra=selection.extra.filter(id=>id!==l.id);
+                    }
+                    refresh();
+                };grid.append(b);
+            }
+            section.append(grid);form.append(section);
+        }
+        section('Ingredientes incluidos','Toca para quitar o volver a incluir.',recipe.lines,'removed');
+        if(recipe.extras.length)section('Hazlo extra','Añade una porción adicional a tu gusto.',recipe.extras,'extra');
+        form.append(summary);refresh();
+        const res=await Swal.fire({titleText:p.nombre,html:form,width:680,customClass:{popup:'genesaret-smart-modal genesaret-modifier'},showCancelButton:true,confirmButtonText:'Agregar al carrito',cancelButtonText:'Cancelar'});
         return res.isConfirmed?{...resolveRecipe(p,selection),selection}:null;
     }
     const variantKey=(id,sel={})=>JSON.stringify([id,[...(sel.removed||[])].sort(),[...(sel.extra||[])].sort()]);
@@ -126,5 +142,5 @@
             return transact(false);
         }
     }
-    root.GenesaretCheckout = {commit,customize,variantKey,escapeHtml,resolveRecipe};
+    root.GenesaretCheckout = {commit,customize,variantKey,escapeHtml,resolveRecipe,foodIcon};
 })(globalThis);
