@@ -367,7 +367,7 @@ function cargarEventos() {
 
             if (!viendoPapelera) {
                 const s1 = document.getElementById('articuloEvento'); if (s1) s1.innerHTML = sel;
-                const s2 = document.getElementById('filtroEventoLista'); if (s2) s2.innerHTML = sel;
+                const s2 = document.getElementById('filtroEventoLista'); if(s2){const old=s2.value;s2.innerHTML=sel;s2.options[0].textContent='Todos los eventos (incluye archivados)';s2.options[0].value='__all__';if([...s2.options].some(o=>o.value===old))s2.value=old;}
                 const s3 = document.getElementById('pulseraEvento'); if (s3) s3.innerHTML = sel;
             }
         }, error => {
@@ -882,32 +882,18 @@ let paginaActualArticulos = 1;
 const itemsPorPaginaArticulos = 10;
 
 // Se llama al entrar a la pestaña "Lista" o cambiar el evento
-function cargarArticulosTabla() {
-    const eventId = document.getElementById('filtroEventoLista').value;
-    if (!eventId) return; // Esperar a que se cargue el select
-
-    db.collection('articulos').where('eventId', '==', eventId).onSnapshot(snap => {
-        articulosGlobales = [];
-        const categoriasSet = new Set(['Todas']);
-
-        snap.forEach(doc => {
-            const data = doc.data();
-            articulosGlobales.push({ id: doc.id, ...data });
-            if (data.categoria) categoriasSet.add(data.categoria);
-        });
-
-        // Actualizar combo de categorías dinámicamente
-        const selectCat = document.getElementById('filtroCategoriaLista');
-        const catActual = selectCat.value;
-        let catHtml = '';
-        Array.from(categoriasSet).sort().forEach(c => {
-            catHtml += `<option value="${c}">${c}</option>`;
-        });
-        selectCat.innerHTML = catHtml;
-        selectCat.value = categoriasSet.has(catActual) ? catActual : 'Todas';
-
+let inventoryListStop=null;
+function cargarArticulosTabla(){
+    const eventId=document.getElementById('filtroEventoLista').value;
+    if(inventoryListStop){inventoryListStop();inventoryListStop=null;}
+    const query=eventId&&eventId!=='__all__'?db.collection('articulos').where('eventId','==',eventId):db.collection('articulos');
+    inventoryListStop=query.onSnapshot(snap=>{
+        articulosGlobales=snap.docs.map(d=>({...d.data(),id:d.id}));
+        const categories=new Set(['Todas',...articulosGlobales.map(a=>a.categoria).filter(Boolean)]);
+        const select=document.getElementById('filtroCategoriaLista'),old=select.value;
+        select.replaceChildren();for(const c of categories)select.add(new Option(c,c));select.value=categories.has(old)?old:'Todas';
         renderizarTablaArticulos();
-    });
+    },e=>showError(e.message));
 }
 
 function renderizarTablaArticulos() {
@@ -958,7 +944,7 @@ function renderizarTablaArticulos() {
 
             // Botones
             const btnEditar = `<button onclick="abrirModalEditarArticulo('${a.id}')" title="Editar" class="btn-icon-action action-role"><i class="fas fa-edit"></i></button>`;
-            const btnBorrar = `<button onclick="borrarArticulo('${a.id}', '${a.nombre}')" title="Eliminar" class="btn-icon-action action-delete"><i class="fas fa-trash-alt"></i></button>`;
+            const btnBorrar = `<button onclick="borrarArticulo('${a.id}')" title="Eliminar" class="btn-icon-action action-delete"><i class="fas fa-trash-alt"></i></button>`;
 
             html += `
                 <tr>
@@ -1079,6 +1065,7 @@ function abrirModalEditarArticulo(id) {
 }
 
 function borrarArticulo(id, nombre) {
+    nombre=nombre||articulosGlobales.find(a=>a.id===id)?.nombre||'Producto';
     Swal.fire({
         title: '¿Eliminar producto?',
         text: `Se borrará "${nombre}" del inventario.`,
@@ -2702,37 +2689,40 @@ let adminTransfStatus = 'pagado';
 let adminScannedPulsera = null; 
 let adminInventarioPOS = []; // ✅ Variable 100% independiente para el POS
 
-function abrirPOSAdmin() {
-    const posModal = document.getElementById('modalPOSAdmin');
-    if (posModal.parentElement !== document.body) document.body.appendChild(posModal);
+let adminCatalogStop=null,adminCatalogVersion=0;
+async function abrirPOSAdmin() {
+    const posModal=document.getElementById('modalPOSAdmin');
+    if(posModal.parentElement!==document.body)document.body.appendChild(posModal);
     posModal.classList.add('active');
-    
-    // Indicador de carga
-    document.getElementById('posGrid').innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-muted); width:100%;"><i class="fas fa-spinner fa-spin"></i> Cargando inventario...</div>';
-    
-    // --- CORRECCIÓN DEFINITIVA: USAMOS .get() SIN FILTROS ---
-    // Esto asegura que cargue TODO lo que haya en la base de datos
-    db.collection('articulos').get().then(snap => {
-        adminInventarioPOS = []; 
-        
-        snap.forEach(doc => {
-            const d = doc.data();
-            adminInventarioPOS.push({ id: doc.id, ...d });
-        });
-
-        // Ordenar alfabéticamente
-        adminInventarioPOS.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
-
-        // Renderizar
-        renderPOSGrid(adminInventarioPOS);
-    }).catch(err => {
-        console.error(err);
-        document.getElementById('posGrid').innerHTML = '<p style="text-align:center; color:red;">Error cargando datos</p>';
-    });
-
-    actualizarAdminCarritoUI();
-    cambiarMetodoPOS('efectivo'); 
-    switchPOSTab('venta'); 
+    const token=++adminCatalogVersion,select=document.getElementById('adminPOSEvent');
+    if(adminCatalogStop){adminCatalogStop();adminCatalogStop=null;}
+    document.getElementById('posGrid').textContent='Cargando catálogo…';
+    select.disabled=true;
+    try{
+        const snap=await db.collection('eventos').where('activo','==',true).get();
+        if(token!==adminCatalogVersion)return;
+        const old=adminEventoActivo;
+        select.replaceChildren();
+        snap.forEach(d=>select.add(new Option(d.data().nombre||'Evento',d.id)));
+        if([...select.options].some(o=>o.value===old))select.value=old;
+        select.disabled=!snap.size;
+        select.onchange=()=>cargarCatalogoAdminEvento();
+        cargarCatalogoAdminEvento();
+    }catch(e){document.getElementById('posGrid').textContent='No se pudo cargar el catálogo';showError(e.message);}
+    actualizarAdminCarritoUI();cambiarMetodoPOS('efectivo');switchPOSTab('venta');
+}
+function cargarCatalogoAdminEvento(){
+    if(adminCatalogStop){adminCatalogStop();adminCatalogStop=null;}
+    const id=document.getElementById('adminPOSEvent').value;
+    if(id!==adminEventoActivo){adminCarrito=[];actualizarAdminCarritoUI();resetAdminNFC();}
+    adminEventoActivo=id;adminInventarioPOS=[];
+    if(!id){renderPOSGrid([]);return;}
+    document.getElementById('posGrid').textContent='Cargando productos…';
+    adminCatalogStop=db.collection('articulos').where('eventId','==',id).onSnapshot(snap=>{
+        if(adminEventoActivo!==id)return;
+        adminInventarioPOS=snap.docs.map(d=>({...d.data(),id:d.id})).sort((a,b)=>String(a.nombre||'').localeCompare(String(b.nombre||''),'es'));
+        filtrarPOS();
+    },e=>{if(adminEventoActivo===id){adminInventarioPOS=[];renderPOSGrid([]);showError(e.message);}});
 }
 
 function cerrarPOSAdmin() {
@@ -2741,47 +2731,18 @@ function cerrarPOSAdmin() {
 }
 
 // --- 1. RENDERIZADO DEL GRID ---
-function renderPOSGrid(lista) {
-    const grid = document.getElementById('posGrid');
-    if(!grid) return;
-    
-    // Si la lista viene vacía, usamos la memoria local
-    if(!lista) lista = adminInventarioPOS;
-    
-    if(lista.length === 0) {
-        grid.innerHTML = '<div style="text-align:center; width:100%; padding:20px; color:var(--text-muted);">No hay productos disponibles</div>';
-        return;
+function renderPOSGrid(lista=adminInventarioPOS){
+    const grid=document.getElementById('posGrid');if(!grid)return;grid.replaceChildren();
+    for(const p of lista){
+        const price=Number(p.precio),stock=Number(p.stock)||0;
+        const available=Number.isFinite(price)&&price>0&&(p.esInfinito||stock>0);
+        const card=document.createElement('button');card.type='button';card.className='producto-card admin-product-tile';card.disabled=!available;
+        const make=(tag,cls,txt)=>{const e=document.createElement(tag);e.className=cls;e.textContent=txt;return e;};
+        card.append(make('span','prod-emoji',GenesaretCheckout.foodIcon(p.nombre,p.categoria?.split(' ')[0]||'📦')),make('strong','prod-nombre',p.nombre||'Producto'),make('strong','prod-precio',Number.isFinite(price)?new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(price):'—'),make('small','admin-product-stock',available?(p.esInfinito?'Disponible':stock+' disponibles'):'Agotado'));
+        if(p.recetaActiva&&available)card.append(make('small','admin-product-custom','Personalizar'));
+        card.onclick=()=>agregarAdminCarrito(p.id);grid.append(card);
     }
-    
-    let html = '';
-    lista.forEach(p => {
-        // Validación Stock
-        const stock = parseInt(p.stock) || 0;
-        const sinStock = !p.esInfinito && stock <= 0;
-        
-        // Estilos Grises si agotado
-        const estiloCard = sinStock ? 'filter: grayscale(1); opacity: 0.6; pointer-events: none; cursor: not-allowed;' : 'cursor: pointer;';
-        const accion = sinStock ? '' : `onclick="agregarAdminCarrito('${p.id}')"`;
-        
-        // Badge visual
-        let badge = '';
-        if(p.esInfinito) badge = '<span style="font-size:10px; background:rgba(59, 130, 246,0.2); color:#3b82f6; padding:2px 5px; border-radius:4px;">♾️ Infinito</span>';
-        else if(sinStock) badge = '<span style="font-size:10px; background:#334155; color:#cbd5e1; padding:2px 5px; border-radius:4px;">AGOTADO</span>';
-        else badge = `<span style="font-size:10px; background:rgba(34,197,94,0.1); color:#4ade80; padding:2px 5px; border-radius:4px;">${stock} disp.</span>`;
-
-        // Emoji y Precio
-        const emoji = p.categoria ? p.categoria.split(' ')[0] : '📦';
-        const precio = parseFloat(p.precio)||0;
-
-        html += `
-        <div style="background:var(--bg-input); border:1px solid var(--border-color); border-radius:10px; padding:10px; text-align:center; position:relative; transition:transform 0.1s; ${estiloCard}" ${accion}>
-            <div style="font-size:28px; margin-bottom:5px;">${emoji}</div>
-            <div style="font-size:12px; font-weight:600; line-height:1.2; height:2.4em; overflow:hidden; margin-bottom:5px;">${p.nombre}</div>
-            <div style="font-size:14px; color:#3b82f6; font-weight:bold;">$${precio.toFixed(2)}</div>
-            <div style="position:absolute; top:5px; right:5px;">${badge}</div>
-        </div>`;
-    });
-    grid.innerHTML = html;
+    if(!grid.children.length)grid.textContent='No hay productos para este evento.';
 }
 
 function filtrarPOS() {
