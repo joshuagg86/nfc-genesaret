@@ -26,7 +26,7 @@ function render(){
  const q=$('search').value.trim().toLocaleLowerCase('es-MX');
  for(const p of products.filter(x=>String(x.nombre||'').toLocaleLowerCase('es-MX').includes(q))){
   const b=node('button',null,'product');b.type='button';b.disabled=!available(p)||(!p.esInfinito&&count(p.id)>=Number(p.stock));
-  const cat=String(p.categoria||'Menú');b.append(node('span',cat.split(' ')[0].match(/[^\p{L}\p{N}]/u)?cat.split(' ')[0]:'🍽️','product-icon'),node('strong',p.nombre||'Producto'),node('span',money(Number(p.precio)||0)),node('small',available(p)?(p.recetaActiva?'Personalizar':'Agregar al pedido'):'No disponible'));b.onclick=()=>choose(p);list.append(b);
+  const cat=String(p.categoria||'Menú');b.append(node('span',GenesaretCheckout.foodIcon(p.nombre,cat.split(' ')[0].match(/[^\p{L}\p{N}]/u)?cat.split(' ')[0]:'🍽️'),'product-icon'),node('strong',p.nombre||'Producto'),node('span',money(Number(p.precio)||0)),node('small',available(p)?(p.recetaActiva?'Personalizar':'Agregar al pedido'):'No disponible'));b.onclick=()=>choose(p);list.append(b);
  }
  if(!list.children.length)list.append(node('p','No hay productos disponibles.'));
  let total=0;
@@ -34,7 +34,7 @@ function render(){
   const line=node('div',null,'line'),controls=node('div',null,'controls');const minus=node('button','−'),plus=node('button','+');
   minus.type=plus.type='button';minus.setAttribute('aria-label','Quitar una unidad de '+p.nombre);plus.setAttribute('aria-label','Agregar una unidad de '+p.nombre);
   minus.onclick=()=>change(key,-1);plus.onclick=()=>change(key,1);plus.disabled=!available(p)||(!p.esInfinito&&count(p.id)>=Number(p.stock));controls.append(minus,node('strong',String(item.qty)),plus);
-  const sub=Math.round(item.price*100)*item.qty/100;total+=sub;line.append(node('strong',p.nombre));for(const note of item.notes)line.append(node('small',note));line.append(controls,node('span',money(sub)));basket.append(line);
+  const sub=Math.round(item.price*100)*item.qty/100;total+=sub;const title=node('div',null,'cart-line-title');title.append(node('span',GenesaretCheckout.foodIcon(p.nombre),'cart-food-icon'),node('strong',p.nombre));line.append(title);for(const note of item.notes)line.append(node('small',note));line.append(controls,node('span',money(sub)));basket.append(line);
  }
  if(!basket.children.length)basket.append(node('p','Selecciona productos para empezar.'));$('total').textContent=money(total);$('send').disabled=true;
 }
