@@ -104,7 +104,9 @@
             const order=orderRef?await tx.get(orderRef):null;
             if(orderRef){
                 const o=order.data();
-                if(!order.exists||o.eventId!==eventId||o.estado!=='pendiente'||estado!=='pagado')throw Error('Pedido no disponible para cobrar');
+                if(!order.exists||o.eventId!==eventId||o.estado!=='pendiente'||o.vendedorId!==user.uid||estado!=='pagado')throw Error('Pedido no disponible para cobrar');
+                const station=await tx.get(db.collection('estaciones_venta').doc(o.estacionId));
+                if(!station.exists||!station.data().activo||station.data().vendedorId!==user.uid||station.data().eventId!==eventId)throw Error('Estación no autorizada');
                 const signature=rows=>JSON.stringify(rows.map(i=>[variantKey(i.id,i.selection),i.cantidad,money(i.precio)]).sort((a,b)=>a[0].localeCompare(b[0])));
                 if(signature(o.items)!==signature(items))throw Error('El carrito no coincide con el pedido de Autoservicio');
             }
