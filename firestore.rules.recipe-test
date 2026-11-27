@@ -32,7 +32,9 @@ service cloud.firestore {
     return r.extras.size()==1 && r.extras[0].id in l.seleccionIntegridad.extra ? [{'id':r.extras[0].id,'amount':r.extras[0].amount*l.cantidad}] : [];
   }
   function usedAmount(r,l,i) {
-    return (baseUsage(r,l).size()>0 && r.lines[0].id==i ? r.lines[0].amount*l.cantidad : 0) + (extraUsage(r,l).size()>0 && r.extras[0].id==i ? r.extras[0].amount*l.cantidad : 0);
+    let sel=l.seleccionIntegridad;
+    return (r.lines.size()==1 && r.lines[0].id==i && !(i in sel.removed) ? r.lines[0].amount*l.cantidad : 0) +
+      (r.extras.size()==1 && r.extras[0].id==i && i in sel.extra ? r.extras[0].amount*l.cantidad : 0);
   }
   function supplyDelta(i,l,r,id) {
     let n=usedAmount(r,l,i);
@@ -53,7 +55,7 @@ service cloud.firestore {
       closeMoney(l.precioUnitario,p.precio+(extra.size()>0?r.extras[0].price:0)) &&
       closeMoney(l.monto,l.precioUnitario*l.cantidad) &&
       (base.size()==0 || supplyDelta(base[0].id,l,r,id)) &&
-      (extra.size()==0 || supplyDelta(extra[0].id,l,r,id));
+      (extra.size()==0 || (base.size()>0 && base[0].id==extra[0].id) || supplyDelta(extra[0].id,l,r,id));
   }
   function linkedSupply(i) {
     let id=request.resource.data.ultimaVentaId;
@@ -82,10 +84,10 @@ service cloud.firestore {
   function distinctProducts(a,b) { return getAfter(linePath(a)).data.articuloId!=getAfter(linePath(b)).data.articuloId; }
   function validLines(s,id) {
     let a=id+'_0'; let b=id+'_1'; let c=id+'_2';
-    return s.lineas>=1 && s.lineas<=3 && validLine(s,id,a) &&
+    return s.lineas==1 ? (validLine(s,id,a) && closeMoney(s.total,lineAmount(a))) : (s.lineas>=2 && s.lineas<=3 && validLine(s,id,a) &&
       (s.lineas<2 || (validLine(s,id,b) && distinctProducts(a,b))) &&
       (s.lineas<3 || (validLine(s,id,c) && distinctProducts(a,c) && distinctProducts(b,c))) &&
-      closeMoney(s.total,lineAmount(a)+(s.lineas>=2?lineAmount(b):0)+(s.lineas>=3?lineAmount(c):0));
+      closeMoney(s.total,lineAmount(a)+lineAmount(b)+(s.lineas>=3?lineAmount(c):0)));
   }
   function validWallet(s,id) {
     return s.metodoPago!='nfc' || (s.estadoPago=='pagado' && s.pulseraId is string && get(walletPath(s.pulseraId)).data.get('bloqueada',false)==false && get(walletPath(s.pulseraId)).data.get('activo',true)==true && closeMoney(getAfter(walletPath(s.pulseraId)).data.saldoActual,get(walletPath(s.pulseraId)).data.saldoActual-s.total) && getAfter(walletPath(s.pulseraId)).data.ultimaVentaId==id);
