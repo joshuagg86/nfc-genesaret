@@ -56,13 +56,30 @@ const firebase=require('firebase/compat/app');require('firebase/compat/firestore
  await test('Bloquea NFC con descuento inferior',()=>assertFails(fakeBatch('underWallet',{method:'nfc',walletDelta:1})));
  await test('Bloquea partida adicional no declarada',()=>assertFails(fakeBatch('extraLine',{extraLine:true})));
  await test('Bloquea reutilización de venta previa',()=>assertFails(cashier.doc('articulos/agua').update({stock:0,ultimaVentaId:'mixed'})));
+ const buy=(uid,id)=>checkout(id,'transferencia',[{id:'agua',cantidad:1,precio:10}],{db:db(uid),auth:{currentUser:{uid}}});
+ await test('Ambos vendedores pueden vender individualmente',async()=>{
+ await admin.doc('articulos/agua').update({stock:2});
+ await assertSucceeds(buy('seller1','baseline1'));
+ await assertSucceeds(buy('seller2','baseline2'));
+ assert.equal((await data(admin,'articulos/agua')).stock,0);
+ assert.equal((await data(admin,'transacciones/baseline1_0')).vendedorId,'seller1');
+ assert.equal((await data(admin,'transacciones/baseline2_0')).vendedorId,'seller2');
+ });
  await test('Dos vendedores compiten por la última unidad',async()=>{
  await admin.doc('articulos/agua').update({stock:1});
- const buy=(uid,id)=>checkout(id,'transferencia',[{id:'agua',cantidad:1,precio:10}],{db:db(uid),auth:{currentUser:{uid}}});
+ const before=(await data(admin,'eventos/cafe/contadores/pedidos')).ultimo;
  const results=await Promise.allSettled([buy('seller1','race1'),buy('seller2','race2')]);
  assert.equal(results.filter(r=>r.status==='fulfilled').length,1);
- assert.match(results.find(r=>r.status==='rejected').reason.message,/stock insuficiente/i);
+ const loser=results.findIndex(r=>r.status==='rejected'),winner=1-loser;
+ const error=results[loser].reason;
+ assert.match(error.message,/stock insuficiente|PERMISSION_DENIED|permission-denied|insufficient permissions/i);
  assert.equal((await data(admin,'articulos/agua')).stock,0);
+ assert.equal((await data(admin,'eventos/cafe/contadores/pedidos')).ultimo,before+1);
+ assert.equal((await data(admin,'transacciones/race'+(winner+1)+'_0')).vendedorId,'seller'+(winner+1));
+ assert.equal((await admin.doc('transacciones/race'+(loser+1)+'_0').get()).exists,false);
+ assert.equal((await admin.doc('ventas_integridad/race'+(loser+1)).get()).exists,false);
+ await assert.rejects(buy('seller'+(loser+1),'race'+(loser+1)),/stock insuficiente/i);
+ if(!/stock insuficiente/i.test(error.message))console.log('AVISO: la colisión fue rechazada por reglas; el reintento confirmó stock insuficiente.');
  });
  await test('Bloquea confirmación de pago inventada',()=>assertFails(cashier.doc('eventos/cafe/confirmaciones_caja/seller1').set({carritoId:'fakeConfirm',total:35,kitchen:false,numeroPedido:999,fecha:firebase.firestore.FieldValue.serverTimestamp(),vendedorId:'seller1'})));
  await test('Bloquea movimiento ficticio de insumos',()=>assertFails(cashier.doc('movimientos_insumos/fake').set({eventId:'cafe',insumoId:'fake',usuarioId:'seller1',motivo:'Venta',delta:-1})));
