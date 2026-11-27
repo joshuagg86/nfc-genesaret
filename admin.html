@@ -16,7 +16,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-    <link rel="stylesheet" href="app-ui.css?v=blue-glass-4">
+    <link rel="stylesheet" href="app-ui.css?v=blue-glass-5">
 </head>
 <body class="screen-admin">
     <div id="loadingOverlay">
@@ -525,7 +525,7 @@
 </section>
 <section class="art-section" id="sec-recetas" style="display:none">
 <div class="shell-heading"><h2>Recetas</h2><p>Define ingredientes y cantidades por producto. Activa la receta para personalizar pedidos y descontar insumos al registrar ventas.</p></div>
-<div class="card"><div class="inventory-toolbar"><label>Evento <select id="recipeEvent"></select></label><label>Producto <select id="recipeProduct"></select></label></div><div id="recipeStatus" role="status"></div><h3>Receta base</h3><p class="recipe-help">El precio de venta se configura en el artículo, independientemente del costo de sus ingredientes.</p><div id="recipeLines"></div><div class="smart-actions"><button class="btn-secondary" id="recipeAdd">Añadir ingrediente</button><button class="btn-primary" id="recipeCreateSupply">Crear insumo</button></div><h3 class="recipe-section-title">Extras opcionales</h3><p class="recipe-help">Define la cantidad y el precio de cada extra para este producto. Puedes cambiar el precio sugerido del insumo.</p><div id="recipeExtras"></div><button class="btn-secondary" id="recipeExtraAdd">Añadir extra</button><div class="smart-kpis" id="recipeSummary"></div><p id="recipeState" role="status">Sin receta</p><div class="smart-actions"><button class="btn-secondary" id="recipeSave">Guardar borrador</button><button class="btn-primary" id="recipeActivate">Activar receta</button></div></div>
+<div class="card recipe-management"><div class="inventory-toolbar"><label>Evento <select id="recipeEvent"></select></label></div><div class="recipe-list-heading"><h3>Recetas guardadas</h3><span id="recipeListCount">0 recetas</span></div><div class="smart-grid" id="recipeList"></div></div><div class="card" id="recipeEditor"><div class="inventory-toolbar"><label>Producto <select id="recipeProduct"></select></label></div><div id="recipeStatus" role="status"></div><h3>Receta base</h3><p class="recipe-help">El precio de venta se configura en el artículo. Si vendes el producto ya preparado, elimina la receta o deja únicamente extras opcionales.</p><div id="recipeLines"></div><div class="smart-actions"><button class="btn-secondary" id="recipeAdd">Añadir ingrediente</button><button class="btn-primary" id="recipeCreateSupply">Crear insumo</button></div><h3 class="recipe-section-title">Extras opcionales</h3><p class="recipe-help">Define la cantidad y el precio de cada extra para este producto. Puedes cambiar el precio sugerido del insumo.</p><div id="recipeExtras"></div><button class="btn-secondary" id="recipeExtraAdd">Añadir extra</button><div class="smart-kpis" id="recipeSummary"></div><p id="recipeState" role="status">Sin receta</p><div class="smart-actions"><button class="btn-danger" id="recipeDelete" disabled>Eliminar receta</button><button class="btn-secondary" id="recipeSave">Guardar borrador</button><button class="btn-primary" id="recipeActivate">Activar receta</button></div></div>
 </section>
 <div class="card art-section" id="sec-bitacora" style="display: none;">
                 <h3>📜 Historial de Movimientos de Stock</h3>
@@ -802,7 +802,7 @@
     <script src="checkout.js?v=10"></script>
     
     <script src="dashboard.js?v=dashboard-7"></script>
-    <script src="inventory-smart.js?v=8"></script>
+    <script src="inventory-smart.js?v=9"></script>
     <script src="admin.js?v=dashboard-14"></script> 
 </body>
 </html>
