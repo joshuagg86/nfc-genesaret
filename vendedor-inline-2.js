@@ -799,17 +799,7 @@ function cargarProductosPorEvento() {
             try {
                 const result=await Swal.fire({title:'¿Confirmar cobro?',text:g.nombre+' · $'+g.monto.toFixed(2)+' · '+(g.metodo==='efectivo'?'Efectivo':'Transferencia'),icon:'question',showCancelButton:true,confirmButtonText:'Confirmar dinero recibido',cancelButtonText:'Cancelar',background:'#102437',color:'#fff'});
                 if (!result.isConfirmed) return;
-                await db.runTransaction(async tx=>{
-                    const refs=g.ids.map(id=>db.collection('transacciones').doc(id));
-                    const docs=await Promise.all(refs.map(ref=>tx.get(ref)));
-                    if(docs.some(doc=>!doc.exists||doc.data().estadoPago!=='pendiente'||doc.data().vendedorId!==auth.currentUser?.uid)) throw Error('La cuenta cambió o ya fue cobrada');
-                    const amount=docs.reduce((sum,doc)=>sum+Math.round(Number(doc.data().monto)*100),0);
-                    if(amount!==Math.round(g.monto*100)) throw Error('El importe cambió');
-                    const cash=docs.reduce((n,d)=>n+(d.data().metodoPago==='efectivo'?Math.round(Number(d.data().monto)*100):0),0),shift=cash?await GenesaretCash.read(db,tx,auth.currentUser.uid):null;
-                    const kitchenRows=await GenesaretCheckout.readPendingKitchen(db,tx,docs);GenesaretCheckout.markPendingKitchenPaid(tx,kitchenRows);GenesaretCash.credit(tx,shift,cash);
-                    const now=new Date();
-                    refs.forEach((ref,i)=>tx.update(ref,{estadoPago:'pagado',fechaVenta:docs[i].data().fechaVenta||docs[i].data().fecha||now,fecha:now,fechaPago:now,...(shift&&docs[i].data().metodoPago==='efectivo'?{turnoCajaId:shift.id}:{})}));
-                });
+                await GenesaretCheckout.settlePending(db,auth,g.ids,g.monto);
                 playSound('success');showSuccess('Cobro registrado');loadMyTransactions();
             } catch(error){showError(error.message);} finally{btn.disabled=false;}
         }
