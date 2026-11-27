@@ -2791,24 +2791,21 @@ function filtrarPOS() {
 }
 
 // --- 2. CARRITO ADMIN ---
-function agregarAdminCarrito(id) {
-    // Buscamos en nuestra lista independiente
-    const prod = adminInventarioPOS.find(p => p.id === id);
-    if(!prod) return;
-
-    const item = adminCarrito.find(i => i.id === id);
-    const cantidadEnCarrito = item ? item.cantidad : 0;
-
-    if (!prod.esInfinito && (cantidadEnCarrito + 1 > prod.stock)) {
-        return showError('⚠️ Stock insuficiente');
-    }
-
-    if(item) { item.cantidad++; } 
-    else { adminCarrito.push({ id: id, nombre: prod.nombre, precio: parseFloat(prod.precio)||0, cantidad: 1, esInfinito: prod.esInfinito }); }
-    
-    actualizarAdminCarritoUI();
+let adminCustomizing=false;
+async function agregarAdminCarrito(id) {
+    if(adminCustomizing)return;
+    const p=adminInventarioPOS.find(p=>p.id===id);if(!p)return;
+    const event=adminEventoActivo;adminCustomizing=true;
+    try{
+        const detail=await GenesaretCheckout.customize(p);if(!detail||event!==adminEventoActivo)return;
+        const qty=adminCarrito.filter(x=>x.id===id).reduce((a,x)=>a+x.cantidad,0);
+        if(!p.esInfinito&&qty+1>p.stock)return showError('Stock insuficiente');
+        const key=GenesaretCheckout.variantKey(id,detail.selection);
+        const item=adminCarrito.find(x=>GenesaretCheckout.variantKey(x.id,x.selection)===key);
+        if(item)item.cantidad++;else adminCarrito.push({id,nombre:p.nombre,precio:detail.price/100,cantidad:1,esInfinito:p.esInfinito,selection:detail.selection,notes:detail.notes});
+        actualizarAdminCarritoUI();
+    }catch(e){showError(e.message);}finally{adminCustomizing=false;}
 }
-
 function actualizarAdminCarritoUI() {
     const list = document.getElementById('posCarritoList');
     const totalEl = document.getElementById('posAdminTotalBadge');
@@ -2828,7 +2825,7 @@ function actualizarAdminCarritoUI() {
         html += `
         <div class="carrito-item">
             <div class="carrito-item-info">
-                <div class="carrito-item-nombre">${item.nombre}</div>
+                <div class="carrito-item-nombre">${GenesaretCheckout.escapeHtml(item.nombre)}</div>${(item.notes||[]).map(n=>`<small style="display:block;color:var(--text-muted)">${GenesaretCheckout.escapeHtml(n)}</small>`).join("")}
                 <div class="carrito-item-precio">$${item.precio.toFixed(2)}</div>
             </div>
             <div class="carrito-item-cantidad">
@@ -2849,7 +2846,7 @@ function cambiarCantAdmin(idx, delta) {
     if (delta > 0) {
         const item = adminCarrito[idx];
         const prodReal = adminInventarioPOS.find(p => p.id === item.id);
-        if (prodReal && !prodReal.esInfinito && item.cantidad + delta > prodReal.stock) {
+        if (prodReal && !prodReal.esInfinito && adminCarrito.filter(x=>x.id===item.id).reduce((a,x)=>a+x.cantidad,0) + delta > prodReal.stock) {
             return showError('Stock insuficiente');
         }
     }
