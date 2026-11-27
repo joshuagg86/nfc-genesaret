@@ -17,7 +17,22 @@ function bars(id,entries,format){
  const target=el(id);target.replaceChildren();
  if(!entries.length){target.textContent='Sin movimientos registrados';return;}
  const max=Math.max(1,...entries.map(x=>x[1]));
- for(const [label,value] of entries){const item=document.createElement('div');row(item,label,format(value));const track=document.createElement('div');track.className='overview-bar';const fill=document.createElement('b');fill.style.width=Math.max(0,value/max*100)+'%';track.append(fill);item.append(track);target.append(item);}
+ for(const [label,value] of entries){const item=document.createElement('div');row(item,label,format(value));const track=document.createElement('div');track.className='overview-bar';track.style.height='14px';const fill=document.createElement('b');fill.style.width=Math.max(0,value/max*100)+'%';track.append(fill);item.append(track);target.append(item);}
+}
+function paymentDonut(entries){
+ const target=el('overviewMethods');target.replaceChildren();
+ const values=entries.filter(x=>x[1]>0),total=values.reduce((s,x)=>s+x[1],0);
+ if(!total){target.textContent='Sin movimientos registrados';return;}
+ const palette={'NFC / QR':'#2563eb','Efectivo':'#16a34a','Transferencia':'#0891b2','Otros':'#a855f7'};
+ let angle=0;const stops=values.map(([label,value])=>{const start=angle;angle+=value/total*100;return palette[label]+' '+start+'% '+angle+'%';});
+ const wrap=document.createElement('div');wrap.style.cssText='display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap';
+ const ring=document.createElement('div');ring.style.cssText='width:130px;height:130px;flex:none;border-radius:50%;display:grid;place-items:center;background:conic-gradient('+stops.join(',')+')';
+ ring.setAttribute('role','img');ring.setAttribute('aria-label','Distribución de pagos: '+values.map(([l,v])=>l+' '+mx(v)).join(', '));
+ const hole=document.createElement('div');hole.style.cssText='width:76%;height:76%;border-radius:50%;background:var(--bg-card);display:grid;place-content:center;text-align:center;color:var(--text-main);font-size:12px';
+ const amount=document.createElement('strong');amount.textContent=mx(total);const caption=document.createElement('small');caption.textContent='Total cobrado';hole.append(amount,caption);ring.append(hole);wrap.append(ring);
+ const legend=document.createElement('div');legend.style.cssText='flex:1;min-width:135px;display:grid;gap:8px';
+ for(const [label,value] of values){const item=document.createElement('div');item.style.cssText='display:flex;align-items:center;gap:7px;font-size:12px';const dot=document.createElement('span');dot.style.cssText='width:9px;height:9px;border-radius:50%;flex:none;background:'+palette[label];const name=document.createElement('span');name.textContent=label;name.style.flex='1';const val=document.createElement('strong');val.textContent=Math.round(value/total*100)+'%';val.title=mx(value);item.append(dot,name,val);legend.append(item);}
+ wrap.append(legend);target.append(wrap);
 }
 function render(){
  if(failed||ready.size!==collections.length)return;
@@ -32,7 +47,7 @@ function render(){
  const methods={nfc:0,efectivo:0,transferencia:0,otro:0}, ranking=new Map();
  for(const s of paid){const method=s.metodoPago==='qr'?'nfc':s.metodoPago|| (s.pulseraId?'nfc':'otro');methods[Object.hasOwn(methods,method)?method:'otro']+=num(s.monto);if(s.articulo)ranking.set(s.articulo,(ranking.get(s.articulo)||0)+(num(s.cantidad)||1));}
  set('recargas',mx(loads.reduce((n,x)=>n+Math.max(0,num(x.monto)),0)));set('ventas',mx(sum(paid,'monto')));set('saldo',mx(sum(wallets,'saldoActual')));set('operaciones',new Set(sales.map(s=>s.carritoId||s.key)).size+loads.length);set('pulseras',wallets.length);set('nfc',mx(methods.nfc));set('pendientes',mx(sum(sales.filter(s=>s.estadoPago==='pendiente'),'monto')));
- bars('overviewRanking',[...ranking].sort((a,b)=>b[1]-a[1]).slice(0,5),v=>v+' uds.');bars('overviewMethods',[['NFC / QR',methods.nfc],['Efectivo',methods.efectivo],['Transferencia',methods.transferencia],['Otros',methods.otro]].filter(x=>x[1]>0),mx);
+ bars('overviewRanking',[...ranking].sort((a,b)=>b[1]-a[1]).slice(0,5),v=>v+' uds.');paymentDonut([['NFC / QR',methods.nfc],['Efectivo',methods.efectivo],['Transferencia',methods.transferencia],['Otros',methods.otro]]);
  const feed=el('overviewFeed');feed.replaceChildren();
  const activity=[...sales.map(s=>({label:s.articulo||'Venta',amount:s.monto,date:s.fecha,sub:s.estadoPago==='pendiente'?'Pendiente':'Venta'})),...loads.map(s=>({label:'Recarga de pulsera',amount:s.monto,date:s.fecha,sub:'Recarga'}))].sort((a,b)=>time(b.date)-time(a.date)).slice(0,12);
  for(const x of activity)row(feed,x.label,mx(num(x.amount)),x.sub+' · '+time(x.date).toLocaleString('es-MX',{dateStyle:'short',timeStyle:'short'}));
