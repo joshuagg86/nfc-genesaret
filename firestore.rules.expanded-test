@@ -82,12 +82,20 @@ service cloud.firestore {
   }
   function lineAmount(lid) { return getAfter(linePath(lid)).data.monto; }
   function distinctProducts(a,b) { return getAfter(linePath(a)).data.articuloId!=getAfter(linePath(b)).data.articuloId; }
+  function freshLine(lid) { return !exists(linePath(lid)) && existsAfter(linePath(lid)); }
   function validLines(s,id) {
-    let a=id+'_0'; let b=id+'_1'; let c=id+'_2';
-    return s.lineas==1 ? (validLine(s,id,a) && closeMoney(s.total,lineAmount(a))) : (s.lineas>=2 && s.lineas<=3 && validLine(s,id,a) &&
-      (s.lineas<2 || (validLine(s,id,b) && distinctProducts(a,b))) &&
-      (s.lineas<3 || (validLine(s,id,c) && distinctProducts(a,c) && distinctProducts(b,c))) &&
-      closeMoney(s.total,lineAmount(a)+lineAmount(b)+(s.lineas>=3?lineAmount(c):0)));
+    let a=id+'_0'; let b=id+'_1'; let c=id+'_2'; let d=id+'_3';
+    return s.lineas>=1 && s.lineas<=4 && freshLine(a) &&
+      (s.lineas<2 || (freshLine(b) && distinctProducts(a,b))) &&
+      (s.lineas<3 || (freshLine(c) && distinctProducts(a,c) && distinctProducts(b,c))) &&
+      (s.lineas<4 || (freshLine(d) && distinctProducts(a,d) && distinctProducts(b,d) && distinctProducts(c,d))) &&
+      closeMoney(s.total,lineAmount(a)+(s.lineas>=2?lineAmount(b):0)+(s.lineas>=3?lineAmount(c):0)+(s.lineas>=4?lineAmount(d):0));
+  }
+  function validSellerLine(id) {
+    let l=request.resource.data;
+    let sid=l.carritoId;
+    let s=getAfter(salePath(sid)).data;
+    return newSale(sid) && (id==sid+'_0' || (s.lineas>=2 && id==sid+'_1') || (s.lineas>=3 && id==sid+'_2') || (s.lineas>=4 && id==sid+'_3')) && validLine(s,sid,id);
   }
   function validWallet(s,id) {
     return s.metodoPago!='nfc' || (s.estadoPago=='pagado' && s.pulseraId is string && get(walletPath(s.pulseraId)).data.get('bloqueada',false)==false && get(walletPath(s.pulseraId)).data.get('activo',true)==true && closeMoney(getAfter(walletPath(s.pulseraId)).data.saldoActual,get(walletPath(s.pulseraId)).data.saldoActual-s.total) && getAfter(walletPath(s.pulseraId)).data.ultimaVentaId==id);
@@ -95,7 +103,7 @@ service cloud.firestore {
   function linkedProduct(id) {
     let sid=request.resource.data.ultimaVentaId;
     let s=getAfter(salePath(sid)).data;
-    return resource.data.get('esInfinito',false)==false && newSale(sid) && ((getAfter(linePath(sid+'_0')).data.articuloId==id) || (s.lineas>=2 && getAfter(linePath(sid+'_1')).data.articuloId==id) || (s.lineas>=3 && getAfter(linePath(sid+'_2')).data.articuloId==id));
+    return resource.data.get('esInfinito',false)==false && newSale(sid) && ((getAfter(linePath(sid+'_0')).data.articuloId==id) || (s.lineas>=2 && getAfter(linePath(sid+'_1')).data.articuloId==id) || (s.lineas>=3 && getAfter(linePath(sid+'_2')).data.articuloId==id) || (s.lineas>=4 && getAfter(linePath(sid+'_3')).data.articuloId==id));
   }
   function linkedConfirmation(eventId,sellerId) {
     let d=request.resource.data;
@@ -162,7 +170,7 @@ service cloud.firestore {
   match /transacciones/{id} {
    allow get: if admin() || (seller() && (resource==null || resource.data.vendedorId==uid()));
    allow list: if admin() || (seller() && resource.data.vendedorId==uid());
-   allow create: if (admin() || (seller() && newSale(request.resource.data.carritoId) && (id==request.resource.data.carritoId+'_0' || (getAfter(salePath(request.resource.data.carritoId)).data.lineas>=2 && id==request.resource.data.carritoId+'_1') || (getAfter(salePath(request.resource.data.carritoId)).data.lineas>=3 && id==request.resource.data.carritoId+'_2')))) && request.resource.data.vendedorId==uid() && activeEvent(request.resource.data.eventId) && request.resource.data.cantidad is int && request.resource.data.cantidad>0 && request.resource.data.precioUnitario is number && request.resource.data.precioUnitario>0 && request.resource.data.monto is number && request.resource.data.monto>0 && request.resource.data.monto>=request.resource.data.precioUnitario*request.resource.data.cantidad-0.000001 && request.resource.data.monto<=request.resource.data.precioUnitario*request.resource.data.cantidad+0.000001 && request.resource.data.estadoPago in ['pagado','pendiente'] && request.resource.data.metodoPago in ['nfc','efectivo','transferencia'] && !(request.resource.data.estadoPago=='pendiente' && request.resource.data.metodoPago=='nfc');
+   allow create: if (seller() && validSellerLine(id)) || (admin() && request.resource.data.vendedorId==uid() && activeEvent(request.resource.data.eventId) && request.resource.data.cantidad is int && request.resource.data.cantidad>0 && request.resource.data.precioUnitario is number && request.resource.data.precioUnitario>0 && closeMoney(request.resource.data.monto,request.resource.data.precioUnitario*request.resource.data.cantidad) && request.resource.data.estadoPago in ['pagado','pendiente'] && request.resource.data.metodoPago in ['nfc','efectivo','transferencia'] && !(request.resource.data.estadoPago=='pendiente' && request.resource.data.metodoPago=='nfc'));
    allow update: if admin() || (seller() && resource.data.vendedorId==uid() && resource.data.estadoPago=='pendiente' && request.resource.data.estadoPago=='pagado' && changed(['estadoPago','fechaVenta','fecha','fechaPago','turnoCajaId']));
    allow delete: if false;
   }
