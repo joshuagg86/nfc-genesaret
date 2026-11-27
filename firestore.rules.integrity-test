@@ -45,6 +45,11 @@ service cloud.firestore {
     let s=getAfter(salePath(sid)).data;
     return resource.data.get('esInfinito',false)==false && newSale(sid) && ((getAfter(linePath(sid+'_0')).data.articuloId==id) || (s.lineas>=2 && getAfter(linePath(sid+'_1')).data.articuloId==id) || (s.lineas>=3 && getAfter(linePath(sid+'_2')).data.articuloId==id));
   }
+  function linkedConfirmation(eventId,sellerId) {
+    let d=request.resource.data;
+    let s=getAfter(salePath(d.carritoId)).data;
+    return newSale(d.carritoId) && s.eventId==eventId && s.vendedorId==sellerId && s.estadoPago=='pagado' && closeMoney(d.total,s.total);
+  }
   match /ventas_integridad/{id} {
     allow get: if admin() || (seller() && (resource==null || resource.data.vendedorId==uid()));
     allow create: if seller() && request.resource.data.keys().hasOnly(['vendedorId','eventId','metodoPago','estadoPago','pulseraId','lineas','total']) && request.resource.data.vendedorId==uid() && activeEvent(request.resource.data.eventId) && request.resource.data.lineas is int && request.resource.data.total is number && request.resource.data.total>0 && request.resource.data.metodoPago in ['efectivo','transferencia','nfc'] && request.resource.data.estadoPago in ['pagado','pendiente'] && validLines(request.resource.data,id) && validWallet(request.resource.data,id);
@@ -64,7 +69,7 @@ service cloud.firestore {
    }
    match /confirmaciones_caja/{sellerId} {
     allow get: if admin() || kiosk() || (seller() && sellerId==uid());
-    allow create, update: if cash() && sellerId==uid() && activeEvent(id) && request.resource.data.keys().hasOnly(['carritoId','total','kitchen','numeroPedido','fecha','vendedorId']) && request.resource.data.vendedorId==uid() && request.resource.data.fecha==request.time && request.resource.data.total is number && request.resource.data.total>0 && request.resource.data.kitchen is bool && request.resource.data.numeroPedido is int;
+    allow create, update: if cash() && (admin() || linkedConfirmation(id,sellerId)) && sellerId==uid() && activeEvent(id) && request.resource.data.keys().hasOnly(['carritoId','total','kitchen','numeroPedido','fecha','vendedorId']) && request.resource.data.vendedorId==uid() && request.resource.data.fecha==request.time && request.resource.data.total is number && request.resource.data.total>0 && request.resource.data.kitchen is bool && request.resource.data.numeroPedido is int;
    }
    match /contadores/{counter} {
     allow get: if cash();
@@ -94,7 +99,7 @@ service cloud.firestore {
   match /bitacora_stock/{id} { allow read, write: if admin(); }
   match /movimientos_insumos/{id} {
    allow read, update, delete: if admin();
-   allow create: if admin() || (seller() && request.resource.data.usuarioId==uid() && request.resource.data.motivo=='Venta' && request.resource.data.delta is int && request.resource.data.delta<0 && activeEvent(request.resource.data.eventId));
+   allow create: if admin(); // Ingredient movements remain disabled for sellers in this simple-product prototype.
   }
   match /pulseras/{id} {
    allow read: if cash();
