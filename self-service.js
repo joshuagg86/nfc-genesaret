@@ -28,21 +28,10 @@ function watchPaymentDisplay(linked){
  if(paymentScope===scope)return;
  stopPaymentDisplay();paymentScope=scope;
  let initialized=false;
- paymentStop=db.collection('transacciones').where('vendedorId','==',linked.vendedorId).onSnapshot({includeMetadataChanges:true},snap=>{
+ paymentStop=db.collection('eventos').doc(linked.eventId).collection('confirmaciones_caja').doc(linked.vendedorId).onSnapshot({includeMetadataChanges:true},snap=>{
   if(paymentScope!==scope||snap.metadata.fromCache||snap.metadata.hasPendingWrites)return;
-  const groups=new Map();
-  for(const d of snap.docs){
-   const t=d.data();
-   if(t.eventId!==linked.eventId||t.estadoPago!=='pagado'||!t.carritoId||!t.fechaVenta?.toMillis)continue;
-   const id=t.carritoId,g=groups.get(id)||{total:0,kitchen:false,number:null,time:0};
-   g.total+=Number(t.monto)||0;g.kitchen=g.kitchen||t.requiereCocina===true;g.number=t.numeroPedido??g.number;g.time=Math.max(g.time,t.fechaVenta.toMillis());groups.set(id,g);
-  }
-  for(const [id,g] of groups){
-   const key=scope+'|'+id;
-   if(paymentSeen.has(key))continue;
-   paymentSeen.add(key);
-   if(initialized&&Date.now()-g.time<15000&&g.time<=Date.now()+10000)paymentQueue.push(g);
-  }
+  const t=snap.data();
+  if(t&&t.carritoId&&t.fecha?.toMillis){const key=scope+'|'+t.carritoId,time=t.fecha.toMillis();if(!paymentSeen.has(key)){paymentSeen.add(key);if(initialized&&Date.now()-time<15000&&time<=Date.now()+10000)paymentQueue.push({total:t.total,kitchen:t.kitchen,number:t.numeroPedido,time});}}
   initialized=true;showNextPayment();
  },e=>{if(paymentScope===scope){console.warn('Confirmación de cliente no disponible',e);$('paymentDisplayStatus').textContent='Confirmaciones no disponibles';}});
 }
