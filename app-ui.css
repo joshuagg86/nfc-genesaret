@@ -179,3 +179,34 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .screen-admin:not(.light-mode) .genesaret-smart-modal,.screen-vendedor:not(.light-mode) .genesaret-smart-modal{background:linear-gradient(145deg,#194d76,#10283f)!important;border:1px solid #a6dcff55;box-shadow:0 24px 70px #00142b99,inset 0 1px 0 #e0f7ff33}
 @media(hover:hover){.screen-admin .producto-card:hover,.screen-vendedor .producto-card:hover{transform:translateY(-3px);border-color:#71caff;box-shadow:0 12px 26px #0879ec38}}
 @media(prefers-reduced-motion:reduce){.screen-admin .producto-card,.screen-vendedor .producto-card{transition:none;transform:none!important}}
+
+/* Touch-first food customization and commerce components */
+.genesaret-modifier.swal2-popup{padding:clamp(14px,3vw,28px)!important;max-width:calc(100vw - 20px);box-sizing:border-box}
+.genesaret-modifier .swal2-title{font-size:clamp(24px,4vw,32px);letter-spacing:-.04em;margin:0}
+.genesaret-modifier .swal2-html-container{margin:0;text-align:left;padding:0 2px}
+.modifier-form{display:grid;gap:18px;color:var(--text-main,#f4faff)}
+.modifier-hero{display:flex;align-items:center;gap:12px;padding:14px;border-radius:22px;background:linear-gradient(125deg,#0964dc,#168dea 65%,#209fe7);color:white;box-shadow:0 8px 20px #0879ec30;text-align:left}
+.modifier-hero-icon{display:grid;place-items:center;width:64px;height:64px;flex:none;border-radius:20px;background:#ffffff25;font-size:38px}
+.modifier-hero>div{flex:1;min-width:0;display:grid;gap:4px}.modifier-hero strong{font-size:17px}.modifier-hero small{font-size:12px;color:#e8f6ff}.modifier-hero .modifier-base-price{font-size:22px;white-space:nowrap}
+.modifier-section h3{font-size:18px;margin:0 0 3px;letter-spacing:-.025em}.modifier-hint{color:var(--text-muted,#b6d4eb);font-size:12px;margin:0 0 10px}
+.modifier-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.modifier-option{font:inherit;display:flex;align-items:center;text-align:left;gap:9px;min-width:0;width:100%;min-height:76px;margin:0;padding:9px;border:1px solid #81bbeb45;border-radius:18px;background:#102b43;color:#eaf7ff;cursor:pointer;transition:background .18s,border-color .18s,transform .18s;box-shadow:none}
+.modifier-option.is-selected{background:linear-gradient(140deg,#1b70b480,#194d76);border-color:#69c5ff;box-shadow:inset 0 1px 0 #ffffff18}
+.modifier-food-icon{flex:none;display:grid;place-items:center;width:38px;height:42px;border-radius:13px;background:#d8efff16;font-size:25px;line-height:1}
+.modifier-info{display:grid;gap:4px;flex:1;min-width:0}.modifier-info strong{font-size:13px;line-height:1.18;overflow-wrap:anywhere}.modifier-info small{font-size:11px;line-height:1.2;color:#a8d9fb}
+.modifier-marker{display:grid;place-items:center;flex:none;width:25px;height:25px;border-radius:50%;background:#c5e9ff16;color:#d9f2ff;font-weight:800;font-size:17px}.modifier-option.is-selected .modifier-marker{background:#a6e0ff;color:#093e77}
+.modifier-option.is-required{cursor:default;opacity:1}.modifier-option:focus-visible{outline:3px solid #a6e0ff;outline-offset:2px}.modifier-option:active:not(:disabled){transform:scale(.98)}
+.modifier-summary{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#102b43;border:1px solid #8bd2ff45;border-radius:20px;padding:14px 16px;color:#f4faff}.modifier-summary>div{display:grid;gap:4px}.modifier-summary small{font-size:12px;color:#b6d4eb}.modifier-summary strong{font-size:30px;letter-spacing:-.045em;color:#9cdeff}.modifier-summary>small{text-align:right}
+.genesaret-modifier .swal2-actions{width:100%;gap:8px;margin:16px 0 0}.genesaret-modifier .swal2-actions button{margin:0;min-height:48px;border-radius:16px;font-weight:700}.genesaret-modifier .swal2-confirm{flex:1;background:linear-gradient(135deg,#0964dc,#209fe7)!important;color:#fff}.genesaret-modifier .swal2-cancel{background:#153957!important;color:#f4faff!important;border:1px solid #8ad3ff45}
+.light-mode .modifier-option:not(.is-selected){background:#edf7ff;color:#153957}.light-mode .modifier-option:not(.is-selected) .modifier-info small{color:#315a79}.light-mode .modifier-option.is-selected{color:white}
+@media(max-width:390px){.modifier-grid{grid-template-columns:1fr}.modifier-hero-icon{width:48px;height:48px;font-size:28px}.modifier-hero .modifier-base-price{font-size:18px}}
+@media(prefers-reduced-motion:reduce){.modifier-option{transition:none}}
+
+/* Catalog and basket: illustrated tiles, clearer prices and touch controls */
+.screen-admin .producto-card,.screen-vendedor .producto-card{padding:12px;gap:8px;position:relative;overflow:hidden}
+.screen-admin .prod-emoji,.screen-vendedor .prod-emoji{background:linear-gradient(150deg,#1a86e54d,#87d6ff24);border:1px solid #9ddfff30;border-radius:17px;margin:0 auto 8px;width:100%;min-height:84px;font-size:48px}
+.screen-admin .carrito-item,.screen-vendedor .carrito-item{border:1px solid var(--border-color);border-radius:18px;background:var(--bg-item-list);padding:10px;gap:8px;margin:8px 0}
+.cart-food-icon{flex:none;display:grid;place-items:center;width:44px;height:44px;font-size:27px;border-radius:14px;background:#2798ef29}
+.screen-admin .qty-btn,.screen-vendedor .qty-btn{border-radius:12px;min-width:30px;min-height:30px}
+.screen-admin .carrito-item-subtotal,.screen-vendedor .carrito-item-subtotal{font-weight:800;color:var(--color-precio)}
+@media(max-width:480px){.cart-food-icon{width:32px;height:32px;font-size:21px}.screen-admin .carrito-item,.screen-vendedor .carrito-item{gap:5px;padding:7px}}
