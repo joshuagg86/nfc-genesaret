@@ -24,7 +24,8 @@ service cloud.firestore {
    allow read: if staff();
    allow write: if admin();
    match /pedidos_cocina/{order} {
-    allow read: if admin() || kitchen() || display();
+    allow get: if admin() || kitchen() || display() || (seller() && (resource==null || resource.data.vendedorId==uid()));
+    allow list: if admin() || kitchen() || display();
     allow create: if cash() && activeEvent(id) && request.resource.data.keys().hasOnly(['items','numeroPedido','fecha','estado','vendedorId','pagoPendiente']) && request.resource.data.vendedorId==uid() && request.resource.data.fecha==request.time && request.resource.data.estado=='activo' && request.resource.data.items is list && request.resource.data.items.size()>0 && request.resource.data.items.size()<=100 && request.resource.data.numeroPedido is int && request.resource.data.pagoPendiente is bool;
     allow update: if admin() && changed(['estado','pagoPendiente']) || (seller() && resource.data.vendedorId==uid() && changed(['pagoPendiente']) && request.resource.data.pagoPendiente==false);
    }
