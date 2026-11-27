@@ -307,3 +307,35 @@ button:disabled{opacity:.55;cursor:not-allowed}
 }
 
 @media(max-width:768px),(max-height:600px){.screen-vendedor #sellerStationQueue{max-height:150px}}
+
+/* Dashboard: ranking must never escape the card. */
+.screen-admin #dashboard .overview-panels{gap:16px;margin-bottom:16px;align-items:stretch}
+.screen-admin #dashboard .overview-panel{height:auto;min-height:0;max-height:none;overflow:hidden}
+.screen-admin #dashboard #overviewRanking{max-height:none;height:auto;overflow:visible;display:grid;gap:8px}
+.screen-admin #dashboard #overviewRanking>div{min-width:0}
+.screen-admin #dashboard #overviewMethods{max-height:none;height:auto;overflow:visible}
+.screen-admin #dashboard #overviewFeed,.screen-admin #dashboard #overviewStock{max-height:245px;overflow-y:auto;overscroll-behavior:contain}
+.screen-admin #dashboard .overview-secondary{margin:16px 0}
+.screen-admin #dashboard .overview-filter .btn-primary{display:inline-flex;align-items:center;gap:6px}
+.admin-sales-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 20px}
+.admin-sales-tabs button{display:flex;align-items:center;justify-content:center;gap:8px;flex:1 1 135px;min-height:48px;padding:10px 14px;border:1px solid var(--border-color);border-radius:15px;background:var(--bg-item-list);color:var(--text-main);font-weight:700}
+.admin-sales-tabs button.active{background:var(--app-gradient);color:white;border-color:transparent}
+.screen-admin #modalPOSAdmin.admin-inline-pos.active{display:block;position:static;background:none;inset:auto;z-index:auto;overflow:visible}
+.admin-sale-grid{grid-template-columns:minmax(0,1.55fr) minmax(300px,1fr);gap:16px;align-items:start}
+.screen-admin #pos-tab-venta,.screen-admin #pos-tab-pendientes,.screen-admin #pos-tab-corte{min-width:0;padding:18px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:20px}
+.screen-admin #modalPOSAdmin .admin-inline-cart{display:flex;flex-direction:column;position:sticky;top:76px;min-width:0;width:100%;height:clamp(360px,calc(100dvh - 340px),660px);overflow:hidden}
+.screen-admin #modalPOSAdmin .admin-inline-cart .carrito-header{flex:none}
+.screen-admin #posCarritoList{flex:1 1 0;min-height:75px;max-height:none;overflow:auto;overscroll-behavior:contain;padding:6px 10px}
+.screen-admin #modalPOSAdmin .payment-section{flex:0 1 auto;max-height:48%;overflow:auto;padding:12px}
+.screen-admin #modalPOSAdmin .admin-cart-columns,.screen-admin #posCarritoList .carrito-item{display:grid;grid-template-columns:30px minmax(0,1fr) 86px 67px 28px;gap:6px;align-items:center}
+.screen-admin #modalPOSAdmin .admin-cart-columns{flex:none;padding:8px 18px;font-size:10px;color:var(--text-muted);font-weight:700}
+.admin-cart-columns span:nth-child(3){text-align:center}.admin-cart-columns span:nth-child(4){text-align:right}
+.screen-admin #posCarritoList .carrito-item{padding:8px!important;margin:5px 0!important}
+.screen-admin #posCarritoList .cart-food-icon{width:30px;height:30px;font-size:20px}
+.screen-admin #posCarritoList .carrito-item-info{min-width:0;overflow-wrap:anywhere}
+.screen-admin #posCarritoList .carrito-item-cantidad{display:grid;grid-template-columns:28px 20px 28px;gap:3px;text-align:center}
+.screen-admin #posCarritoList .qty-btn{width:28px;min-width:28px;height:30px;padding:0}
+.screen-admin #posCarritoList .carrito-item-subtotal{min-width:0;white-space:nowrap;font-variant-numeric:tabular-nums;text-align:right}
+.screen-admin #posCarritoList .btn-eliminar-item{width:28px;padding:0}
+.screen-admin #saleHistoryList{max-height:65dvh;overflow-y:auto;align-content:start;overscroll-behavior:contain;padding:4px}
+@media(max-width:900px){.admin-sale-grid{grid-template-columns:1fr}.screen-admin #modalPOSAdmin .admin-inline-cart{position:static!important;inset:auto!important;max-height:none!important;height:auto;width:100%!important;padding:0!important;z-index:auto!important}.screen-admin #posCarritoList{flex:none;height:240px}.screen-admin #modalPOSAdmin .payment-section{max-height:none;overflow:visible}.screen-admin #saleHistoryList{max-height:none}}
