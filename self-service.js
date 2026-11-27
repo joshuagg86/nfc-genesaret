@@ -2,7 +2,7 @@
 'use strict';
 const $=id=>document.getElementById(id), money=n=>new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(n);
 let products=[],cart=new Map(),stopProducts=null,stopEvents=null,version=0,authorized=false;
-const node=(tag,text,cls)=>{const n=document.createElement(tag);if(text!=null)n.textContent=text;if(cls)n.className=cls;return n;};
+const node=(tag,text,cls)=>{const n=document.createElement(tag);if(text!=null)n.textContent=text;if(cls)n.className=cls;if(text==='🧴')n.classList.add('water-bottle-icon');return n;};
 const status=(message,error=false)=>{$('status').textContent=message;$('status').classList.toggle('error',error);};
 const available=p=>Number.isFinite(Number(p.precio))&&Number(p.precio)>0&&(p.esInfinito===true||Number(p.stock)>0);
 let customizing=false;
