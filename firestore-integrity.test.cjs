@@ -35,6 +35,35 @@ const firebase=require('firebase/compat/app');require('firebase/compat/firestore
  await test('No se permite bajar saldo NFC sin venta',()=>assertFails(cashier.doc('pulseras/wallet').update({saldoActual:0})));
  await test('No se permite bajar stock sin venta',()=>assertFails(cashier.doc('articulos/agua').update({stock:0})));
  await test('No se permite manifiesto sin partidas de venta',()=>assertFails(cashier.doc('ventas_integridad/orphan').set({vendedorId:'seller1',eventId:'cafe',metodoPago:'efectivo',estadoPago:'pagado',pulseraId:null,lineas:1,total:35})));
+ // Full atomic writes: these exercise the rules directly, bypassing the browser's checkout checks.
+ const fakeBatch=async(id,{price=35,total=35,quantity=1,stockDelta=1,method='efectivo',walletDelta=35,omitStock=false,omitWallet=false,extraLine=false}={})=>{
+ const batch=cashier.batch(), product=cashier.doc('articulos/sandwich'), wallet=cashier.doc('pulseras/wallet');
+ const p=await data(admin,'articulos/sandwich'),w=await data(admin,'pulseras/wallet');
+ const pulseraId=method==='nfc'?'wallet':null;
+ batch.set(cashier.doc('ventas_integridad/'+id),{vendedorId:'seller1',eventId:'cafe',metodoPago:method,estadoPago:'pagado',pulseraId,lineas:1,total});
+ const line={eventId:'cafe',vendedorId:'seller1',articuloId:'sandwich',cantidad:quantity,precioUnitario:price,monto:price*quantity,estadoPago:'pagado',metodoPago:method,carritoId:id,pulseraId,lineasVenta:1,descuentoProducto:quantity,descuentoInsumos:[]};
+ batch.set(cashier.doc('transacciones/'+id+'_0'),line);
+ if(extraLine)batch.set(cashier.doc('transacciones/'+id+'_1'),line);
+ if(!omitStock)batch.update(product,{stock:p.stock-stockDelta,ultimaVentaId:id});
+ if(method==='nfc'&&!omitWallet)batch.update(wallet,{saldoActual:w.saldoActual-walletDelta,ultimaVentaId:id});
+ return batch.commit();
+ };
+ await test('Bloquea venta completa con precio inferior al catálogo',()=>assertFails(fakeBatch('cheap',{price:1,total:1})));
+ await test('Bloquea venta completa con total inconsistente',()=>assertFails(fakeBatch('wrongTotal',{total:1})));
+ await test('Bloquea venta completa sin descontar producto',()=>assertFails(fakeBatch('noStock',{omitStock:true})));
+ await test('Bloquea descuento excesivo de inventario',()=>assertFails(fakeBatch('extraStock',{stockDelta:2})));
+ await test('Bloquea NFC sin descontar saldo',()=>assertFails(fakeBatch('noWallet',{method:'nfc',omitWallet:true})));
+ await test('Bloquea NFC con descuento inferior',()=>assertFails(fakeBatch('underWallet',{method:'nfc',walletDelta:1})));
+ await test('Bloquea partida adicional no declarada',()=>assertFails(fakeBatch('extraLine',{extraLine:true})));
+ await test('Bloquea reutilización de venta previa',()=>assertFails(cashier.doc('articulos/agua').update({stock:0,ultimaVentaId:'mixed'})));
+ await test('Dos vendedores compiten por la última unidad',async()=>{
+ await admin.doc('articulos/agua').update({stock:1});
+ const buy=(uid,id)=>checkout(id,'transferencia',[{id:'agua',cantidad:1,precio:10}],{db:db(uid),auth:{currentUser:{uid}}});
+ const results=await Promise.allSettled([buy('seller1','race1'),buy('seller2','race2')]);
+ assert.equal(results.filter(r=>r.status==='fulfilled').length,1);
+ assert.match(results.find(r=>r.status==='rejected').reason.message,/stock insuficiente/i);
+ assert.equal((await data(admin,'articulos/agua')).stock,0);
+ });
  console.log('Resultado: '+passed+' correctas, '+failed+' fallidas. Las fallidas requieren corrección antes de publicar.');
  if(failed)process.exitCode=1;
  }finally{await env.cleanup();}
