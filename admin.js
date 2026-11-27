@@ -2731,7 +2731,6 @@ function filtrarPOS() {
 // --- 2. CARRITO ADMIN ---
 let adminCustomizing=false;
 async function agregarAdminCarrito(id) {
-    if(adminSelfOrderId)return showError('Vacía el pedido cargado antes de agregar otros productos');
     if(adminCustomizing||adminCheckoutBusy)return;
     const p=adminInventarioPOS.find(p=>p.id===id);if(!p)return;
     const event=adminEventoActivo;adminCustomizing=true;
@@ -2782,7 +2781,7 @@ function actualizarAdminCarritoUI() {
 }
 
 function cambiarCantAdmin(idx, delta) {
-    if(adminSelfOrderId||adminCheckoutBusy)return showError('No puedes modificar este pedido');
+    if(adminCheckoutBusy||adminCustomizing)return;
     if (delta > 0) {
         const item = adminCarrito[idx];
         const prodReal = adminInventarioPOS.find(p => p.id === item.id);
@@ -2790,13 +2789,15 @@ function cambiarCantAdmin(idx, delta) {
             return showError('Stock insuficiente');
         }
     }
+    if(adminSelfOrderId&&adminCarrito.length===1&&adminCarrito[idx].cantidad+delta<=0)return showError('Para eliminar todo el pedido, usa Cancelar en la cola');
     adminCarrito[idx].cantidad += delta;
     if(adminCarrito[idx].cantidad <= 0) adminCarrito.splice(idx, 1);
     actualizarAdminCarritoUI();
 }
 
 function eliminarItemAdmin(idx) {
-    if(adminSelfOrderId||adminCheckoutBusy)return showError('No puedes modificar este pedido');
+    if(adminCheckoutBusy||adminCustomizing)return;
+    if(adminSelfOrderId&&adminCarrito.length===1)return showError('Para eliminar todo el pedido, usa Cancelar en la cola');
     adminCarrito.splice(idx, 1);
     actualizarAdminCarritoUI();
 }
