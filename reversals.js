@@ -31,7 +31,11 @@ async function cancelSale(id){
  const ingredients=await Promise.all([...supplies].map(async ([id,n])=>({n,d:await tx.get(db.collection('insumos').doc(id))})));
  for(const {d,n} of [...stock,...ingredients])if(!d.exists||d.data().eventId!==initial.eventId||!Number.isSafeInteger(Number(d.data().stock)+n))throw Error('Inventario no disponible');
  for(const {d} of stock)if(d.data().esInfinito)throw Error('El modo de stock cambió; recupera manualmente');
+ const cashRefund=initial.estadoPago==='pagado'&&initial.metodoPago==='efectivo'&&initial.turnoCajaId;
+ const refundShift=cashRefund?await tx.get(db.collection('turnos_caja').doc(initial.turnoCajaId)):null;
+ if(cashRefund&&(!refundShift.exists||refundShift.data().estado!=='abierto'||rows.some(t=>t.turnoCajaId!==initial.turnoCajaId)))throw Error('El turno original está cerrado. La devolución requiere conciliación administrativa; no se modificó la venta.');
  const now=firebase.firestore.FieldValue.serverTimestamp();
+ if(refundShift)tx.update(refundShift.ref,{efectivoVentas:firebase.firestore.FieldValue.increment(-total)});
  if(wallet)tx.update(wallet.ref,{saldoActual:(cents(wallet.data().saldoActual)+total)/100});
  for(const {d,n} of stock)tx.update(d.ref,{stock:Number(d.data().stock)+n});
  for(const {d,n} of ingredients){const v=d.data(),stock=v.stock+n;tx.update(d.ref,{stock});tx.set(db.collection('movimientos_insumos').doc(),{eventId:initial.eventId,insumoId:d.id,nombre:v.nombre,unit:v.unit,delta:n,stockFinal:stock,motivo:'Cancelación',usuarioId:uid,fecha:now,carritoId:key||id});}
