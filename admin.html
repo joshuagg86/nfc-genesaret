@@ -17,7 +17,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <link rel="stylesheet" href="app-ui.css?v=blue-glass-10">
-<link rel="stylesheet" href="light-theme.css?v=1"><link rel="stylesheet" href="modal-theme.css?v=1"></head>
+<link rel="stylesheet" href="light-theme.css?v=2"><link rel="stylesheet" href="modal-theme.css?v=1"></head>
 <body class="screen-admin">
     <div id="loadingOverlay">
         <h1 class="loading-text">¡Hola, <span id="loadingUserName" class="loading-name">...</span>! 👋</h1>
@@ -239,7 +239,7 @@
                     </div>
                 </div></div></section>
 <section class="tab-content" id="mas"><div class="shell-heading"><h2>Más</h2><p>Administración de la cafetería y eventos.</p></div><div class="shell-menu"><button onclick="switchTab('eventos')"><i class="fas fa-calendar-days"></i><span><strong>Eventos</strong><small>Crear y administrar eventos</small></span><i class="fas fa-chevron-right"></i></button><button onclick="switchTab('cuentas')"><i class="fas fa-users"></i><span><strong>Vendedores y cuentas</strong><small>Usuarios y permisos</small></span><i class="fas fa-chevron-right"></i></button><button onclick="switchTab('reportes')"><i class="fas fa-chart-column"></i><span><strong>Reportes</strong><small>Consultar resultados</small></span><i class="fas fa-chevron-right"></i></button><button onclick="switchTab('dispositivos')"><i class="fas fa-link"></i><span><strong>Sincronizar dispositivos</strong><small>Pantallas de la cafetería</small></span><i class="fas fa-chevron-right"></i></button></div></section>
-<section class="tab-content" id="dispositivos"><div class="shell-heading"><h2>Sincronizar dispositivos</h2><p>Administra las pantallas y los accesos independientes de cada estación.</p></div><button type="button" class="btn-secondary" onclick="switchTab('mas')"><i class="fas fa-arrow-left"></i> Volver a Más</button><div class="shell-menu"><button type="button" onclick="window.location.href='cocina.html'"><i class="fas fa-utensils"></i><span><strong>Cocina</strong><small>Administrar preparación</small></span><i class="fas fa-chevron-right"></i></button><button type="button" onclick="window.location.href='tv-pedidos.html'"><i class="fas fa-tv"></i><span><strong>TV de pedidos</strong><small>En preparación y listos</small></span><i class="fas fa-chevron-right"></i></button></div><div class="card" style="margin-top:20px"><h3>Estaciones de venta</h3><p class="overview-status">Inicia sesión en la tablet con una cuenta de Autoservicio e introduce el código de la caja correspondiente. La vinculación se conserva en ese dispositivo.</p><div class="inventory-toolbar station-create-form"><label>Evento<select id="stationEvent"></select></label><label>Vendedor o caja<select id="stationVendor"></select></label><label>Nombre<input id="stationName" placeholder="Caja 01"></label><button class="btn-primary" id="stationCreate">Crear estación</button></div><div id="stationList" class="smart-grid"></div></div></section>
+<section class="tab-content" id="dispositivos"><div class="shell-heading"><h2>Sincronizar dispositivos</h2><p>Administra las pantallas y los accesos independientes de cada estación.</p></div><button type="button" class="btn-secondary section-back" onclick="switchTab('mas')"><i class="fas fa-arrow-left"></i> Volver a Más</button><div class="shell-menu"><button type="button" onclick="window.location.href='cocina.html'"><i class="fas fa-utensils"></i><span><strong>Cocina</strong><small>Administrar preparación</small></span><i class="fas fa-chevron-right"></i></button><button type="button" onclick="window.location.href='tv-pedidos.html'"><i class="fas fa-tv"></i><span><strong>TV de pedidos</strong><small>En preparación y listos</small></span><i class="fas fa-chevron-right"></i></button></div><div class="card" style="margin-top:20px"><h3>Estaciones de venta</h3><p class="overview-status">Inicia sesión en la tablet con una cuenta de Autoservicio e introduce el código de la caja correspondiente. La vinculación se conserva en ese dispositivo.</p><div class="inventory-toolbar station-create-form"><label>Evento<select id="stationEvent"></select></label><label>Vendedor o caja<select id="stationVendor"></select></label><label>Nombre<input id="stationName" placeholder="Caja 01"></label><button class="btn-primary" id="stationCreate">Crear estación</button></div><div id="stationList" class="smart-grid"></div></div></section>
 <section class="tab-content active" id="dashboard">
 <div class="overview-hero"><div><span class="overview-eyebrow">GENESARET / ADMINISTRACIÓN</span><h2>Resumen de operaciones</h2><p>Control de ventas, pulseras e inventario.</p></div><div class="overview-filter"><label for="overviewEvent">Evento</label><select id="overviewEvent"><option value="">Todos los eventos</option></select><button class="btn-primary" onclick="abrirPOSAdmin()"><i class="fas fa-cash-register"></i> Nueva venta</button></div></div>
 <p id="overviewStatus" role="status" class="overview-status">Conectando con los datos…</p>
@@ -248,7 +248,7 @@
 <div class="overview-panels"><article class="overview-panel"><h3>Productos más vendidos</h3><p>Unidades cobradas · Top 5</p><div id="overviewRanking" class="overview-ranking"></div></article><article class="overview-panel"><h3>Actividad reciente</h3><p>Últimos movimientos del evento</p><div id="overviewFeed" class="overview-feed"></div></article></div>
 <div class="overview-panels"><article class="overview-panel"><h3>Métodos de pago</h3><p>Distribución de ventas cobradas</p><div id="overviewMethods" class="overview-ranking"></div></article><article class="overview-panel"><h3>Inventario bajo</h3><p>Productos con 5 unidades o menos</p><div id="overviewStock" class="overview-feed"></div><button class="btn-secondary" onclick="switchTab('articulos')">Ver inventario</button></article></div>
 </section>
-<div class="tab-content" id="eventos">
+<div class="tab-content" id="eventos"><button type="button" class="btn-secondary section-back" onclick="switchTab('mas')"><i class="fas fa-arrow-left"></i> Volver a Más</button><div class="shell-heading"><h2>Eventos</h2></div>
             <div class="grid">
                 <div class="card">
                     <h3>📅 Crear Evento</h3>
@@ -511,7 +511,7 @@
             </div>
         </div>
 
-        <div class="tab-content" id="cuentas">
+        <div class="tab-content" id="cuentas"><button type="button" class="btn-secondary section-back" onclick="switchTab('mas')"><i class="fas fa-arrow-left"></i> Volver a Más</button><div class="shell-heading"><h2>Vendedores y cuentas</h2></div>
             <div class="card" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
                 <h3 style="margin: 0;">👥 Usuarios</h3>
                 
@@ -552,16 +552,166 @@
             </div>
         </div>
 
-        <div class="tab-content" id="reportes">
-            <div class="card" style="text-align: center; padding: 40px; margin-top: 20px;">
-                <p style="color: var(--text-muted); margin-bottom: 20px; font-size: 14px;">
-                    ¿Necesitas ver inventarios, gráficas detalladas o reportes por rango de fechas?
-                </p>
-                <button class="btn-primary" onclick="irAReportes()" style="font-size: 15px; padding: 12px 30px; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);">
-                    🔎 Ir a Reportes Avanzados
-                </button>
+        <div class="tab-content" id="reportes"><button type="button" class="btn-secondary section-back" onclick="switchTab('mas')"><i class="fas fa-arrow-left"></i> Volver a Más</button><div class="shell-heading"><h2>Reportes</h2><p>Consulta ventas, gráficas, inventario y pulseras.</p></div><div class="reports-advanced"><div class="card">
+            <h3>🔍 Filtros</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px;">
+                <div>
+                    <label>Evento</label>
+                    <select id="eventoFilter" onchange="GenesaretReports.actualizarReportes()">
+                        <option value="">Ver todos</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Vendedor / Puesto</label>
+                    <select id="vendedorFilter" onchange="GenesaretReports.actualizarReportes()">
+                        <option value="">Todos los vendedores</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Desde</label>
+                    <input type="date" id="fechaDesde" onchange="GenesaretReports.actualizarReportes()">
+                </div>
+                <div>
+                    <label>Hasta</label>
+                    <input type="date" id="fechaHasta" onchange="GenesaretReports.actualizarReportes()">
+                </div>
             </div>
-            
+            <div style="margin-top: 15px; display: flex; gap: 10px;">
+                <button class="btn-secondary" onclick="GenesaretReports.actualizarReportes()" style="flex: 1;">🔍 Filtrar</button>
+                <button class="btn-primary" onclick="GenesaretReports.openDownloadModal()" style="flex: 1;">📥 Descargar</button>
+            </div>
+        </div>
+
+        <div class="sub-nav-container">
+            <button class="sub-tab-btn active" onclick="GenesaretReports.verPestana('resumen', this)">📊 Resumen</button>
+            <button class="sub-tab-btn" onclick="GenesaretReports.verPestana('graficas', this)">📈 Gráficas</button>
+            <button class="sub-tab-btn" onclick="GenesaretReports.verPestana('inventario', this)">📦 Inventario</button>
+            <button class="sub-tab-btn" onclick="GenesaretReports.verPestana('pulseras', this)">🏷️ Pulseras</button>
+        </div>
+
+        <div id="rep-resumen" class="rep-section active">
+            <h3 style="margin-bottom: 10px; color: var(--text-muted); font-size: 14px;">💵 Ingresos</h3>
+            <div class="grid">
+                <div class="stat-card">
+                    <div class="stat-label">Ventas Totales</div>
+                    <div class="stat-value">$<span id="totalVentas">0.00</span></div>
+                </div>
+                <div class="stat-card" style="border-bottom: 3px solid #3b82f6;">
+                    <div class="stat-label" style="color: #3b82f6;">💳 Ventas NFC</div>
+                    <div class="stat-value">$<span id="totalNFC">0.00</span></div>
+                </div>
+                <div class="stat-card" style="border-bottom: 3px solid #86efac;">
+                    <div class="stat-label" style="color: #22c55e;">💵 Ventas Efectivo</div>
+                    <div class="stat-value">$<span id="totalEfectivo">0.00</span></div>
+                </div>
+                <div class="stat-card" style="border-bottom: 3px solid #93c5fd;">
+                    <div class="stat-label" style="color: #3b82f6;">🏦 Transferencias</div>
+                    <div class="stat-value">$<span id="totalTransf">0.00</span></div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h3>🏪 Resumen por Vendedor / Puesto</h3>
+                    <small style="color:var(--text-muted)" id="piezasTotalesVendidas">0 piezas vendidas</small>
+                </div>
+                <div class="table-container">
+                    <div id="vendedoresList">Cargando datos...</div>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: 10px; color: var(--text-muted); font-size: 14px; margin-top: 20px;">🏷️ Pulseras (Global)</h3>
+            <div class="grid">
+                <div class="stat-card">
+                    <div class="stat-label">Saldo Cargado</div>
+                    <div class="stat-value">$<span id="totalAsignado">0.00</span></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Saldo No Gastado</div>
+                    <div class="stat-value">$<span id="totalRestante">0.00</span></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Transacciones</div>
+                    <div class="stat-value"><span id="totalTrans">0</span></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>📋 Historial de Transacciones</h3>
+                <div class="table-container">
+                    <div id="transacionesList"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="rep-graficas" class="rep-section">
+            <div class="grid">
+                <div class="card">
+                    <h3>🏆 Top 5 Productos</h3>
+                    <div id="chartProductos" class="chart-container"></div>
+                </div>
+                <div class="card">
+                    <h3>👨‍💼 Ventas por Vendedor</h3>
+                    <div id="chartVendedores" class="chart-container"></div>
+                </div>
+            </div>
+            <div class="card" style="margin-top: 20px;">
+                <h3>📅 Ventas por Día</h3>
+                <div id="chartVentasDia" class="chart-container-wide"></div>
+            </div>
+            <div class="card" style="margin-top: 20px;">
+                <h3>🕐 Actividad por Hora</h3>
+                <div id="chartHoras" class="chart-container-wide"></div>
+            </div>
+        </div>
+
+        <div id="rep-inventario" class="rep-section">
+            <div class="grid">
+                <div class="stat-card"><div class="stat-label">Valor del Inventario</div><div class="stat-value" style="color: #22c55e;">$<span id="invValorTotal">0.00</span></div></div>
+                <div class="stat-card"><div class="stat-label">Productos Bajos de Stock</div><div class="stat-value" style="color: #ef4444;"><span id="invBajoStock">0</span></div></div>
+                <div class="stat-card"><div class="stat-label">Ítems Físicos Totales</div><div class="stat-value" style="color: #3b82f6;"><span id="invTotalItems">0</span></div></div>
+            </div>
+
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+                    <h3>📦 Existencias Actuales</h3>
+                    <div style="display: flex; gap: 10px; flex: 1; justify-content: flex-end; min-width: 280px;">
+                        <select id="invCategoriaFilter" onchange="GenesaretReports.renderInventario()" style="padding: 8px; width: 140px;">
+                            <option value="">📂 Todas</option>
+                        </select>
+                        <input type="text" id="invSearchFilter" placeholder="🔍 Buscar producto..." onkeyup="GenesaretReports.renderInventario()" style="padding: 8px; width: 160px;">
+                    </div>
+                </div>
+                <div style="font-size:11px; color:var(--text-muted); margin-bottom: 10px; display: flex; gap: 15px;">
+                    <span>🔴 Crítico (&lt;5)</span><span>🟡 Medio (&lt;15)</span><span>🟢 Bien</span><span style="color: #3b82f6;">♾️ Infinito</span>
+                </div>
+                <div class="table-container">
+                    <div id="inventarioList">Cargando inventario...</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="rep-pulseras" class="rep-section">
+            <div class="grid">
+                <div class="stat-card"><div class="stat-label">Dinero en Pulseras (Saldo Restante)</div><div class="stat-value" style="color: #3b82f6;">$<span id="pulsSaldoRestante">0.00</span></div></div>
+                <div class="stat-card"><div class="stat-label">Dinero Gastado (Consumido)</div><div class="stat-value" style="color: #22c55e;">$<span id="pulsSaldoGastado">0.00</span></div></div>
+                <div class="stat-card"><div class="stat-label">Saldo cargado (incluye registro inicial)</div><div class="stat-value" id="pulsRecargasTotal">—</div></div>
+                <div class="stat-card"><div class="stat-label">Pulseras registradas</div><div class="stat-value" style="color: #3b82f6;"><span id="pulsTotalCount">0</span></div></div>
+            </div>
+
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+                    <h3>🏷️ Reporte de Pulseras</h3>
+                    <div style="display: flex; gap: 10px; flex: 1; justify-content: flex-end; min-width: 280px;">
+                        <input type="text" id="pulsSearchFilter" placeholder="🔍 Buscar por nombre o ID..." onkeyup="GenesaretReports.renderReportePulseras()" style="padding: 8px; width: 200px;">
+                    </div>
+                </div>
+                <div class="table-container">
+                    <div id="reportePulserasList">Cargando datos...</div>
+                </div>
+            </div>
+        </div>
+</div><details class="reports-monthly"><summary>Resumen mensual y gráficas históricas</summary>
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
                     <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
@@ -622,6 +772,7 @@
                     <canvas id="topProductosChart"></canvas>
                 </div>
             </div>
+</details>
         </div>
     </div>
     
@@ -774,8 +925,22 @@
     <script src="config.js?v=1.4"></script>
     <script src="checkout.js?v=14"></script>
     
-    <script src="dashboard.js?v=dashboard-8"></script>
+    <div id="downloadModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><h3>Descargar Reporte</h3><button class="modal-close" onclick="GenesaretReports.closeDownloadModal()">✕</button></div>
+            <div class="modal-body">
+                <p>Selecciona el formato:</p>
+                <div class="modal-buttons">
+                    <button class="btn-primary" onclick="GenesaretReports.downloadHTMLReport()" style="width: 100%; margin-bottom: 10px;">📄 PDF</button>
+                    <button class="btn-primary" onclick="GenesaretReports.downloadExcelReport()" style="width: 100%;">📊 Excel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+<script src="reports-module.js?v=1"></script><script src="dashboard.js?v=dashboard-8"></script>
     <script src="inventory-smart.js?v=10"></script>
-    <script src="station-presence.js?v=1"></script><script src="stations.js?v=5"></script><script src="reversals.js?v=2"></script><script src="admin.js?v=dashboard-21"></script> 
+    <script src="station-presence.js?v=1"></script><script src="stations.js?v=5"></script><script src="reversals.js?v=2"></script><script src="admin.js?v=dashboard-22"></script> 
 </body>
 </html>
