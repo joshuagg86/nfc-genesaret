@@ -215,6 +215,7 @@ function switchTab(tab) {
 
     // --- AQUÍ ESTABA EL ERROR ---
     // Usamos 'tab' en lugar de 'tabId' y agrupamos las cargas:
+    if(tab==='dispositivos')GenesaretStations.open();
     if (tab === 'reportes') {
         cargarReporteMensual();
         cargarGraficaVentas();
@@ -2689,6 +2690,17 @@ let adminTransfStatus = 'pagado';
 let adminScannedPulsera = null; 
 let adminInventarioPOS = []; // ✅ Variable 100% independiente para el POS
 
+let adminSelfOrderId=null,adminQueue=null;
+function startAdminQueue(event){
+ if(adminQueue)adminQueue.close();
+ adminQueue=GenesaretStations.queue({container:'adminStationQueue',eventId:event,canLoad:()=>document.getElementById('modalPOSAdmin').classList.contains('active')&&!adminCarrito.length&&!adminCheckoutBusy&&!adminCustomizing&&!document.getElementById('adminPagoOverlay').classList.contains('active')&&!Swal.isVisible(),load:async(id,station)=>{
+ const doc=await db.collection('pedidos_autoservicio').doc(id).get({source:'server'}),o=doc.data();
+ if(!doc.exists||o.estado!=='pendiente'||o.eventId!==event||o.estacionId!==station||o.vendedorId!==auth.currentUser.uid)throw Error('Pedido no disponible');
+ const items=await Promise.all(o.items.map(async i=>{const d=await db.collection('articulos').doc(i.id).get({source:'server'}),p=d.data();if(!d.exists||p.eventId!==event)throw Error('Producto no disponible');const detail=GenesaretCheckout.resolveRecipe(p,i.selection);if(detail.price!==Math.round(i.precio*100))throw Error('El precio cambió');return {...i,nombre:p.nombre,notes:detail.notes,esInfinito:p.esInfinito};}));
+ if(adminCarrito.length||adminEventoActivo!==event||adminCheckoutBusy||adminCustomizing||!document.getElementById('modalPOSAdmin').classList.contains('active'))return false;
+ adminCarrito=items;adminSelfOrderId=id;actualizarAdminCarritoUI();showSuccess('Pedido de Autoservicio recibido');return true;
+ },cancel:async(id,station)=>{try{if(adminCheckoutBusy)return;if(await GenesaretStations.cancel(id,station)){if(adminSelfOrderId===id)limpiarCarritoPOS(true);adminQueue?.next();}}catch(e){showError(e.message);}},onError:showError});
+}
 let adminCatalogStop=null,adminCatalogVersion=0;
 async function abrirPOSAdmin() {
     const posModal=document.getElementById('modalPOSAdmin');
@@ -2714,8 +2726,8 @@ async function abrirPOSAdmin() {
 function cargarCatalogoAdminEvento(){
     if(adminCatalogStop){adminCatalogStop();adminCatalogStop=null;}
     const id=document.getElementById('adminPOSEvent').value;
-    if(id!==adminEventoActivo){adminCarrito=[];actualizarAdminCarritoUI();resetAdminNFC();}
-    adminEventoActivo=id;adminInventarioPOS=[];
+    if(id!==adminEventoActivo){adminSelfOrderId=null;adminCarrito=[];actualizarAdminCarritoUI();resetAdminNFC();}
+    adminEventoActivo=id;adminInventarioPOS=[];startAdminQueue(id);
     if(!id){renderPOSGrid([]);return;}
     document.getElementById('posGrid').textContent='Cargando productos…';
     adminCatalogStop=db.collection('articulos').where('eventId','==',id).onSnapshot(snap=>{
@@ -2726,6 +2738,7 @@ function cargarCatalogoAdminEvento(){
 }
 
 function cerrarPOSAdmin() {
+    if(adminCheckoutBusy)return;if(adminQueue){adminQueue.close();adminQueue=null;}
     document.getElementById('modalPOSAdmin').classList.remove('active');
     if(window.html5QrcodeScanner) window.cerrarScannerQR();
 }
@@ -2754,7 +2767,8 @@ function filtrarPOS() {
 // --- 2. CARRITO ADMIN ---
 let adminCustomizing=false;
 async function agregarAdminCarrito(id) {
-    if(adminCustomizing)return;
+    if(adminSelfOrderId)return showError('Vacía el pedido cargado antes de agregar otros productos');
+    if(adminCustomizing||adminCheckoutBusy)return;
     const p=adminInventarioPOS.find(p=>p.id===id);if(!p)return;
     const event=adminEventoActivo;adminCustomizing=true;
     try{
@@ -2804,6 +2818,7 @@ function actualizarAdminCarritoUI() {
 }
 
 function cambiarCantAdmin(idx, delta) {
+    if(adminSelfOrderId||adminCheckoutBusy)return showError('No puedes modificar este pedido');
     if (delta > 0) {
         const item = adminCarrito[idx];
         const prodReal = adminInventarioPOS.find(p => p.id === item.id);
@@ -2817,14 +2832,16 @@ function cambiarCantAdmin(idx, delta) {
 }
 
 function eliminarItemAdmin(idx) {
+    if(adminSelfOrderId||adminCheckoutBusy)return showError('No puedes modificar este pedido');
     adminCarrito.splice(idx, 1);
     actualizarAdminCarritoUI();
 }
 
-function limpiarCarritoPOS() {
+function limpiarCarritoPOS(force=false) {
+    if(adminCheckoutBusy&&!force)return;if(adminSelfOrderId&&!force)adminQueue?.pause();adminSelfOrderId=null;
     adminCarrito = [];
     actualizarAdminCarritoUI();
-    resetAdminNFC();
+    resetAdminNFC();if(!force)adminQueue?.next();
 }
 
 // --- 3. PESTAÑAS (VENTA | PENDIENTES | CORTE) ---
@@ -2964,12 +2981,12 @@ async function finalizarVentaAdmin(total, pulseraId, nombre, saldoNuevo, metodo,
     if (adminCheckoutBusy) return;
     adminCheckoutBusy = true;
     try {
-        const result = await GenesaretCheckout.commit({db, auth, eventId: adminEventoActivo, items: adminCarrito.map(i => ({...i})), pulseraId, pulseraNombre: nombre, metodo, estado, carritoId: db.collection('transacciones').doc().id});
+        const result = await GenesaretCheckout.commit({db, auth, eventId: adminEventoActivo, items: adminCarrito.map(i => ({...i})), pulseraId, pulseraNombre: nombre, metodo, estado, carritoId: db.collection('transacciones').doc().id,selfOrderId:adminSelfOrderId});
         if (estado === 'pagado') playSound('success');
         document.getElementById('adminConfMonto').textContent = '$' + total.toFixed(2);
         const folio = document.getElementById('adminConfPedido'); if(folio) folio.textContent = result.numeroPedido ? 'Pedido ' + result.numeroPedido : 'Venta sin folio de pedido';
         document.getElementById('adminPagoOverlay').classList.add('active');
-        limpiarCarritoPOS();
+        limpiarCarritoPOS(true);
         document.getElementById('adminClienteTransf').value = '';
         setAdminTransfStatus('pagado');
         cargarCorteAdmin();
@@ -2993,7 +3010,7 @@ function simularNFCAdmin() {
 }
 
 function cerrarConfirmacionAdmin() {
-    document.getElementById('adminPagoOverlay').classList.remove('active');
+    document.getElementById('adminPagoOverlay').classList.remove('active');adminQueue?.next();
 }
 
 function cargarPendientesAdmin() {
