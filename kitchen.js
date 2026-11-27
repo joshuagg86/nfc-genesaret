@@ -15,7 +15,7 @@ function render(){
  if(!ordersSnapshot||!statesSnapshot)return;
  const snapshot=ordersSnapshot;const states=new Map(statesSnapshot.docs.map(d=>[d.id,d.data().estado]));const online=!snapshot.metadata.fromCache&&!statesSnapshot.metadata.fromCache&&!snapshot.metadata.hasPendingWrites&&!statesSnapshot.metadata.hasPendingWrites;
  const groups=new Map();
- for(const doc of snapshot.docs){const x=doc.data();if(!['pagado','pendiente'].includes(x.estadoPago)||!x.carritoId)continue;
+ for(const doc of snapshot.docs){const x=doc.data();if(!['pagado','pendiente'].includes(x.estadoPago)||!x.carritoId||x.requiereCocina!==true)continue;
  const key=x.carritoId;if(!groups.has(key))groups.set(key,{key,items:[],time:0,pending:false,number:null});const g=groups.get(key);if(Number.isSafeInteger(x.numeroPedido)&&x.numeroPedido>0)g.number=x.numeroPedido;g.items.push({name:x.articulo||'Producto',qty:Number(x.cantidad)||1});g.time=Math.max(g.time,millis(x.fechaVenta||x.fecha));g.pending ||= x.estadoPago==='pendiente';
  }
  const target=$('orders');target.replaceChildren();
