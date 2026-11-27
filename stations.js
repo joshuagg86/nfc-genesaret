@@ -52,7 +52,7 @@ async function open(){
  if(stop||opening)return;opening=true;
  try{
  const [events,initialUsers]=await Promise.all([db.collection('eventos').where('activo','==',true).get(),db.collection('usuarios').get()]);
- let users=initialUsers,stationSnapshot=null;
+ let users=initialUsers,stationSnapshot=null,presence=[],presenceKnown=false;
  const eventSelect=$('stationEvent');eventSelect.replaceChildren();for(const d of events.docs)eventSelect.add(new Option(d.data().nombre||d.id,d.id));
  function refreshVendors(){const sel=$('stationVendor'),old=sel.value;sel.replaceChildren();for(const d of users.docs.filter(d=>d.data().activo!==false&&['vendedor','admin','administrador'].includes(d.data().role))){const u=d.data();sel.add(new Option((u.name||u.nombre||'Sin nombre')+(u.email?' · '+u.email:''),d.id));}if([...sel.options].some(o=>o.value===old))sel.value=old;}
  refreshVendors();
@@ -68,6 +68,11 @@ async function open(){
  const seller=users.docs.find(x=>x.id===s.vendedorId)?.data(),account=node('div',null,'station-config-account');
  account.append(node('small','Vendedor asignado'),node('strong',seller?.name||seller?.nombre||'Cuenta no disponible'));if(seller?.email)account.append(node('small',seller.email));card.append(account);
  const code=node('div',null,'station-config-code');code.append(node('small','Código de vinculación'),node('strong',s.codigoVinculacion||d.id),node('small','Introdúcelo en la tablet de Autoservicio'));card.append(code);
+ const connections=node('div',null,'station-connections');
+ for(const [role,label] of [['caja','Vendedor'],['autoservicio','Autoservicio']]){
+ const connected=s.activo&&presence.some(p=>p.stationId===d.id&&p.role===role&&(role==='caja'?p.uid===s.vendedorId:p.code===(s.codigoVinculacion||d.id))&&p.lastSeen?.toMillis&&Date.now()-p.lastSeen.toMillis()<90000);
+ const line=node('div',null,'station-connection');line.append(node('span',label),node('strong',!presenceKnown?'Sin verificar':connected?'En línea':'Sin señal reciente','connection-state '+(connected?'online':'')));connections.append(line);
+ }card.append(connections);
  const actions=node('div',null,'station-config-actions');
  if(s.activo){const launch=node('a','Vista previa', 'btn-secondary');launch.href='autoservicio.html?estacion='+encodeURIComponent(d.id)+'&evento='+encodeURIComponent(s.eventId)+'&preview=1';launch.target='_self';launch.rel='noopener';launch.title='Probar como administrador';actions.append(launch);}
  const toggle=btn(s.activo?'Deshabilitar':'Habilitar',async()=>{const result=await Swal.fire({title:s.activo?'¿Deshabilitar estación?':'¿Habilitar estación?',text:s.activo?'La estación dejará de recibir pedidos. Revisa antes que no haya pedidos pendientes.':'La estación podrá recibir pedidos nuevamente.',showCancelButton:true,confirmButtonText:s.activo?'Deshabilitar':'Habilitar',cancelButtonText:'Volver'});if(!result.isConfirmed)return;try{if(s.activo){const orders=await db.collection('pedidos_autoservicio').where('estacionId','==',d.id).get({source:'server'});if(orders.docs.some(o=>o.data().estado==='pendiente'))throw Error('Cobra o cancela los pedidos pendientes antes de deshabilitar la estación');}await d.ref.update({activo:!s.activo});}catch(e){showError(e.message);}});actions.append(toggle);for(const [label,action] of [['Editar','edit'],['Regenerar código','rotate'],['Eliminar','delete']])actions.append(btn(label,async()=>{try{await manageStation(d.id,action,users);}catch(e){showError(e.message);}}));card.append(actions);list.append(card);
@@ -75,6 +80,8 @@ async function open(){
  if(!list.children.length)list.append(node('p','Crea tu primera estación.'));
  }
  stop=db.collection('estaciones_venta').onSnapshot(snap=>{stationSnapshot=snap;renderStations(snap);},e=>{$('stationList').textContent=e.message;stop=null;if(stopUsers){stopUsers();stopUsers=null;}});
+ db.collection('estaciones_presencia').onSnapshot({includeMetadataChanges:true},snap=>{presenceKnown=!snap.metadata.fromCache;presence=snap.docs.map(d=>d.data());if(stationSnapshot)renderStations(stationSnapshot);},e=>{presenceKnown=false;if(stationSnapshot)renderStations(stationSnapshot);console.warn(e);});
+ setInterval(()=>{if(stationSnapshot&&document.getElementById('dispositivos').classList.contains('active'))renderStations(stationSnapshot);},15000);
  stopUsers=db.collection('usuarios').onSnapshot(snap=>{users=snap;refreshVendors();if(stationSnapshot)renderStations(stationSnapshot);},e=>showError('No se pudieron actualizar las cuentas: '+e.message));
  }catch(e){showError(e.message);}finally{opening=false;}
 }
@@ -93,16 +100,17 @@ function queue({container,eventId,canLoad,load,cancel,onError}){
  }
  const uid=auth.currentUser?.uid;
  if(!uid||!eventId){draw();return {close(){},next(){},pause(){}};}
- let stopOrders=null;
+ let stopOrders=null,stopPresence=null;
  stops.push(db.collection('estaciones_venta').where('vendedorId','==',uid).onSnapshot(snap=>{
  const matches=snap.docs.filter(d=>d.data().activo&&d.data().eventId===eventId).sort((a,b)=>a.id.localeCompare(b.id));
  const sel=matches[0];if(station?.id===sel?.id&&station)return;
- if(stopOrders)stopOrders();station=sel?{id:sel.id,...sel.data()}:null;orders=[];confirmed=false;draw();
+ if(stopOrders)stopOrders();if(stopPresence)stopPresence();stopPresence=null;station=sel?{id:sel.id,...sel.data()}:null;orders=[];confirmed=false;draw();
+ if(station&&root.GenesaretPresence)stopPresence=root.GenesaretPresence.start(station.id,'caja');
  if(station)stopOrders=db.collection('pedidos_autoservicio').where('estacionId','==',station.id).onSnapshot({includeMetadataChanges:true},snap=>{
  confirmed=!snap.metadata.fromCache&&!snap.metadata.hasPendingWrites;orders=snap.docs.filter(d=>d.data().estado==='pendiente'&&d.data().eventId===eventId).map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.fecha?.toMillis?.()||0)-(b.fecha?.toMillis?.()||0)||a.id.localeCompare(b.id));draw();next();
  },e=>{confirmed=false;draw();onError(e.message);});
  },e=>onError(e.message)));
- draw();return {close(){closed=true;stops.forEach(f=>f());if(stopOrders)stopOrders();target.replaceChildren();},next(){draw();next();},pause(){paused=true;draw();}};
+ draw();return {close(){closed=true;stops.forEach(f=>f());if(stopOrders)stopOrders();if(stopPresence)stopPresence();target.replaceChildren();},next(){draw();next();},pause(){paused=true;draw();}};
 }
 async function cancel(id,stationId){
  const r=await Swal.fire({title:'¿Cancelar pedido sin cobrar?',text:'No se descontarán existencias ni saldo.',showCancelButton:true,confirmButtonText:'Cancelar pedido',cancelButtonText:'Volver'});
