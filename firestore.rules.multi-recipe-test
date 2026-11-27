@@ -25,9 +25,11 @@ service cloud.firestore {
   function closeMoney(a,b) { return a>=b-0.000001 && a<=b+0.000001; }
   function supplyPath(id) { return /databases/$(database)/documents/insumos/$(id); }
   function movementPath(id) { return /databases/$(database)/documents/movimientos_insumos/$(id); }
-  function expectedUsage(r,l) {
-    let sel=l.seleccionIntegridad;
-    return (r.lines.size()>0 && !(r.lines[0].id in sel.removed) ? [{'id':r.lines[0].id,'amount':r.lines[0].amount*l.cantidad}] : []).concat((r.lines.size()>1 && !(r.lines[1].id in sel.removed) ? [{'id':r.lines[1].id,'amount':r.lines[1].amount*l.cantidad}] : [])).concat((r.lines.size()>2 && !(r.lines[2].id in sel.removed) ? [{'id':r.lines[2].id,'amount':r.lines[2].amount*l.cantidad}] : [])).concat((r.lines.size()>3 && !(r.lines[3].id in sel.removed) ? [{'id':r.lines[3].id,'amount':r.lines[3].amount*l.cantidad}] : [])).concat((r.extras.size()>0 && r.extras[0].id in sel.extra ? [{'id':r.extras[0].id,'amount':r.extras[0].amount*l.cantidad}] : [])).concat((r.extras.size()>1 && r.extras[1].id in sel.extra ? [{'id':r.extras[1].id,'amount':r.extras[1].amount*l.cantidad}] : []));
+  function recipeEntry(r,sel,k,j) {
+    return r[k].size()>j && (k=='lines' ? !(r[k][j].id in sel.removed) : r[k][j].id in sel.extra);
+  }
+  function entryValid(u,r,sel,k,j,index,qty,id) {
+    return !recipeEntry(r,sel,k,j) || (u.size()>index && u[index]=={'id':r[k][j].id,'amount':r[k][j].amount*qty} && supplyTouched(r[k][j].id,id));
   }
   function usageAmount(u,i) {
     return (u.size()>0 && u[0].id==i ? u[0].amount : 0) + (u.size()>1 && u[1].id==i ? u[1].amount : 0) + (u.size()>2 && u[2].id==i ? u[2].amount : 0) + (u.size()>3 && u[3].id==i ? u[3].amount : 0) + (u.size()>4 && u[4].id==i ? u[4].amount : 0) + (u.size()>5 && u[5].id==i ? u[5].amount : 0);
@@ -41,10 +43,25 @@ service cloud.firestore {
     return get(supplyPath(i)).data.get('ultimaVentaId',null)!=id &&
       getAfter(supplyPath(i)).data.ultimaVentaId==id;
   }
+  function validEntries(r,sel,u,qty,id) {
+    let a=recipeEntry(r,sel,'lines',0)?1:0;
+    let b=recipeEntry(r,sel,'lines',1)?1:0;
+    let c=recipeEntry(r,sel,'lines',2)?1:0;
+    let d=recipeEntry(r,sel,'lines',3)?1:0;
+    let e=recipeEntry(r,sel,'extras',0)?1:0;
+    let f=recipeEntry(r,sel,'extras',1)?1:0;
+    return u.size()==a+b+c+d+e+f &&
+      entryValid(u,r,sel,'lines',0,0,qty,id) &&
+      entryValid(u,r,sel,'lines',1,a,qty,id) &&
+      entryValid(u,r,sel,'lines',2,a+b,qty,id) &&
+      entryValid(u,r,sel,'lines',3,a+b+c,qty,id) &&
+      entryValid(u,r,sel,'extras',0,a+b+c+d,qty,id) &&
+      entryValid(u,r,sel,'extras',1,a+b+c+d+e,qty,id);
+  }
   function recipeValid(p,l,id,s) {
     let r=p.recetaActiva;
     let sel=l.seleccionIntegridad;
-    let usage=expectedUsage(r,l);
+    let u=l.descuentoInsumos;
     let removable=(r.lines.size()>0 && r.lines[0].removable==true ? [r.lines[0].id] : []).concat((r.lines.size()>1 && r.lines[1].removable==true ? [r.lines[1].id] : [])).concat((r.lines.size()>2 && r.lines[2].removable==true ? [r.lines[2].id] : [])).concat((r.lines.size()>3 && r.lines[3].removable==true ? [r.lines[3].id] : []));
     let extras=(r.extras.size()>0 ? [r.extras[0].id] : []).concat((r.extras.size()>1 ? [r.extras[1].id] : []));
     let extraPrice=(r.extras.size()>0 && r.extras[0].id in sel.extra ? r.extras[0].price : 0) + (r.extras.size()>1 && r.extras[1].id in sel.extra ? r.extras[1].price : 0);
@@ -52,14 +69,8 @@ service cloud.firestore {
       sel.removed is list && sel.extra is list && sel.removed.size()<=4 && sel.extra.size()<=2 &&
       sel.removed.toSet().size()==sel.removed.size() && sel.extra.toSet().size()==sel.extra.size() &&
       removable.hasAll(sel.removed) && extras.hasAll(sel.extra) && !sel.removed.hasAny(sel.extra) &&
-      l.descuentoInsumos==usage && closeMoney(l.precioUnitario,p.precio+extraPrice) &&
-      closeMoney(l.monto,l.precioUnitario*l.cantidad) &&
-      (r.lines.size()<=0 || r.lines[0].id in sel.removed || supplyTouched(r.lines[0].id,id)) &&
-      (r.lines.size()<=1 || r.lines[1].id in sel.removed || supplyTouched(r.lines[1].id,id)) &&
-      (r.lines.size()<=2 || r.lines[2].id in sel.removed || supplyTouched(r.lines[2].id,id)) &&
-      (r.lines.size()<=3 || r.lines[3].id in sel.removed || supplyTouched(r.lines[3].id,id)) &&
-      (r.extras.size()<=0 || !(r.extras[0].id in sel.extra) || supplyTouched(r.extras[0].id,id)) &&
-      (r.extras.size()<=1 || !(r.extras[1].id in sel.extra) || supplyTouched(r.extras[1].id,id));
+      u is list && closeMoney(l.precioUnitario,p.precio+extraPrice) &&
+      closeMoney(l.monto,l.precioUnitario*l.cantidad) && validEntries(r,sel,u,l.cantidad,id);
   }
   function linkedSupply(i) {
     let id=request.resource.data.ultimaVentaId;
@@ -81,7 +92,7 @@ service cloud.firestore {
   function validLine(s,id,lid) {
     let l=request.resource.data;
     let p=get(productPath(l.articuloId)).data;
-    return !exists(linePath(lid)) && l.carritoId==id && l.lineasVenta==s.lineas && l.vendedorId==uid() && l.eventId==s.eventId && l.metodoPago==s.metodoPago && l.estadoPago==s.estadoPago && !(l.estadoPago=='pendiente' && l.metodoPago=='nfc') && l.pulseraId==s.pulseraId && l.cantidad is int && l.cantidad>0 && l.cantidad<=100 && p.eventId==s.eventId && (p.get('recetaActiva',null)==null ? (closeMoney(l.precioUnitario,p.precio) && closeMoney(l.monto,p.precio*l.cantidad) && l.descuentoInsumos.size()==0) : recipeValid(p,l,id,s)) && l.monto>0 && (p.get('esInfinito',false)==true ? l.descuentoProducto==0 : (l.descuentoProducto==l.cantidad && getAfter(productPath(l.articuloId)).data.stock==p.stock-l.cantidad && getAfter(productPath(l.articuloId)).data.ultimaVentaId==id));
+    return l.carritoId==id && l.lineasVenta==s.lineas && l.vendedorId==uid() && l.eventId==s.eventId && l.metodoPago==s.metodoPago && l.estadoPago==s.estadoPago && !(l.estadoPago=='pendiente' && l.metodoPago=='nfc') && l.pulseraId==s.pulseraId && l.cantidad is int && l.cantidad>0 && l.cantidad<=100 && p.eventId==s.eventId && (p.get('recetaActiva',null)==null ? (closeMoney(l.precioUnitario,p.precio) && closeMoney(l.monto,p.precio*l.cantidad) && l.descuentoInsumos.size()==0) : recipeValid(p,l,id,s)) && l.monto>0 && (p.get('esInfinito',false)==true ? l.descuentoProducto==0 : (l.descuentoProducto==l.cantidad && getAfter(productPath(l.articuloId)).data.stock==p.stock-l.cantidad && getAfter(productPath(l.articuloId)).data.ultimaVentaId==id));
   }
   function lineAmount(lid) { return getAfter(linePath(lid)).data.monto; }
   function distinctProducts(a,b) { return getAfter(linePath(a)).data.articuloId!=getAfter(linePath(b)).data.articuloId; }
