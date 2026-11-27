@@ -138,7 +138,7 @@ const unsubscribe = auth.onAuthStateChanged(user => {
     }
 
     // E. Restaurar pestaña activa
-    const tab = 'dashboard'; 
+    const tab = new URLSearchParams(location.search).get('tab')==='dispositivos'?'dispositivos':'dashboard'; 
     if(typeof switchTab === 'function') switchTab(tab);
 
     // F. FINALMENTE: Quitar pantalla de carga
