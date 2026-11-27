@@ -64,6 +64,8 @@ const firebase=require('firebase/compat/app');require('firebase/compat/firestore
  assert.match(results.find(r=>r.status==='rejected').reason.message,/stock insuficiente/i);
  assert.equal((await data(admin,'articulos/agua')).stock,0);
  });
+ await test('Bloquea confirmación de pago inventada',()=>assertFails(cashier.doc('eventos/cafe/confirmaciones_caja/seller1').set({carritoId:'fakeConfirm',total:35,kitchen:false,numeroPedido:999,fecha:firebase.firestore.FieldValue.serverTimestamp(),vendedorId:'seller1'})));
+ await test('Bloquea movimiento ficticio de insumos',()=>assertFails(cashier.doc('movimientos_insumos/fake').set({eventId:'cafe',insumoId:'fake',usuarioId:'seller1',motivo:'Venta',delta:-1})));
  console.log('Resultado: '+passed+' correctas, '+failed+' fallidas. Las fallidas requieren corrección antes de publicar.');
  if(failed)process.exitCode=1;
  }finally{await env.cleanup();}
