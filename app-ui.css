@@ -362,3 +362,5 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .screen-admin #dispositivos .station-create-form button{min-height:44px}
 @media(max-width:900px){.screen-admin #dispositivos .station-create-form{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:480px){.screen-admin #dispositivos .station-create-form{grid-template-columns:1fr}.station-config-card{padding:16px}}
+
+.station-connections{display:grid;gap:8px}.station-connection{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px}.connection-state{font-size:11px;color:var(--text-muted)}.connection-state.online{color:#0aa77a}.connection-state:before{content:'●';margin-right:5px}.screen-admin:not(.light-mode) .connection-state.online{color:#68dfb4}.station-config-actions>*{flex-basis:130px}
