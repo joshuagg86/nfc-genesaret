@@ -12,7 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="style.css">
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-    <link rel="stylesheet" href="app-ui.css?v=alabanza-blue-4">
+    <link rel="stylesheet" href="app-ui.css?v=blue-glass-1">
 </head>
 <body class="screen-vendedor">
     <div id="loadingOverlay">
@@ -79,8 +79,8 @@
                             <input type="text" id="buscadorVendedor" onkeyup="renderizarGridProductos()" placeholder="🔍 Buscar producto (ej: Coca, Pizza...)" style="background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); width: 100%; padding: 10px; border-radius: 8px;">
                         </div>
 
-                        <div class="catalog-scope"><button type="button" id="catalogScope" class="btn-secondary" onclick="toggleCatalogScope()" aria-pressed="false">Ver todos los productos</button></div>
-                        <div id="categoryTabs" class="category-tabs-container"></div>
+                        <div class="catalog-scope"><button type="button" id="catalogScope" class="btn-secondary" onclick="toggleCatalogScope()" aria-pressed="true">Ver mi puesto</button></div>
+                        
                         </div>
 
                         <div id="categoryTabs" class="category-tabs-container"></div>
@@ -286,7 +286,7 @@
     <script src="config.js?v=1.1"></script>
     <script src="checkout.js?v=5"></script>
 
-    <script src="vendedor-inline-2.js?v=3"></script>
+    <script src="vendedor-inline-2.js?v=4"></script>
     <div class="modal-overlay" id="modalQR" onclick="cerrarScannerQR()">
     <div class="modal-box" onclick="event.stopPropagation()" style="max-width: 500px;">
         <div class="modal-header">
