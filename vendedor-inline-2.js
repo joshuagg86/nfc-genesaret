@@ -384,7 +384,7 @@ function cargarProductosPorEvento() {
                 }
 
                 html += `<div class="producto-card" ${clickAction} style="${estilosCard} transition: all 0.2s;">
-                            <div class="prod-emoji">${d.emoji}</div>
+                            <div class="prod-emoji">${GenesaretCheckout.foodIcon(p.nombre,d.emoji)}</div>
                             <div class="prod-info">
                                 <div class="prod-nombre">${p.nombre}</div>
                                 <div class="prod-precio">$${precioSeguro.toFixed(2)}</div>
@@ -440,7 +440,7 @@ function cargarProductosPorEvento() {
                 const sub = it.precio * it.cantidad; total += sub;
                 html += `
                     <div class="carrito-item">
-                        <div class="carrito-item-info">
+                        <span class="cart-food-icon" aria-hidden="true">${GenesaretCheckout.foodIcon(it.nombre)}</span><div class="carrito-item-info">
                             <div class="carrito-item-nombre">${GenesaretCheckout.escapeHtml(it.nombre)}</div>${(it.notes||[]).map(n=>`<small style="display:block;color:var(--text-muted)">${GenesaretCheckout.escapeHtml(n)}</small>`).join("")}
                             <div class="carrito-item-precio">$${it.precio.toFixed(2)} c/u</div>
                         </div>
