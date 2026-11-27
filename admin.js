@@ -3105,7 +3105,7 @@ function cargarCorteAdmin() {
                 
                 // Lógica visual para la lista
                 let montoDisplay = `$${t.monto.toFixed(2)}`;
-                let estiloMonto = 'font-weight:bold; color:#fff;';
+                let estiloMonto = 'font-weight:bold; color:var(--text-main);';
                 
                 if (t.estadoPago === 'pendiente') {
                     estiloMonto = 'font-weight:bold; color:#3b82f6;';
@@ -3141,7 +3141,7 @@ function cargarCorteAdmin() {
             </div>`;
 
             // Inyectamos todo en el contenedor
-            const tabCorte = document.getElementById('pos-tab-corte');
+            const tabCorte = document.getElementById('adminCashSummary');
             tabCorte.innerHTML = statsHTML + `<div class="table-container">${htmlList}</tbody></table></div>`;
         });
 }
