@@ -209,5 +209,26 @@
         return Promise.all([...groups.values()].map(ref=>tx.get(ref)));
     }
     function markPendingKitchenPaid(tx,rows){for(const d of rows)if(d.exists&&d.data().estado==='activo')tx.update(d.ref,{pagoPendiente:false});}
-    root.GenesaretCheckout = {readPendingKitchen,markPendingKitchenPaid,commit,customize,variantKey,escapeHtml,resolveRecipe,buildIntegrityCatalog,tryIntegrityCatalog,foodIcon,ingredientAvailability};
+    async function settlePending(db,auth,ids,expectedAmount){
+        const uid=auth.currentUser.uid;
+        if(!ids.length||ids.length>8||new Set(ids).size!==ids.length)throw Error('Cuenta fuera del alcance de cobro (máximo 8 partidas)');
+        const audit=db.collection('liquidaciones').doc();
+        return db.runTransaction(async tx=>{
+            const docs=await Promise.all(ids.map(id=>tx.get(db.collection('transacciones').doc(id))));
+            if(docs.some(d=>!d.exists||d.data().vendedorId!==uid||d.data().estadoPago!=='pendiente'))throw Error('La cuenta cambió o ya fue cobrada');
+            const rows=docs.map(d=>d.data());
+            if(rows.some(t=>!['efectivo','transferencia'].includes(t.metodoPago)))throw Error('Método inválido');
+            const amount=rows.reduce((n,t)=>n+money(t.monto),0),cash=rows.reduce((n,t)=>n+(t.metodoPago==='efectivo'?money(t.monto):0),0);
+            if(amount!==money(expectedAmount)||amount<=0)throw Error('El importe cambió');
+            const shift=cash?await GenesaretCash.read(db,tx,uid):null;
+            if(cash&&!shift)throw Error('Abre caja antes de cobrar efectivo');
+            const kitchenRows=await readPendingKitchen(db,tx,docs);
+            const now=firebase.firestore.FieldValue.serverTimestamp();
+            markPendingKitchenPaid(tx,kitchenRows);
+            if(shift)tx.update(shift.ref,{efectivoVentas:firebase.firestore.FieldValue.increment(cash),ultimaLiquidacionId:audit.id});
+            for(const d of docs)tx.update(d.ref,{estadoPago:'pagado',fechaVenta:d.data().fechaVenta||d.data().fecha||now,fecha:now,fechaPago:now,liquidacionId:audit.id,...(shift&&d.data().metodoPago==='efectivo'?{turnoCajaId:shift.id}:{})});
+            tx.set(audit,{vendedorId:uid,transacciones:ids,total:amount/100,efectivo:cash/100,turnoCajaId:shift?shift.id:null,fecha:now});
+        });
+    }
+    root.GenesaretCheckout = {settlePending,readPendingKitchen,markPendingKitchenPaid,commit,customize,variantKey,escapeHtml,resolveRecipe,buildIntegrityCatalog,tryIntegrityCatalog,foodIcon,ingredientAvailability};
 })(globalThis);
