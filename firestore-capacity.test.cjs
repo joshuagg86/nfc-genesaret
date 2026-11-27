@@ -234,28 +234,34 @@ const firebase=require('firebase/compat/app');require('firebase/compat/firestore
  }
  assert.ok(Object.keys(catalog.variants).length>4);
  });
+ // The checkout merges identical variants in the UI and rejects duplicate keys.
+ // Seed distinct real catalog products to exercise the rule capacity instead.
+ const capacityProducts=[['agua',10],['sandwich',35],['papas',20],['panDulce',12],['cafe',7],['te',10],['galleta',8],['jugo',15],['fruta',18]];
+ for(const [id,precio] of capacityProducts){
+ await admin.doc('articulos/'+id).set({eventId:'cafe',nombre:id,precio,stock:30,requiereCocina:false,costoUnitario:2});
+ }
  await test('Carrito real de ocho partidas simples',async()=>{
- const items=[['agua',10],['sandwich',35],['papas',20],['panDulce',12],['agua',10],['papas',20],['sandwich',35],['panDulce',12]].map(([id,precio])=>({id,precio,cantidad:1}));
- const ids=[...new Set(items.map(x=>x.id))],before=await Promise.all(ids.map(id=>data(admin,'articulos/'+id)));
+ const items=capacityProducts.slice(0,8).map(([id,precio])=>({id,precio,cantidad:1}));
+ const before=await Promise.all(items.map(x=>data(admin,'articulos/'+x.id)));
  await assertSucceeds(checkout('eightLines','transferencia',items));
- for(let j=0;j<ids.length;j++)assert.equal((await data(admin,'articulos/'+ids[j])).stock,before[j].stock-2);
- assert.equal((await data(admin,'ventas_integridad/eightLines')).total,154);
+ for(let j=0;j<items.length;j++)assert.equal((await data(admin,'articulos/'+items[j].id)).stock,before[j].stock-1);
+ assert.equal((await data(admin,'ventas_integridad/eightLines')).total,items.reduce((n,x)=>n+x.precio,0));
  });
  await test('Carrito de seis partidas con receta y extras',async()=>{
  const p=(await data(admin,'articulos/recipe')).stock,q=(await data(admin,'insumos/queso')).stock;
- const items=[{id:'recipe',cantidad:1,precio:40,selection:{removed:[],extra:['queso']}},{id:'agua',cantidad:1,precio:10},{id:'papas',cantidad:1,precio:20},{id:'panDulce',cantidad:1,precio:12},{id:'recipe',cantidad:1,precio:35,selection:{removed:['queso'],extra:[]}},{id:'agua',cantidad:1,precio:10}];
+ const items=[{id:'recipe',cantidad:1,precio:40,selection:{removed:[],extra:['queso']}},{id:'agua',cantidad:1,precio:10},{id:'papas',cantidad:1,precio:20},{id:'panDulce',cantidad:1,precio:12},{id:'recipe',cantidad:1,precio:35,selection:{removed:['queso'],extra:[]}},{id:'te',cantidad:1,precio:10}];
  await assertSucceeds(checkout('sixMixed','transferencia',items));
  assert.equal((await data(admin,'articulos/recipe')).stock,p-2);
  assert.equal((await data(admin,'insumos/queso')).stock,q-2);
  assert.equal((await data(admin,'ventas_integridad/sixMixed')).total,127);
  });
  await test('Carrito fuera del límite se rechaza sin cambios',async()=>{
- const p=(await data(admin,'articulos/agua')).stock;
- await admin.doc('articulos/agua').update({stock:30});
- try{await assertFails(checkout('nineLines','transferencia',Array.from({length:9},()=>({id:'agua',cantidad:1,precio:10}))));
- assert.equal((await data(admin,'articulos/agua')).stock,30);
- assert.equal((await admin.doc('ventas_integridad/nineLines').get()).exists,false);}
- finally{await admin.doc('articulos/agua').update({stock:p});}
+ const items=capacityProducts.map(([id,precio])=>({id,precio,cantidad:1}));
+ const before=await Promise.all(items.map(x=>data(admin,'articulos/'+x.id)));
+ await assertFails(checkout('nineLines','transferencia',items));
+ for(let j=0;j<items.length;j++)assert.equal((await data(admin,'articulos/'+items[j].id)).stock,before[j].stock);
+ assert.equal((await admin.doc('ventas_integridad/nineLines').get()).exists,false);
+ assert.equal((await admin.doc('transacciones/nineLines_0').get()).exists,false);
  });
  console.log('Resultado: '+passed+' correctas, '+failed+' fallidas. Las fallidas requieren corrección antes de publicar.');
  if(failed)process.exitCode=1;
