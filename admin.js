@@ -2737,7 +2737,7 @@ function renderPOSGrid(lista=adminInventarioPOS){
         const price=Number(p.precio),stock=Number(p.stock)||0;
         const available=Number.isFinite(price)&&price>0&&(p.esInfinito||stock>0);
         const card=document.createElement('button');card.type='button';card.className='producto-card admin-product-tile';card.disabled=!available;
-        const make=(tag,cls,txt)=>{const e=document.createElement(tag);e.className=cls;e.textContent=txt;return e;};
+        const make=(tag,cls,txt)=>{const e=document.createElement(tag);e.className=cls;e.textContent=txt;if(txt==='🧴')e.classList.add('water-bottle-icon');return e;};
         card.append(make('span','prod-emoji',GenesaretCheckout.foodIcon(p.nombre,p.categoria?.split(' ')[0]||'📦')),make('strong','prod-nombre',p.nombre||'Producto'),make('strong','prod-precio',Number.isFinite(price)?new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(price):'—'),make('small','admin-product-stock',available?(p.esInfinito?'Disponible':stock+' disponibles'):'Agotado'));
         if(p.recetaActiva&&available)card.append(make('small','admin-product-custom','Personalizar'));
         card.onclick=()=>agregarAdminCarrito(p.id);grid.append(card);
@@ -2785,7 +2785,7 @@ function actualizarAdminCarritoUI() {
         total += sub;
         html += `
         <div class="carrito-item">
-            <span class="cart-food-icon" aria-hidden="true">${GenesaretCheckout.foodIcon(item.nombre)}</span><div class="carrito-item-info">
+            <span class="cart-food-icon ${GenesaretCheckout.foodIcon(item.nombre)==='🧴'?'water-bottle-icon':''}" aria-hidden="true">${GenesaretCheckout.foodIcon(item.nombre)}</span><div class="carrito-item-info">
                 <div class="carrito-item-nombre">${GenesaretCheckout.escapeHtml(item.nombre)}</div>${(item.notes||[]).map(n=>`<small style="display:block;color:var(--text-muted)">${GenesaretCheckout.escapeHtml(n)}</small>`).join("")}
                 <div class="carrito-item-precio">$${item.precio.toFixed(2)}</div>
             </div>
