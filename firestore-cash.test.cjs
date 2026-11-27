@@ -263,8 +263,13 @@ const firebase=require('firebase/compat/app');require('firebase/compat/firestore
  assert.equal((await admin.doc('ventas_integridad/nineLines').get()).exists,false);
  assert.equal((await admin.doc('transacciones/nineLines_0').get()).exists,false);
  });
- await admin.doc('turnos_caja/shift2').set({vendedorId:'seller1',estado:'abierto',fondoInicial:10000,efectivoVentas:0,entradas:0,salidas:0});
- await admin.doc('cajas_activas/seller1').set({turnoId:'shift2'});
+ await test('Vendedor abre segundo turno después del cierre',async()=>{
+ const batch=cashier.batch();
+ batch.set(cashier.doc('turnos_caja/shift2'),{vendedorId:'seller1',estado:'abierto',fondoInicial:10000,efectivoVentas:0,entradas:0,salidas:0,abiertoAt:firebase.firestore.FieldValue.serverTimestamp()});
+ batch.set(cashier.doc('cajas_activas/seller1'),{turnoId:'shift2'});
+ await assertSucceeds(batch.commit());
+ assert.equal((await data(admin,'cajas_activas/seller1')).turnoId,'shift2');
+ });
  const shiftRef=cashier.doc('turnos_caja/shift2');
  const move=(id,type,amount,delta=amount)=>{
  const batch=cashier.batch();
