@@ -23,6 +23,15 @@ service cloud.firestore {
   match /eventos/{id} {
    allow read: if staff();
    allow write: if admin();
+   match /pedidos_cocina/{order} {
+    allow read: if admin() || kitchen() || display();
+    allow create: if cash() && activeEvent(id) && request.resource.data.keys().hasOnly(['items','numeroPedido','fecha','estado','vendedorId','pagoPendiente']) && request.resource.data.vendedorId==uid() && request.resource.data.fecha==request.time && request.resource.data.estado=='activo' && request.resource.data.items is list && request.resource.data.items.size()>0 && request.resource.data.items.size()<=100 && request.resource.data.numeroPedido is int && request.resource.data.pagoPendiente is bool;
+    allow update: if admin() && changed(['estado','pagoPendiente']) || (seller() && resource.data.vendedorId==uid() && changed(['pagoPendiente']) && request.resource.data.pagoPendiente==false);
+   }
+   match /confirmaciones_caja/{sellerId} {
+    allow get: if admin() || kiosk() || (seller() && sellerId==uid());
+    allow create, update: if cash() && sellerId==uid() && activeEvent(id) && request.resource.data.keys().hasOnly(['carritoId','total','kitchen','numeroPedido','fecha','vendedorId']) && request.resource.data.vendedorId==uid() && request.resource.data.fecha==request.time && request.resource.data.total is number && request.resource.data.total>0 && request.resource.data.kitchen is bool && request.resource.data.numeroPedido is int;
+   }
    match /contadores/{counter} {
     allow get: if cash();
     allow create: if cash() && activeEvent(id) && counter=='pedidos' && request.resource.data.keys().hasOnly(['ultimo']) && request.resource.data.ultimo==1;
@@ -60,8 +69,8 @@ service cloud.firestore {
   }
   match /recargas/{id} { allow read, write: if admin(); }
   match /transacciones/{id} {
-   allow get: if admin() || kitchen() || display() || (seller() && (resource==null || resource.data.vendedorId==uid()));
-   allow list: if admin() || kitchen() || display() || (seller() && resource.data.vendedorId==uid());
+   allow get: if admin() || (seller() && (resource==null || resource.data.vendedorId==uid()));
+   allow list: if admin() || (seller() && resource.data.vendedorId==uid());
    allow create: if cash() && request.resource.data.vendedorId==uid() && activeEvent(request.resource.data.eventId) && request.resource.data.cantidad is int && request.resource.data.cantidad>0 && request.resource.data.precioUnitario is number && request.resource.data.precioUnitario>0 && request.resource.data.monto is number && request.resource.data.monto>0 && request.resource.data.monto>=request.resource.data.precioUnitario*request.resource.data.cantidad-0.000001 && request.resource.data.monto<=request.resource.data.precioUnitario*request.resource.data.cantidad+0.000001 && request.resource.data.estadoPago in ['pagado','pendiente'] && request.resource.data.metodoPago in ['nfc','efectivo','transferencia'] && !(request.resource.data.estadoPago=='pendiente' && request.resource.data.metodoPago=='nfc');
    allow update: if admin() || (seller() && resource.data.vendedorId==uid() && resource.data.estadoPago=='pendiente' && request.resource.data.estadoPago=='pagado' && changed(['estadoPago','fechaVenta','fecha','fechaPago','turnoCajaId']));
    allow delete: if false;
