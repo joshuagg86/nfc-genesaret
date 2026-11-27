@@ -182,5 +182,11 @@
         });
         return transact(true);
     }
-    root.GenesaretCheckout = {commit,customize,variantKey,escapeHtml,resolveRecipe,foodIcon,ingredientAvailability};
+    async function readPendingKitchen(db,tx,docs){
+        const groups=new Map();
+        for(const d of docs){const t=d.data();if(!t.eventId||!t.carritoId||t.requiereCocina!==true)continue;const key=t.eventId+'/'+t.carritoId;if(!groups.has(key))groups.set(key,db.collection('eventos').doc(t.eventId).collection('pedidos_cocina').doc(t.carritoId));}
+        return Promise.all([...groups.values()].map(ref=>tx.get(ref)));
+    }
+    function markPendingKitchenPaid(tx,rows){for(const d of rows)if(d.exists&&d.data().estado==='activo')tx.update(d.ref,{pagoPendiente:false});}
+    root.GenesaretCheckout = {readPendingKitchen,markPendingKitchenPaid,commit,customize,variantKey,escapeHtml,resolveRecipe,foodIcon,ingredientAvailability};
 })(globalThis);
