@@ -703,7 +703,7 @@ function cargarProductosPorEvento() {
     try {
         const result = await GenesaretCheckout.commit({db, auth, eventId, items, pulseraId, pulseraNombre, metodo, estado, carritoId});
         if (estado === 'pagado') playSound('success');
-        mostrarConfirmacionPago(total, pulseraNombre, result.saldoNuevo, metodo, estado);
+        mostrarConfirmacionPago(total, pulseraNombre, result.saldoNuevo, metodo, estado, result.numeroPedido);
         vaciarCarrito(true);
         if (metodo === 'nfc') resetScan();
         document.getElementById('nombreClienteTransferencia').value = '';
@@ -722,10 +722,10 @@ function cargarProductosPorEvento() {
 }
         
         let interval;
-        function mostrarConfirmacionPago(total, cliente, saldo, metodo, estado) {
+        function mostrarConfirmacionPago(total, cliente, saldo, metodo, estado, numeroPedido) {
             document.getElementById('sellerPaymentTitle').textContent = estado === 'pendiente' ? 'Venta fiada registrada' : '¡Pago Exitoso!';
             document.getElementById('confirmarMonto').textContent = '$'+total.toFixed(2);
-            document.getElementById('confirmarProducto').textContent = `Carrito (${carrito.length} items)`;
+            document.getElementById('confirmarProducto').textContent = numeroPedido ? 'Pedido ' + numeroPedido : 'Venta sin folio de pedido';
             document.getElementById('confirmarCliente').textContent = cliente;
             let txtMetodo = metodo === 'nfc' ? 'Pulsera NFC' : (metodo === 'efectivo' ? 'Efectivo' : 'Transferencia');
             if (estado === 'pendiente') txtMetodo += ' (PENDIENTE)';
