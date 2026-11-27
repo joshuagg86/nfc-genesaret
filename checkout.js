@@ -33,6 +33,10 @@
         }
         return {recipe:r,price:p.precio,variants};
     }
+    function tryIntegrityCatalog(p) {
+        if(!p.recetaActiva||p.produccionPorLotes||p.recetaActiva.lines.length>4||p.recetaActiva.extras.length>2)return null;
+        return buildIntegrityCatalog(p);
+    }
     function foodIcon(name,fallback='🍽️'){
         const n=String(name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
         for(const [pattern,icon] of [[/aguacate/,'🥑'],[/queso/,'🧀'],[/carne|hamburguesa/,'🍔'],[/sandwich|chapata|torta/,'🥪'],[/jitomate|tomate/,'🍅'],[/cebolla/,'🧅'],[/lechuga|verdura/,'🥬'],[/jamon|tocino/,'🥓'],[/pollo/,'🍗'],[/huevo/,'🥚'],[/pan dulce|dona/,'🍩'],[/pan/,'🍞'],[/agua/,'🧴'],[/cafe/,'☕'],[/refresco|jugo/,'🥤'],[/papa/,'🍟'],[/chocolate/,'🍫']])if(pattern.test(n))return icon;
@@ -205,5 +209,5 @@
         return Promise.all([...groups.values()].map(ref=>tx.get(ref)));
     }
     function markPendingKitchenPaid(tx,rows){for(const d of rows)if(d.exists&&d.data().estado==='activo')tx.update(d.ref,{pagoPendiente:false});}
-    root.GenesaretCheckout = {readPendingKitchen,markPendingKitchenPaid,commit,customize,variantKey,escapeHtml,resolveRecipe,buildIntegrityCatalog,foodIcon,ingredientAvailability};
+    root.GenesaretCheckout = {readPendingKitchen,markPendingKitchenPaid,commit,customize,variantKey,escapeHtml,resolveRecipe,buildIntegrityCatalog,tryIntegrityCatalog,foodIcon,ingredientAvailability};
 })(globalThis);
