@@ -183,12 +183,12 @@ function actualizarSaludo() {
 function switchTab(tab) {
     
     if (!document.getElementById(tab)) tab = 'dashboard';
-    const group = ['eventos','cuentas','reportes','mas'].includes(tab) ? 'mas' : tab;
+    const group = ['eventos','cuentas','reportes','mas','dispositivos'].includes(tab) ? 'mas' : tab;
     document.querySelectorAll('[data-shell-tab]').forEach(button => {
         if (button.dataset.shellTab === group) button.setAttribute('aria-current','page');
         else button.removeAttribute('aria-current');
     });
-    const names = {dashboard:'Inicio',ventas:'Ventas',pulseras:'Pulseras',articulos:'Inventario',mas:'Más',eventos:'Eventos',cuentas:'Vendedores y cuentas',reportes:'Reportes'};
+    const names = {dashboard:'Inicio',ventas:'Ventas',pulseras:'Pulseras',articulos:'Inventario',mas:'Más',eventos:'Eventos',cuentas:'Vendedores y cuentas',reportes:'Reportes',dispositivos:'Sincronizar dispositivos'};
     const title = document.getElementById('shellTitle');
     if (title) title.textContent = names[tab] || tab;
     window.scrollTo(0,0);
@@ -2393,7 +2393,9 @@ let adminEventoActivo = '';
 
 // 1. MODIFICAR: Función abrirPOSAdmin (Para cargar un evento por defecto)
 function abrirPOSAdmin() {
-    document.getElementById('modalPOSAdmin').classList.add('active');
+    const posModal = document.getElementById('modalPOSAdmin');
+    if (posModal.parentElement !== document.body) document.body.appendChild(posModal);
+    posModal.classList.add('active');
     
     // Cargar Inventario
     document.getElementById('posGrid').innerHTML = '<div style="text-align:center; padding:20px;"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>';
@@ -2695,7 +2697,9 @@ let adminScannedPulsera = null;
 let adminInventarioPOS = []; // ✅ Variable 100% independiente para el POS
 
 function abrirPOSAdmin() {
-    document.getElementById('modalPOSAdmin').classList.add('active');
+    const posModal = document.getElementById('modalPOSAdmin');
+    if (posModal.parentElement !== document.body) document.body.appendChild(posModal);
+    posModal.classList.add('active');
     
     // Indicador de carga
     document.getElementById('posGrid').innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-muted); width:100%;"><i class="fas fa-spinner fa-spin"></i> Cargando inventario...</div>';
@@ -2866,10 +2870,9 @@ function switchPOSTab(tabName, btn) {
     document.getElementById('pos-tab-corte').style.display = 'none';
     document.getElementById('pos-tab-' + tabName).style.display = 'block';
 
-    if(btn) {
-        document.querySelectorAll('#modalPOSAdmin .sub-tab-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-    }
+    const tabs = Array.from(document.querySelectorAll('#modalPOSAdmin .sub-tab-btn'));
+    const selected = btn || tabs.find(b => (b.getAttribute('onclick') || '').includes("'" + tabName + "'"));
+    tabs.forEach(b => b.classList.toggle('active', b === selected));
     if(tabName === 'pendientes') cargarPendientesAdmin();
     if(tabName === 'corte') cargarCorteAdmin();
 }
