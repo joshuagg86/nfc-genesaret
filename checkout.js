@@ -25,7 +25,7 @@
     async function customize(p) {
         const recipe=p.recetaActiva, selection={removed:[],extra:[]};
         if(!recipe)return {...resolveRecipe(p),selection};
-        const el=(tag,cls,txt)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(txt!=null)n.textContent=txt;return n;};
+        const el=(tag,cls,txt)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(txt!=null)n.textContent=txt;if(txt==='🧴')n.classList.add('water-bottle-icon');return n;};
         const fmt=n=>new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(n/100);
         const form=el('div','modifier-form');
         const hero=el('div','modifier-hero');
