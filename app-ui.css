@@ -339,3 +339,26 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .screen-admin #posCarritoList .btn-eliminar-item{width:28px;padding:0}
 .screen-admin #saleHistoryList{max-height:65dvh;overflow-y:auto;align-content:start;overscroll-behavior:contain;padding:4px}
 @media(max-width:900px){.admin-sale-grid{grid-template-columns:1fr}.screen-admin #modalPOSAdmin .admin-inline-cart{position:static!important;inset:auto!important;max-height:none!important;height:auto;width:100%!important;padding:0!important;z-index:auto!important}.screen-admin #posCarritoList{flex:none;height:240px}.screen-admin #modalPOSAdmin .payment-section{max-height:none;overflow:visible}.screen-admin #saleHistoryList{max-height:none}}
+
+/* Station administration: distinct identity, account, pairing and actions. */
+.screen-admin #stationList{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));gap:16px;margin-top:22px}
+.station-config-card{min-width:0;display:grid;gap:18px;padding:20px;border-radius:22px;background:var(--bg-card);border:1px solid var(--border-color)}
+.screen-admin:not(.light-mode) .station-config-card{background:linear-gradient(145deg,#255c8455,#102b43);border-color:#91d4ff40;box-shadow:inset 0 1px 0 #ffffff12}
+.station-config-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.station-config-icon{display:grid;place-items:center;width:46px;height:46px;flex:none;border-radius:14px;background:#168dea24;color:var(--app-accent);font-size:21px}
+.station-config-title{flex:1;min-width:90px}.station-config-title h3{font-size:19px;margin:0 0 4px;overflow-wrap:anywhere}
+.station-config-card small{display:block;font-size:12px;line-height:1.45;color:var(--text-muted);overflow-wrap:anywhere}
+.station-config-state{font-size:11px;font-weight:700;padding:6px 10px;border-radius:20px;background:#8196aa20;color:var(--text-muted)}
+.station-config-state.enabled{background:#0aa77a22;color:#0aa77a}.screen-admin:not(.light-mode) .station-config-state.enabled{color:#68dfb4}
+.station-config-account{display:grid;gap:4px;padding:0 2px}.station-config-account strong{font-size:16px;overflow-wrap:anywhere}
+.station-config-code{display:grid;justify-items:center;gap:7px;padding:18px 12px;text-align:center;border:1px dashed #60a5fa70;border-radius:18px;background:#168dea12}
+.station-config-code strong{font-size:clamp(28px,4vw,38px);font-weight:800;letter-spacing:.12em;font-variant-numeric:tabular-nums;color:var(--app-accent)}
+.screen-admin:not(.light-mode) .station-config-code strong,.screen-admin:not(.light-mode) .station-config-icon{color:#8dd8ff}
+.station-config-actions{display:flex;gap:10px;flex-wrap:wrap;padding-top:12px;border-top:1px solid var(--border-color)}
+.station-config-actions>*{flex:1 1 100px;min-height:42px;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:12px;margin:0}
+.screen-admin #dispositivos .station-create-form{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) minmax(0,1fr) auto;align-items:end;gap:12px;margin-top:18px;padding:16px;border:1px solid var(--border-color);border-radius:18px;background:var(--bg-item-list)}
+.screen-admin #dispositivos .station-create-form label{min-width:0;display:grid;gap:7px;margin:0}
+.screen-admin #dispositivos .station-create-form :is(input,select){width:100%;min-width:0;margin:0}
+.screen-admin #dispositivos .station-create-form button{min-height:44px}
+@media(max-width:900px){.screen-admin #dispositivos .station-create-form{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:480px){.screen-admin #dispositivos .station-create-form{grid-template-columns:1fr}.station-config-card{padding:16px}}
