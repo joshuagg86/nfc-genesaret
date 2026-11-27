@@ -75,7 +75,7 @@
     }
     const variantKey=(id,sel={})=>JSON.stringify([id,[...(sel.removed||[])].sort(),[...(sel.extra||[])].sort()]);
     const escapeHtml=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    async function commit({db, auth, eventId, items, pulseraId, pulseraNombre, metodo, estado, carritoId}) {
+    async function commit({db, auth, eventId, items, pulseraId, pulseraNombre, metodo, estado, carritoId, selfOrderId=null}) {
         const user = auth.currentUser;
         if (!user || !eventId || !items.length || !carritoId) throw Error('Datos de venta incompletos');
         if (!['nfc','efectivo','transferencia'].includes(metodo) || !['pagado','pendiente'].includes(estado) || (estado === 'pendiente' && metodo === 'nfc')) throw Error('Método o estado inválido');
@@ -94,12 +94,20 @@
         const sales = items.map((i,index) => db.collection('transacciones').doc(carritoId + '_' + index));
         // One number per event and cart. A separate counter avoids modifying event settings.
         const counterRef = eventRef.collection('contadores').doc('pedidos');
+        const orderRef=selfOrderId?db.collection('pedidos_autoservicio').doc(selfOrderId):null;
         const transact = numbered => db.runTransaction(async tx => {
             const [event, profile, previous, wallet, ...products] = await Promise.all([tx.get(eventRef),tx.get(userRef),tx.get(sales[0]),walletRef ? tx.get(walletRef) : Promise.resolve(null),...refs.map(ref=>tx.get(ref))]);
             if (!event.exists || event.data().activo !== true) throw Error('El evento ya no está activo');
             if (!profile.exists || profile.data().activo === false || !['admin','vendedor','administrador'].includes(profile.data().role)) throw Error('Usuario sin autorización');
             if (previous.exists) throw Error('Esta venta ya fue registrada');
             const counter = numbered ? await tx.get(counterRef) : null;
+            const order=orderRef?await tx.get(orderRef):null;
+            if(orderRef){
+                const o=order.data();
+                if(!order.exists||o.eventId!==eventId||o.estado!=='pendiente'||estado!=='pagado')throw Error('Pedido no disponible para cobrar');
+                const signature=rows=>JSON.stringify(rows.map(i=>[variantKey(i.id,i.selection),i.cantidad,money(i.precio)]).sort((a,b)=>a[0].localeCompare(b[0])));
+                if(signature(o.items)!==signature(items))throw Error('El carrito no coincide con el pedido de Autoservicio');
+            }
             const last = counter?.exists ? counter.data().ultimo : 0;
             if (numbered && (!Number.isSafeInteger(last) || last < 0 || last >= Number.MAX_SAFE_INTEGER)) throw Error('Contador de pedidos inválido');
             const numeroPedido = numbered ? last + 1 : null;
@@ -125,6 +133,7 @@
             for(const {doc,qty} of supplies)if(!doc.exists||doc.data().eventId!==eventId||!Number.isSafeInteger(qty)||!Number.isSafeInteger(doc.data().stock)||doc.data().stock<qty)throw Error('Insumo insuficiente: '+(doc.data()?.nombre||'ingrediente'));
             for(const {p,ref,qty} of productTotals.values())if(!p.esInfinito)tx.update(ref,{stock:Number(p.stock)-qty});
             for(const {id,doc,qty} of supplies){const v=doc.data(),stock=v.stock-qty;tx.update(doc.ref,{stock});tx.set(db.collection('movimientos_insumos').doc(),{eventId,insumoId:id,nombre:v.nombre,unit:v.unit,delta:-qty,stockFinal:stock,motivo:'Venta',usuarioId:user.uid,fecha:new Date(),carritoId});}
+            if(orderRef)tx.update(orderRef,{estado:'cobrado',carritoId,numeroPedido,cobradoPor:user.uid,cobradoAt:new Date()});
             if (numbered) tx.set(counterRef,{ultimo:numeroPedido},{merge:true});
             if (walletRef) tx.update(walletRef,{saldoActual:after/100});
             products.forEach((doc,index) => {
