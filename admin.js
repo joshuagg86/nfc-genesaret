@@ -2850,7 +2850,7 @@ function switchPOSTab(tabName){
  document.querySelectorAll('[data-pos-tab]').forEach(b=>{b.classList.toggle('active',b.dataset.posTab===tabName);b.setAttribute('aria-pressed',String(b.dataset.posTab===tabName));});
  if(tabName==='historial')GenesaretReversals.open();
  if(tabName==='pendientes')cargarPendientesAdmin();
- if(tabName==='corte')cargarCorteAdmin();
+ if(tabName==='corte'){GenesaretCash.mount('adminCashTurn');cargarCorteAdmin();}
 }
 
 // --- 4. MÉTODOS DE PAGO Y FLUJO ---
@@ -3067,38 +3067,11 @@ function cargarPendientesAdmin() {
         });
 }
 
-function confirmarCobroAdmin(idsEncoded, monto) {
-    try {
-        // CORRECCIÓN: Decodificamos el string seguro
-        const ids = JSON.parse(decodeURIComponent(idsEncoded));
-        
-        Swal.fire({
-            title: `¿Cobrar $${monto.toFixed(2)}?`,
-            text: "Se marcará como pagado.",
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#22c55e',
-            confirmButtonText: 'Sí, cobrar',
-            background: '#1e293b', color: '#fff'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                const batch = db.batch();
-                ids.forEach(id => {
-                    batch.update(db.collection('transacciones').doc(id), { 
-                        estadoPago: 'pagado', 
-                        fecha: new Date() 
-                    });
-                });
-                batch.commit().then(() => {
-                    showSuccess('Deuda cobrada exitosamente');
-                });
-            }
-        });
-    } catch (e) {
-        showError('Error al procesar IDs: ' + e.message);
-    }
+async function confirmarCobroAdmin(idsEncoded,monto){
+ try{const ids=JSON.parse(decodeURIComponent(idsEncoded));const result=await Swal.fire({title:'¿Confirmar cobro?',text:'Confirma la recepción de $'+monto.toFixed(2),showCancelButton:true,confirmButtonText:'Cobrar'});if(!result.isConfirmed)return;
+ await db.runTransaction(async tx=>{const uid=auth.currentUser.uid,refs=ids.map(id=>db.collection('transacciones').doc(id)),[p,...docs]=await Promise.all([tx.get(db.collection('usuarios').doc(uid)),...refs.map(r=>tx.get(r))]);if(!p.exists||p.data().role!=='admin'||p.data().activo===false||docs.some(d=>!d.exists||d.data().estadoPago!=='pendiente'||d.data().vendedorId!==uid))throw Error('Cuenta no disponible');const total=docs.reduce((n,d)=>n+Math.round(Number(d.data().monto)*100),0);if(total!==Math.round(monto*100))throw Error('El importe cambió');const cash=docs.reduce((n,d)=>n+(d.data().metodoPago==='efectivo'?Math.round(Number(d.data().monto)*100):0),0),shift=cash?await GenesaretCash.read(db,tx,uid):null;GenesaretCash.credit(tx,shift,cash);const now=new Date();docs.forEach(d=>tx.update(d.ref,{estadoPago:'pagado',fechaVenta:d.data().fechaVenta||d.data().fecha||now,fecha:now,fechaPago:now,...(shift&&d.data().metodoPago==='efectivo'?{turnoCajaId:shift.id}:{})}));});showSuccess('Deuda cobrada');
+ }catch(e){showError(e.message);}
 }
-
 let adminCutStop=null;
 function cargarCorteAdmin() {
     if(adminCutStop)adminCutStop();
