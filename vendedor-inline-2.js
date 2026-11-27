@@ -458,6 +458,7 @@ function cargarProductosPorEvento() {
             const cont = document.getElementById('carritoItems'); 
             const btnNFC = document.getElementById('btnPagarNFC');
             const totalDisplay = document.getElementById('headerTotalDisplay');
+            const scrollTop=cont.scrollTop;
             let total = 0;
             if (carrito.length === 0) { 
                 cont.innerHTML = `<div class="carrito-vacio"><i class="fas fa-shopping-basket"></i><p>El carrito está esperando productos</p></div>`; 
@@ -474,15 +475,15 @@ function cargarProductosPorEvento() {
                             <div class="carrito-item-precio">$${it.precio.toFixed(2)} c/u</div>
                         </div>
                         <div class="carrito-item-cantidad">
-                            <button class="qty-btn" onclick="cambiarCantidad(${ix}, -1)"><i class="fas fa-minus" style="font-size:10px;"></i></button>
+                            <button class="qty-btn" type="button" aria-label="Disminuir cantidad" onclick="cambiarCantidad(${ix}, -1)"><i class="fas fa-minus" style="font-size:10px;"></i></button>
                             <span class="qty-val">${it.cantidad}</span>
-                            <button class="qty-btn" onclick="cambiarCantidad(${ix}, 1)"><i class="fas fa-plus" style="font-size:10px;"></i></button>
+                            <button class="qty-btn" type="button" aria-label="Aumentar cantidad" onclick="cambiarCantidad(${ix}, 1)"><i class="fas fa-plus" style="font-size:10px;"></i></button>
                         </div>
                         <div class="carrito-item-subtotal">$${sub.toFixed(2)}</div>
-                        <button class="btn-eliminar-item" onclick="eliminarDelCarrito(${ix})"><i class="fas fa-trash-alt"></i></button>
+                        <button class="btn-eliminar-item" type="button" aria-label="Eliminar producto" onclick="eliminarDelCarrito(${ix})"><i class="fas fa-trash-alt"></i></button>
                     </div>`;
             });
-            cont.innerHTML = html; totalDisplay.textContent = '$' + total.toFixed(2);
+            cont.innerHTML = html; cont.scrollTop=scrollTop; totalDisplay.textContent = '$' + total.toFixed(2);
             if(btnNFC) btnNFC.style.display = 'block';
         }
         function obtenerTotalCarrito() { return carrito.reduce((s, i) => s + (i.precio * i.cantidad), 0); }
