@@ -424,7 +424,6 @@ function cargarProductosPorEvento() {
 
         let customizingProduct=false;
         async function agregarDirecto(id) {
-            if (selfOrderId) return showError('Vacía el pedido cargado para agregar otros productos');
             if (isProcessingPayment||customizingProduct) return;
             const p=productosGlobales.find(p=>p.id===id);if(!p)return;
             const event=document.getElementById('eventSelect').value;
@@ -441,17 +440,17 @@ function cargarProductosPorEvento() {
             }catch(e){showError(e.message);}finally{customizingProduct=false;}
         }
         function cambiarCantidad(idx, d) {
-    if(selfOrderId)return showError('El pedido de Autoservicio no se puede modificar en Caja');
     if (isProcessingPayment || !carrito[idx]) return;
     const item = carrito[idx];
     const product = productosGlobales.find(p => p.id === item.id);
     const limit = product ? product.stock : item.stock;
     if (d > 0 && !item.esInfinito && carrito.filter(x=>x.id===item.id).reduce((a,x)=>a+x.cantidad,0) + d > limit) return showError('Stock insuficiente');
+    if(selfOrderId&&carrito.length===1&&item.cantidad+d<=0)return showError('Para eliminar todo el pedido, usa Cancelar en la cola');
     item.cantidad += d;
     if (item.cantidad <= 0) carrito.splice(idx, 1);
     renderizarCarrito();
 }
-        function eliminarDelCarrito(idx) { if(selfOrderId)return showError('Vacía el carrito para liberar el pedido'); if (isProcessingPayment) return; carrito.splice(idx, 1); renderizarCarrito(); }
+        function eliminarDelCarrito(idx) { if (isProcessingPayment||customizingProduct) return; if(selfOrderId&&carrito.length===1)return showError('Para eliminar todo el pedido, usa Cancelar en la cola'); carrito.splice(idx, 1); renderizarCarrito(); }
         function vaciarCarrito(force = false) { if (isProcessingPayment && !force) return; if(selfOrderId&&!force)sellerQueue?.pause(); carrito = []; selfOrderId=null; renderizarCarrito(); if(!force)sellerQueue?.next(); }
         
         function renderizarCarrito() {
