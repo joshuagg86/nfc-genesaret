@@ -107,8 +107,11 @@ let allRecargas = null;
             }
 
             // Excluir pendientes no cobrados
-            transF = transF.filter(t => t.estadoPago !== 'pendiente');
+            transF = transF.filter(t => !['pendiente','cancelado','anulado'].includes(t.estadoPago));
             filteredTransactions = transF;
+            const known=transF.filter(t=>Number.isFinite(t.costoVenta)&&t.costoVenta>=0),income=known.reduce((a,t)=>a+Number(t.monto||0),0),cost=known.reduce((a,t)=>a+t.costoVenta,0);
+            const currency=n=>new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(n);
+            document.getElementById('profitIncome').textContent=currency(income);document.getElementById('profitCost').textContent=currency(cost);document.getElementById('profitMargin').textContent=known.length?currency(income-cost):'—';document.getElementById('profitCoverage').textContent=known.length+' de '+transF.length+' partidas con costo registrado. No incluye gastos operativos ni mermas.';
 
             let tV=0, tN=0, tE=0, tT=0;
             let prodConteo = {}, vendConteo = {}, porHora = {}, porDia = {};
