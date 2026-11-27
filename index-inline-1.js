@@ -136,6 +136,7 @@ const rolePages={admin:'admin.html',vendedor:'vendedor.html',cocina:'cocina.html
 
             // Usar app secundaria para no cerrar sesión si ya hay una (aunque aquí no afecta tanto)
             const secondaryApp = firebase.initializeApp(firebase.app().options, 'Secondary');
+    if(window.GenesaretLocalTest) secondaryApp.auth().useEmulator('http://127.0.0.1:9099');
             
             secondaryApp.auth().createUserWithEmailAndPassword(email, password)
                 .then(cred => {
