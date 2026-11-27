@@ -806,7 +806,7 @@ function cargarProductosPorEvento() {
                     const amount=docs.reduce((sum,doc)=>sum+Math.round(Number(doc.data().monto)*100),0);
                     if(amount!==Math.round(g.monto*100)) throw Error('El importe cambió');
                     const cash=docs.reduce((n,d)=>n+(d.data().metodoPago==='efectivo'?Math.round(Number(d.data().monto)*100):0),0),shift=cash?await GenesaretCash.read(db,tx,auth.currentUser.uid):null;
-                    GenesaretCash.credit(tx,shift,cash);
+                    const kitchenRows=await GenesaretCheckout.readPendingKitchen(db,tx,docs);GenesaretCheckout.markPendingKitchenPaid(tx,kitchenRows);GenesaretCash.credit(tx,shift,cash);
                     const now=new Date();
                     refs.forEach((ref,i)=>tx.update(ref,{estadoPago:'pagado',fechaVenta:docs[i].data().fechaVenta||docs[i].data().fecha||now,fecha:now,fechaPago:now,...(shift&&docs[i].data().metodoPago==='efectivo'?{turnoCajaId:shift.id}:{})}));
                 });
