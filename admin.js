@@ -2824,7 +2824,7 @@ function actualizarAdminCarritoUI() {
         total += sub;
         html += `
         <div class="carrito-item">
-            <div class="carrito-item-info">
+            <span class="cart-food-icon" aria-hidden="true">${GenesaretCheckout.foodIcon(item.nombre)}</span><div class="carrito-item-info">
                 <div class="carrito-item-nombre">${GenesaretCheckout.escapeHtml(item.nombre)}</div>${(item.notes||[]).map(n=>`<small style="display:block;color:var(--text-muted)">${GenesaretCheckout.escapeHtml(n)}</small>`).join("")}
                 <div class="carrito-item-precio">$${item.precio.toFixed(2)}</div>
             </div>
