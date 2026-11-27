@@ -157,3 +157,25 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .genesaret-smart-modal .swal2-cancel{background:var(--bg-input)!important;color:var(--text-main)!important;border:1px solid var(--border-color);border-radius:14px!important;min-height:48px}
 .recipe-help{color:var(--text-muted);font-size:13px;margin:6px 0 12px}.recipe-section-title{margin-top:24px}.recipe-row{grid-template-columns:minmax(0,2fr) minmax(80px,1fr) auto auto}.recipe-check{display:flex;align-items:center;gap:6px;font-size:12px}.recipe-extra-row{display:grid;grid-template-columns:minmax(0,2fr) minmax(80px,1fr) minmax(80px,1fr) auto;gap:8px;align-items:center;margin:10px 0}.recipe-extra-row input,.recipe-extra-row select{margin:0;min-width:0}.recipe-extra-row button{min-height:44px}
 @media(max-width:650px){.smart-modal-form{grid-template-columns:1fr}.recipe-row,.recipe-extra-row{grid-template-columns:repeat(2,minmax(0,1fr))}.recipe-row button{grid-column:auto}}
+
+/* Blue glass design system — translucent surfaces and vivid actions */
+.screen-admin,.screen-vendedor{--glass-blue:#1277f5;--glass-sky:#1da4ee;--glass-pale:#bfe8fa;--glass-gradient:linear-gradient(135deg,#0964dc,#168dea 60%,#209fe7);--app-gradient:var(--glass-gradient)}
+.screen-admin:not(.light-mode),.screen-vendedor:not(.light-mode){
+ --bg-body:radial-gradient(ellipse at 8% 5%,#135fa0 0%,transparent 47%),radial-gradient(ellipse at 98% 72%,#10477a 0%,transparent 49%),linear-gradient(145deg,#09243f,#071426 70%);
+ --bg-card:#102d48;--bg-header:#102d48;--bg-input:#10283e;--bg-item-list:#163b57;--border-color:#82caff38;--text-main:#f4faff;--text-muted:#b6d4eb;--color-precio:#83d5ff;--app-accent:#54bcff;--app-gradient:var(--glass-gradient);
+}
+.screen-admin:not(.light-mode) .container>header,.screen-vendedor:not(.light-mode) .container>header,.screen-admin:not(.light-mode) .native-tabs,.screen-vendedor:not(.light-mode) .container>.sub-nav-container{background:rgba(12,39,65,.82)!important;backdrop-filter:blur(18px) saturate(145%);-webkit-backdrop-filter:blur(18px) saturate(145%);border:1px solid #98d6ff38!important}
+.screen-admin:not(.light-mode) :is(.card,.overview-panel,.overview-secondary,.smart-card,.smart-tile,.overview-kpi,.shell-menu button,.shell-shortcuts button),.screen-vendedor:not(.light-mode) :is(.card,.pos-right){background:linear-gradient(145deg,rgba(80,166,232,.20),rgba(16,40,64,.83));border:1px solid #9ed9ff38;border-radius:24px;box-shadow:inset 0 1px 0 #d9f3ff16,0 12px 30px #03142640}
+.screen-admin:not(.light-mode) .overview-kpi.ventas,.screen-admin:not(.light-mode) .shell-shortcuts button:first-child{background:var(--glass-gradient);color:#fff}
+.screen-admin:not(.light-mode) .producto-card,.screen-vendedor:not(.light-mode) .producto-card{background:linear-gradient(145deg,#328be34d,#153b5a90);border:1px solid #8ad3ff55;border-radius:22px;box-shadow:inset 0 1px 0 #d4f3ff20,0 8px 20px #04162b45}
+.screen-admin .producto-card,.screen-vendedor .producto-card{transition:transform .18s,box-shadow .18s,border-color .18s}
+.screen-admin .prod-emoji,.screen-vendedor .prod-emoji{font-size:40px;line-height:1.2;padding:10px;display:grid;place-items:center;min-height:64px}
+.screen-admin .prod-nombre,.screen-vendedor .prod-nombre{font-weight:750;letter-spacing:-.015em}
+.screen-admin .prod-precio,.screen-vendedor .prod-precio{font-size:clamp(20px,2vw,26px);font-weight:800;letter-spacing:-.035em}
+.screen-admin .btn-primary,.screen-vendedor .btn-primary,.screen-admin .cat-tab.active,.screen-vendedor .cat-tab.active{background:var(--glass-gradient)!important;color:#fff!important;box-shadow:0 6px 18px #0879ec35}
+.screen-admin .shell-menu button>i:first-child,.screen-admin .shell-shortcuts i{font-size:25px}
+.screen-vendedor:not(.light-mode) .carrito-header{background:linear-gradient(120deg,#2069ad66,#16344e);border-radius:22px 22px 0 0}
+.screen-vendedor:not(.light-mode) .pm-btn.active{background:#177ce440;border-color:#71caff;color:#d5f1ff}
+.screen-admin:not(.light-mode) .genesaret-smart-modal,.screen-vendedor:not(.light-mode) .genesaret-smart-modal{background:linear-gradient(145deg,#194d76,#10283f)!important;border:1px solid #a6dcff55;box-shadow:0 24px 70px #00142b99,inset 0 1px 0 #e0f7ff33}
+@media(hover:hover){.screen-admin .producto-card:hover,.screen-vendedor .producto-card:hover{transform:translateY(-3px);border-color:#71caff;box-shadow:0 12px 26px #0879ec38}}
+@media(prefers-reduced-motion:reduce){.screen-admin .producto-card,.screen-vendedor .producto-card{transition:none;transform:none!important}}
