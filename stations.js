@@ -31,6 +31,9 @@ async function open(){
  stop=db.collection('estaciones_venta').onSnapshot(snap=>{
  const list=$('stationList');list.replaceChildren();
  for(const d of snap.docs){const s=d.data(),card=node('article',null,'smart-card');card.append(node('h3',s.nombre),node('strong',d.id,'smart-amount'),node('small',(events.docs.find(x=>x.id===s.eventId)?.data().nombre||'Evento')+' · '+(users.docs.find(x=>x.id===s.vendedorId)?.data().name||'Caja')),node('small',s.activo?'Habilitada':'Deshabilitada'));
+ const auto=node('div',null,'station-autoservice');auto.append(node('h3','Autoservicio · '+s.nombre),node('small','Acceso independiente para esta estación'));
+ const url='autoservicio.html?estacion='+encodeURIComponent(d.id)+'&evento='+encodeURIComponent(s.eventId);
+ const launch=node('a','Abrir Autoservicio','btn-primary');launch.href=url;launch.target='_blank';launch.rel='noopener';launch.style.cssText='display:block;text-align:center;text-decoration:none;padding:12px;border-radius:12px';if(s.activo){auto.append(launch,btn('Copiar enlace',async()=>{try{await navigator.clipboard.writeText(new URL(url,location.href).href);showSuccess('Enlace copiado');}catch(e){await Swal.fire({title:'Enlace de Autoservicio',text:new URL(url,location.href).href});}}));}else auto.append(node('small','Estación deshabilitada'));card.append(auto);
  card.append(btn(s.activo?'Deshabilitar':'Habilitar',async()=>{try{await d.ref.update({activo:!s.activo});}catch(e){showError(e.message);}}));list.append(card);}
  if(!list.children.length)list.append(node('p','Crea tu primera estación.'));
  },e=>{$('stationList').textContent=e.message;stop=null;});
