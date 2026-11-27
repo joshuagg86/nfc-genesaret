@@ -1617,16 +1617,10 @@ body.light-mode .mobile-menu-header h2 {
     z-index: 3000 !important; /* Más alto que el modal (que suele ser 2000) */
 }
 
-/* --- OCULTAR POS ADMIN TEMPORALMENTE --- */
-/* Esto busca cualquier botón que abra el POS y lo desaparece */
-[onclick="abrirPOSAdmin()"] {
-    display: none !important;
-}
-
-/* Por seguridad, ocultamos también el modal para que no aparezca ni por error */
-#modalPOSAdmin {
-    display: none !important;
-}
+/* POS Admin: show the overlay only when explicitly opened. */
+#modalPOSAdmin:not(.active) { display: none; }
+#modalPOSAdmin.active { display: flex; }
+.screen-admin .legacy-pos-fab { display: none !important; }
 
 /* =========================================================
    UI MÓVIL ESTILO APP POS (BOTTOM DOCK DINÁMICO)
