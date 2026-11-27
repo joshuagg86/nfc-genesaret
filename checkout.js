@@ -151,6 +151,15 @@
             for(const {p,qty} of productTotals.values())if(!p.esInfinito&&(!Number.isFinite(Number(p.stock))||Number(p.stock)<qty))throw Error('Stock insuficiente: '+p.nombre);
             const supplies=await Promise.all([...supplyTotals].map(async ([id,qty])=>({id,qty,doc:await tx.get(db.collection('insumos').doc(id))})));
             for(const {doc,qty} of supplies)if(!doc.exists||doc.data().eventId!==eventId||!Number.isSafeInteger(qty)||!Number.isSafeInteger(doc.data().stock)||doc.data().stock<qty)throw Error('Insumo insuficiente: '+(doc.data()?.nombre||'ingrediente'));
+            const costs=new Map(supplies.map(({id,doc})=>[id,doc.data().costPerUnit]));
+            const costSnapshots=resolved.map((detail,index)=>{
+                const p=products[index].data(),i=items[index];
+                // Prepared batches and purchased products need an explicit finished-unit cost.
+                const base=p.produccionPorLotes||!p.recetaActiva? p.costoUnitario:null;
+                if((p.produccionPorLotes||!p.recetaActiva)&&(!Number.isFinite(base)||base<0))return null;
+                if(detail.usage.some(l=>!Number.isFinite(costs.get(l.id))||costs.get(l.id)<0))return null;
+                return Math.round(((base||0)+detail.usage.reduce((a,l)=>a+l.amount*costs.get(l.id),0))*i.cantidad*100)/100;
+            });
             for(const {p,ref,qty} of productTotals.values())if(!p.esInfinito)tx.update(ref,{stock:Number(p.stock)-qty});
             for(const {id,doc,qty} of supplies){const v=doc.data(),stock=v.stock-qty;tx.update(doc.ref,{stock});tx.set(db.collection('movimientos_insumos').doc(),{eventId,insumoId:id,nombre:v.nombre,unit:v.unit,delta:-qty,stockFinal:stock,motivo:'Venta',usuarioId:user.uid,fecha:new Date(),carritoId});}
             if(orderRef){
@@ -164,7 +173,7 @@
             products.forEach((doc,index) => {
                 const i = items[index], p = doc.data();
                 const detail=resolved[index];
-                tx.set(sales[index],{eventId,...(shift?{turnoCajaId:shift.id}:{}),...(selfOrderId?{pedidoAutoservicioId:selfOrderId}:{}),pulseraId,pulsera:wallet ? wallet.data().nombre : pulseraNombre,articulo:p.nombre,articuloId:i.id,cantidad:i.cantidad,lineasVenta:items.length,descuentoProducto:!p.esInfinito?i.cantidad:0,descuentoInsumos:detail.usage.map(l=>({id:l.id,amount:l.amount*i.cantidad})),requiereCocina:p.requiereCocina===true,personalizacion:detail.notes,precioUnitario:detail.price/100,monto:detail.price*i.cantidad/100,saldoAnterior:before/100,saldoNuevo:after/100,vendedor:profile.data().name || user.email || 'Vendedor',vendedorId:user.uid,fecha:new Date(),fechaVenta:new Date(),fechaPago:estado==='pagado'?new Date():null,metodoPago:metodo,estadoPago:estado,carritoId,...(numbered?{numeroPedido}:{}),ventaFueraDePuesto:!!(p.vendedorAsignadoId && p.vendedorAsignadoId !== 'todos' && p.vendedorAsignadoId !== user.uid)});
+                tx.set(sales[index],{eventId,...(shift?{turnoCajaId:shift.id}:{}),...(selfOrderId?{pedidoAutoservicioId:selfOrderId}:{}),pulseraId,pulsera:wallet ? wallet.data().nombre : pulseraNombre,articulo:p.nombre,articuloId:i.id,cantidad:i.cantidad,lineasVenta:items.length,descuentoProducto:!p.esInfinito?i.cantidad:0,descuentoInsumos:detail.usage.map(l=>({id:l.id,amount:l.amount*i.cantidad})),requiereCocina:p.requiereCocina===true,personalizacion:detail.notes,costoVenta:costSnapshots[index],precioUnitario:detail.price/100,monto:detail.price*i.cantidad/100,saldoAnterior:before/100,saldoNuevo:after/100,vendedor:profile.data().name || user.email || 'Vendedor',vendedorId:user.uid,fecha:new Date(),fechaVenta:new Date(),fechaPago:estado==='pagado'?new Date():null,metodoPago:metodo,estadoPago:estado,carritoId,...(numbered?{numeroPedido}:{}),ventaFueraDePuesto:!!(p.vendedorAsignadoId && p.vendedorAsignadoId !== 'todos' && p.vendedorAsignadoId !== user.uid)});
             });
             return {saldoNuevo:after/100,numeroPedido};
         });
