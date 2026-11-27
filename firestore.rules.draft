@@ -62,7 +62,7 @@ service cloud.firestore {
   match /transacciones/{id} {
    allow get: if admin() || kitchen() || display() || (seller() && (resource==null || resource.data.vendedorId==uid()));
    allow list: if admin() || kitchen() || display() || (seller() && resource.data.vendedorId==uid());
-   allow create: if cash() && request.resource.data.vendedorId==uid() && activeEvent(request.resource.data.eventId) && request.resource.data.cantidad is int && request.resource.data.cantidad>0 && request.resource.data.precioUnitario is number && request.resource.data.precioUnitario>0 && request.resource.data.monto==request.resource.data.precioUnitario*request.resource.data.cantidad && request.resource.data.estadoPago in ['pagado','pendiente'] && request.resource.data.metodoPago in ['nfc','efectivo','transferencia'] && !(request.resource.data.estadoPago=='pendiente' && request.resource.data.metodoPago=='nfc');
+   allow create: if cash() && request.resource.data.vendedorId==uid() && activeEvent(request.resource.data.eventId) && request.resource.data.cantidad is int && request.resource.data.cantidad>0 && request.resource.data.precioUnitario is number && request.resource.data.precioUnitario>0 && request.resource.data.monto is number && request.resource.data.monto>0 && request.resource.data.monto>=request.resource.data.precioUnitario*request.resource.data.cantidad-0.000001 && request.resource.data.monto<=request.resource.data.precioUnitario*request.resource.data.cantidad+0.000001 && request.resource.data.estadoPago in ['pagado','pendiente'] && request.resource.data.metodoPago in ['nfc','efectivo','transferencia'] && !(request.resource.data.estadoPago=='pendiente' && request.resource.data.metodoPago=='nfc');
    allow update: if admin() || (seller() && resource.data.vendedorId==uid() && resource.data.estadoPago=='pendiente' && request.resource.data.estadoPago=='pagado' && changed(['estadoPago','fechaVenta','fecha','fechaPago','turnoCajaId']));
    allow delete: if false;
   }
@@ -76,7 +76,7 @@ service cloud.firestore {
   match /estaciones_codigos/{id} { allow get: if admin() || kiosk(); allow list, write: if admin(); }
   match /pedidos_autoservicio/{id} {
    allow get: if admin() || (seller() && resource.data.vendedorId==uid()) || (kiosk() && (resource==null || resource.data.creadoPor==uid()));
-   allow list: if admin() || (seller() && station(resource.data.estacionId).vendedorId==uid());
+   allow list: if admin() || (seller() && resource.data.vendedorId==uid());
    allow create: if (kiosk() || admin()) && request.resource.data.keys().hasOnly(['eventId','items','total','estado','estacionId','vendedorId','creadoPor','fecha']) && request.resource.data.creadoPor==uid() && request.resource.data.estado=='pendiente' && request.resource.data.fecha==request.time && request.resource.data.items is list && request.resource.data.items.size()>0 && request.resource.data.items.size()<=100 && request.resource.data.total is number && request.resource.data.total>0 && validStation(request.resource.data) && activeEvent(request.resource.data.eventId);
    allow update: if (admin() || seller()) && resource.data.vendedorId==uid() && resource.data.estado=='pendiente' && validStation(resource.data) && ((request.resource.data.estado=='cobrado' && request.resource.data.cobradoPor==uid() && changed(['estado','carritoId','numeroPedido','cobradoPor','cobradoAt','itemsFinales','totalFinal','modificadoEnCaja'])) || (request.resource.data.estado=='cancelado' && request.resource.data.canceladoPor==uid() && changed(['estado','canceladoPor','canceladoAt'])));
   }
