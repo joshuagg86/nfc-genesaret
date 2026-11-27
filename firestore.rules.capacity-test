@@ -1,0 +1,223 @@
+rules_version = '2';
+service cloud.firestore {
+ match /databases/{database}/documents {
+  function signed() { return request.auth != null; }
+  function uid() { return request.auth.uid; }
+  function profile() { return get(/databases/$(database)/documents/usuarios/$(uid())).data; }
+  function role(roles) { return signed() && activeRole(profile(),roles); }
+  function activeRole(p,roles) { return p.get('activo',false)==true && p.role in roles; }
+  function admin() { return role(['admin','administrador']); }
+  function seller() { return role(['vendedor']); }
+  function cash() { return admin() || seller(); }
+  function kiosk() { return role(['autoservicio']); }
+  function kitchen() { return role(['cocina']); }
+  function display() { return role(['tv']); }
+  function staff() { return role(['admin','administrador','vendedor','autoservicio','cocina','tv']); }
+  function activeEvent(id) { return get(/databases/$(database)/documents/eventos/$(id)).data.activo == true; }
+  function changed(keys) { return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys); }
+  function station(id) { return get(/databases/$(database)/documents/estaciones_venta/$(id)).data; }
+  function validStation(d) { return station(d.estacionId).activo == true && station(d.estacionId).vendedorId == d.vendedorId && station(d.estacionId).eventId == d.eventId; }
+  // Experimental integrity rules: bounded simple-product checkout, no recipes.
+  function salePath(id) { return /databases/$(database)/documents/ventas_integridad/$(id); }
+  function linePath(id) { return /databases/$(database)/documents/transacciones/$(id); }
+  function productPath(id) { return /databases/$(database)/documents/articulos/$(id); }
+  function walletPath(id) { return /databases/$(database)/documents/pulseras/$(id); }
+  function newSale(id) { return id is string && !exists(salePath(id)) && existsAfter(salePath(id)) && getAfter(salePath(id)).data.vendedorId==uid(); }
+  function closeMoney(a,b) { return a>=b-0.000001 && a<=b+0.000001; }
+  function supplyPath(id) { return /databases/$(database)/documents/insumos/$(id); }
+  function movementPath(id) { return /databases/$(database)/documents/movimientos_insumos/$(id); }
+  function usageAmount(u,i) {
+    return (u.size()>0 && u[0].id==i ? u[0].amount : 0) + (u.size()>1 && u[1].id==i ? u[1].amount : 0) + (u.size()>2 && u[2].id==i ? u[2].amount : 0) + (u.size()>3 && u[3].id==i ? u[3].amount : 0) + (u.size()>4 && u[4].id==i ? u[4].amount : 0) + (u.size()>5 && u[5].id==i ? u[5].amount : 0);
+  }
+  function lineUsage(s,id,index,i) {
+    return s.lineas>index ? usageAmount(getAfter(linePath(id+'_'+string(index))).data.descuentoInsumos,i) : 0;
+  }
+  // The supply update rule verifies exact quantity and movement. Here we
+  // require that each selected supply was actually updated in this commit.
+  function supplyTouched(i,id) {
+    return get(supplyPath(i)).data.get('ultimaVentaId',null)!=id &&
+      getAfter(supplyPath(i)).data.ultimaVentaId==id;
+  }
+  // Admin-published combinations. The snapshot must match the current recipe and price.
+  function entryMatches(u,v,j,qty,id) {
+    return v.size()<=j || (u[j].id==v[j].id && u[j].amount==v[j].amount*qty &&
+      u[j].keys().hasOnly(['id','amount']) && supplyTouched(v[j].id,id));
+  }
+  function recipeValid(p,l,id) {
+    let catalog=p.catalogoIntegridad;
+    let v=catalog.variants[l.varianteIntegridad];
+    let u=l.descuentoInsumos;
+    return p.get('produccionPorLotes',false)==false &&
+      catalog.recipe==p.recetaActiva && catalog.price==p.precio &&
+      v.selection==l.seleccionIntegridad && closeMoney(l.precioUnitario,v.price) &&
+      closeMoney(l.monto,l.precioUnitario*l.cantidad) &&
+      u is list && u.size()==v.usage.size() && u.size()<=6 &&
+      entryMatches(u,v.usage,0,l.cantidad,id) &&
+      entryMatches(u,v.usage,1,l.cantidad,id) &&
+      entryMatches(u,v.usage,2,l.cantidad,id) &&
+      entryMatches(u,v.usage,3,l.cantidad,id) &&
+      entryMatches(u,v.usage,4,l.cantidad,id) &&
+      entryMatches(u,v.usage,5,l.cantidad,id);
+  }
+  function linkedSupply(i) {
+    let id=request.resource.data.ultimaVentaId;
+    let sale=getAfter(salePath(id)).data;
+    let n=lineUsage(sale,id,0,i)+lineUsage(sale,id,1,i)+lineUsage(sale,id,2,i)+lineUsage(sale,id,3,i)+lineUsage(sale,id,4,i)+lineUsage(sale,id,5,i)+lineUsage(sale,id,6,i)+lineUsage(sale,id,7,i);
+    let m=getAfter(movementPath(id+'_'+i)).data;
+    return newSale(id) && resource.data.eventId==sale.eventId && n is int && n>0 &&
+      request.resource.data.stock==resource.data.stock-n && request.resource.data.stock>=0 &&
+      m.carritoId==id && m.insumoId==i && m.usuarioId==uid() && m.eventId==resource.data.eventId && m.delta==-n && m.stockFinal==request.resource.data.stock && m.motivo=='Venta';
+  }
+  function linkedMovement(id) {
+    let m=request.resource.data;
+    let p=get(supplyPath(m.insumoId)).data;
+    let q=getAfter(supplyPath(m.insumoId)).data;
+    return id==m.carritoId+'_'+m.insumoId && newSale(m.carritoId) && q.ultimaVentaId==m.carritoId && p.get('ultimaVentaId',null)!=m.carritoId &&
+      m.usuarioId==uid() && m.eventId==p.eventId && m.motivo=='Venta' && m.delta is int && m.delta<0 &&
+      m.delta==q.stock-p.stock && m.stockFinal==q.stock;
+  }
+  function validLine(s,id) {
+    let l=request.resource.data;
+    let p=get(productPath(l.articuloId)).data;
+    return l.carritoId==id && l.lineasVenta==s.lineas && l.vendedorId==uid() && l.eventId==s.eventId && l.metodoPago==s.metodoPago && l.estadoPago==s.estadoPago && !(l.estadoPago=='pendiente' && l.metodoPago=='nfc') && l.pulseraId==s.pulseraId && l.cantidad is int && l.cantidad>0 && l.cantidad<=100 && p.eventId==s.eventId && (p.get('recetaActiva',null)==null ? (closeMoney(l.precioUnitario,p.precio) && closeMoney(l.monto,p.precio*l.cantidad) && l.descuentoInsumos.size()==0) : recipeValid(p,l,id)) && l.monto>0 && (p.get('esInfinito',false)==true ? l.descuentoProducto==0 : (l.descuentoProducto==l.cantidad && p.get('ultimaVentaId',null)!=id && getAfter(productPath(l.articuloId)).data.ultimaVentaId==id));
+  }
+  function lineAmount(lid) { return getAfter(linePath(lid)).data.monto; }
+  function freshLine(lid) { return !exists(linePath(lid)) && existsAfter(linePath(lid)); }
+  function validLines(s,id) {
+    return s.lineas>=1 && s.lineas<=8 && freshLine(id+'_0') &&
+      (s.lineas<=1 || freshLine(id+'_1')) &&
+      (s.lineas<=2 || freshLine(id+'_2')) &&
+      (s.lineas<=3 || freshLine(id+'_3')) &&
+      (s.lineas<=4 || freshLine(id+'_4')) &&
+      (s.lineas<=5 || freshLine(id+'_5')) &&
+      (s.lineas<=6 || freshLine(id+'_6')) &&
+      (s.lineas<=7 || freshLine(id+'_7')) &&
+      closeMoney(s.total,lineAmount(id+'_0')+(s.lineas>1?lineAmount(id+'_1'):0)+(s.lineas>2?lineAmount(id+'_2'):0)+(s.lineas>3?lineAmount(id+'_3'):0)+(s.lineas>4?lineAmount(id+'_4'):0)+(s.lineas>5?lineAmount(id+'_5'):0)+(s.lineas>6?lineAmount(id+'_6'):0)+(s.lineas>7?lineAmount(id+'_7'):0));
+  }
+  function validSellerLine(id) {
+    let l=request.resource.data;
+    let sid=l.carritoId;
+    let s=getAfter(salePath(sid)).data;
+    return newSale(sid) && ((s.lineas>0 && id==sid+'_0') || (s.lineas>1 && id==sid+'_1') || (s.lineas>2 && id==sid+'_2') || (s.lineas>3 && id==sid+'_3') || (s.lineas>4 && id==sid+'_4') || (s.lineas>5 && id==sid+'_5') || (s.lineas>6 && id==sid+'_6') || (s.lineas>7 && id==sid+'_7')) && validLine(s,sid);
+  }
+  function validWallet(s,id) {
+    return s.metodoPago!='nfc' || (s.estadoPago=='pagado' && s.pulseraId is string && get(walletPath(s.pulseraId)).data.get('bloqueada',false)==false && get(walletPath(s.pulseraId)).data.get('activo',true)==true && closeMoney(getAfter(walletPath(s.pulseraId)).data.saldoActual,get(walletPath(s.pulseraId)).data.saldoActual-s.total) && getAfter(walletPath(s.pulseraId)).data.ultimaVentaId==id);
+  }
+  function productLineQty(s,sid,index,id) {
+    return s.lineas>index ? matchingProductQty(getAfter(linePath(sid+'_'+string(index))).data,id) : 0;
+  }
+  function matchingProductQty(l,id) {
+    return l.articuloId==id ? l.descuentoProducto : 0;
+  }
+  function linkedProduct(id) {
+    let sid=request.resource.data.ultimaVentaId;
+    let s=getAfter(salePath(sid)).data;
+    let n=productLineQty(s,sid,0,id)+productLineQty(s,sid,1,id)+productLineQty(s,sid,2,id)+productLineQty(s,sid,3,id)+productLineQty(s,sid,4,id)+productLineQty(s,sid,5,id)+productLineQty(s,sid,6,id)+productLineQty(s,sid,7,id);
+    return resource.data.get('esInfinito',false)==false && resource.data.eventId==s.eventId &&
+      newSale(sid) && n is int && n>0 && request.resource.data.stock==resource.data.stock-n;
+  }
+  function linkedConfirmation(eventId,sellerId) {
+    let d=request.resource.data;
+    let s=getAfter(salePath(d.carritoId)).data;
+    return newSale(d.carritoId) && s.eventId==eventId && s.vendedorId==sellerId && s.estadoPago=='pagado' && closeMoney(d.total,s.total);
+  }
+  match /ventas_integridad/{id} {
+    allow get: if admin() || (seller() && (resource==null || resource.data.vendedorId==uid()));
+    allow create: if seller() && request.resource.data.keys().hasOnly(['vendedorId','eventId','metodoPago','estadoPago','pulseraId','lineas','total']) && request.resource.data.vendedorId==uid() && activeEvent(request.resource.data.eventId) && request.resource.data.lineas is int && request.resource.data.total is number && request.resource.data.total>0 && request.resource.data.metodoPago in ['efectivo','transferencia','nfc'] && request.resource.data.estadoPago in ['pagado','pendiente'] && validLines(request.resource.data,id) && validWallet(request.resource.data,id);
+  }
+  match /usuarios/{id} {
+   allow get: if signed() && (uid()==id || admin());
+   allow list, create, update, delete: if admin();
+  }
+  match /eventos/{id} {
+   allow read: if staff();
+   allow write: if admin();
+   match /pedidos_cocina/{order} {
+    allow get: if admin() || kitchen() || display() || (seller() && (resource==null || resource.data.vendedorId==uid()));
+    allow list: if admin() || kitchen() || display();
+    allow create: if cash() && activeEvent(id) && request.resource.data.keys().hasOnly(['items','numeroPedido','fecha','estado','vendedorId','pagoPendiente']) && request.resource.data.vendedorId==uid() && request.resource.data.fecha==request.time && request.resource.data.estado=='activo' && request.resource.data.items is list && request.resource.data.items.size()>0 && request.resource.data.items.size()<=100 && request.resource.data.numeroPedido is int && request.resource.data.pagoPendiente is bool;
+    allow update: if admin() && changed(['estado','pagoPendiente']) || (seller() && resource.data.vendedorId==uid() && changed(['pagoPendiente']) && request.resource.data.pagoPendiente==false);
+   }
+   match /confirmaciones_caja/{sellerId} {
+    allow get: if admin() || kiosk() || (seller() && sellerId==uid());
+    allow create, update: if cash() && (admin() || linkedConfirmation(id,sellerId)) && sellerId==uid() && activeEvent(id) && request.resource.data.keys().hasOnly(['carritoId','total','kitchen','numeroPedido','fecha','vendedorId']) && request.resource.data.vendedorId==uid() && request.resource.data.fecha==request.time && request.resource.data.total is number && request.resource.data.total>0 && request.resource.data.kitchen is bool && request.resource.data.numeroPedido is int;
+   }
+   match /contadores/{counter} {
+    allow get: if cash();
+    allow create: if cash() && activeEvent(id) && counter=='pedidos' && request.resource.data.keys().hasOnly(['ultimo']) && request.resource.data.ultimo==1;
+    allow update: if cash() && activeEvent(id) && counter=='pedidos' && changed(['ultimo']) && request.resource.data.ultimo==resource.data.ultimo+1;
+    allow delete: if admin();
+   }
+   match /preparacion_pedidos/{order} {
+    allow read: if admin() || kitchen() || display();
+    allow create: if (admin() || kitchen()) && activeEvent(id) && request.resource.data.keys().hasOnly(['estado','updatedAt','updatedBy']) && request.resource.data.estado=='preparando' && request.resource.data.updatedBy==uid() && request.resource.data.updatedAt==request.time;
+    allow update: if (admin() || kitchen()) && activeEvent(id) && changed(['estado','updatedAt','updatedBy']) && request.resource.data.updatedBy==uid() && request.resource.data.updatedAt==request.time && ((resource.data.estado=='pendiente' && request.resource.data.estado=='preparando') || (resource.data.estado=='preparando' && request.resource.data.estado=='listo') || (resource.data.estado=='listo' && request.resource.data.estado=='entregado'));
+   }
+  }
+  match /articulos/{id} {
+   allow read: if cash() || kiosk();
+   allow create, delete: if admin();
+   allow update: if admin() || (seller() && activeEvent(resource.data.eventId) && changed(['stock','ultimaVentaId']) && linkedProduct(id) && request.resource.data.stock is number && request.resource.data.stock>=0 && request.resource.data.stock<=resource.data.stock);
+  }
+  match /insumos/{id} {
+   allow get: if cash() || kiosk();
+   allow list, create, delete: if admin();
+   allow update: if admin() || (seller() && changed(['stock','ultimaVentaId']) && linkedSupply(id));
+  }
+  match /categorias/{id} { allow read: if cash() || kiosk(); allow write: if admin(); }
+  match /recetas_borrador/{id} { allow read, write: if admin(); }
+  match /lotes_produccion/{id} { allow read, write: if admin(); }
+  match /bitacora_stock/{id} { allow read, write: if admin(); }
+  match /movimientos_insumos/{id} {
+   allow read, update, delete: if admin();
+   allow create: if admin() || (seller() && linkedMovement(id));
+  }
+  match /pulseras/{id} {
+   allow read: if cash();
+   allow create, delete: if admin();
+   allow update: if admin() || (seller() && changed(['saldoActual','ultimaVentaId']) && newSale(request.resource.data.ultimaVentaId) && getAfter(salePath(request.resource.data.ultimaVentaId)).data.pulseraId==id && getAfter(salePath(request.resource.data.ultimaVentaId)).data.metodoPago=='nfc' && resource.data.get('bloqueada',false)==false && resource.data.get('activo',true)==true && request.resource.data.saldoActual is number && request.resource.data.saldoActual>=0 && request.resource.data.saldoActual<=resource.data.saldoActual);
+  }
+  match /recargas/{id} { allow read, write: if admin(); }
+  match /transacciones/{id} {
+   allow get: if admin() || (seller() && (resource==null || resource.data.vendedorId==uid()));
+   allow list: if admin() || (seller() && resource.data.vendedorId==uid());
+   allow create: if (seller() && validSellerLine(id)) || (admin() && request.resource.data.vendedorId==uid() && activeEvent(request.resource.data.eventId) && request.resource.data.cantidad is int && request.resource.data.cantidad>0 && request.resource.data.precioUnitario is number && request.resource.data.precioUnitario>0 && closeMoney(request.resource.data.monto,request.resource.data.precioUnitario*request.resource.data.cantidad) && request.resource.data.estadoPago in ['pagado','pendiente'] && request.resource.data.metodoPago in ['nfc','efectivo','transferencia'] && !(request.resource.data.estadoPago=='pendiente' && request.resource.data.metodoPago=='nfc'));
+   allow update: if admin() || (seller() && resource.data.vendedorId==uid() && resource.data.estadoPago=='pendiente' && request.resource.data.estadoPago=='pagado' && changed(['estadoPago','fechaVenta','fecha','fechaPago','turnoCajaId']));
+   allow delete: if false;
+  }
+  match /anulaciones/{id} { allow read, create: if admin(); }
+  match /estaciones_venta/{id} {
+   allow get: if cash() || kiosk();
+   allow list: if admin() || (seller() && resource.data.vendedorId==uid());
+   allow write: if admin();
+  }
+  match /estaciones_asignaciones/{id} { allow read, write: if admin(); }
+  match /estaciones_codigos/{id} { allow get: if admin() || kiosk(); allow list, write: if admin(); }
+  match /pedidos_autoservicio/{id} {
+   allow get: if admin() || (seller() && resource.data.vendedorId==uid()) || (kiosk() && (resource==null || resource.data.creadoPor==uid()));
+   allow list: if admin() || (seller() && resource.data.vendedorId==uid());
+   allow create: if (kiosk() || admin()) && request.resource.data.keys().hasOnly(['eventId','items','total','estado','estacionId','vendedorId','creadoPor','fecha']) && request.resource.data.creadoPor==uid() && request.resource.data.estado=='pendiente' && request.resource.data.fecha==request.time && request.resource.data.items is list && request.resource.data.items.size()>0 && request.resource.data.items.size()<=100 && request.resource.data.total is number && request.resource.data.total>0 && validStation(request.resource.data) && activeEvent(request.resource.data.eventId);
+   allow update: if (admin() || seller()) && resource.data.vendedorId==uid() && resource.data.estado=='pendiente' && validStation(resource.data) && ((request.resource.data.estado=='cobrado' && request.resource.data.cobradoPor==uid() && changed(['estado','carritoId','numeroPedido','cobradoPor','cobradoAt','itemsFinales','totalFinal','modificadoEnCaja'])) || (request.resource.data.estado=='cancelado' && request.resource.data.canceladoPor==uid() && changed(['estado','canceladoPor','canceladoAt'])));
+  }
+  match /estaciones_presencia/{id} {
+   allow read: if admin();
+   allow create, update: if (cash() || kiosk()) && request.resource.data.keys().hasOnly(['stationId','role','uid','code','lastSeen']) && request.resource.data.uid==uid() && request.resource.data.lastSeen==request.time && (resource==null || resource.data.uid==uid()) && station(request.resource.data.stationId).activo==true && ((request.resource.data.role=='caja' && cash() && station(request.resource.data.stationId).vendedorId==uid()) || (request.resource.data.role=='autoservicio' && (kiosk() || admin()) && request.resource.data.code==station(request.resource.data.stationId).get('codigoVinculacion',request.resource.data.stationId)));
+   allow delete: if admin() || (staff() && resource.data.uid==uid());
+  }
+  match /cajas_activas/{id} {
+   allow get: if admin() || (seller() && uid()==id);
+   allow list: if admin();
+   allow create, update: if cash() && uid()==id && request.resource.data.keys().hasOnly(['turnoId','ultimoTurnoId']);
+  }
+  match /turnos_caja/{id} {
+   allow get, list: if admin() || (seller() && resource.data.vendedorId==uid());
+   allow create: if cash() && request.resource.data.vendedorId==uid() && request.resource.data.estado=='abierto' && request.resource.data.fondoInicial is int && request.resource.data.fondoInicial>=0 && request.resource.data.efectivoVentas==0 && request.resource.data.entradas==0 && request.resource.data.salidas==0 && request.resource.data.abiertoAt==request.time;
+   allow update: if cash() && (admin() || resource.data.vendedorId==uid()) && resource.data.estado=='abierto' && ((request.resource.data.estado=='abierto' && changed(['efectivoVentas','entradas','salidas'])) || (request.resource.data.estado=='cerrado' && changed(['estado','efectivoEsperado','efectivoContado','diferencia','cerradoAt']) && request.resource.data.cerradoAt==request.time && request.resource.data.efectivoEsperado==resource.data.fondoInicial+resource.data.efectivoVentas+resource.data.entradas-resource.data.salidas && request.resource.data.efectivoContado is int && request.resource.data.efectivoContado>=0 && request.resource.data.diferencia==request.resource.data.efectivoContado-request.resource.data.efectivoEsperado));
+   match /movimientos/{movement} {
+    allow read: if admin() || (seller() && get(/databases/$(database)/documents/turnos_caja/$(id)).data.vendedorId==uid());
+    allow create: if cash() && get(/databases/$(database)/documents/turnos_caja/$(id)).data.vendedorId==uid() && get(/databases/$(database)/documents/turnos_caja/$(id)).data.estado=='abierto' && request.resource.data.usuarioId==uid() && request.resource.data.tipo in ['entradas','salidas'] && request.resource.data.importe is int && request.resource.data.importe>0 && request.resource.data.fecha==request.time;
+   }
+  }
+  match /{document=**} { allow read, write: if false; }
+ }
+}
