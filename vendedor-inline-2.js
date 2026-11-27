@@ -225,6 +225,7 @@ function showError(message) {
             // 2. --- LÓGICA DE ACTUALIZACIÓN AUTOMÁTICA ---
             // Si entras a "Mi Corte", recargamos las transacciones al instante.
             if (tabId === 'corte') {
+                GenesaretCash.mount('sellerCashTurn');
                 // Pequeño indicador visual de que está actualizando
                 const lista = document.getElementById('transactionsList');
                 if(lista) lista.style.opacity = '0.5'; 
@@ -804,8 +805,10 @@ function cargarProductosPorEvento() {
                     if(docs.some(doc=>!doc.exists||doc.data().estadoPago!=='pendiente'||doc.data().vendedorId!==auth.currentUser?.uid)) throw Error('La cuenta cambió o ya fue cobrada');
                     const amount=docs.reduce((sum,doc)=>sum+Math.round(Number(doc.data().monto)*100),0);
                     if(amount!==Math.round(g.monto*100)) throw Error('El importe cambió');
+                    const cash=docs.reduce((n,d)=>n+(d.data().metodoPago==='efectivo'?Math.round(Number(d.data().monto)*100):0),0),shift=cash?await GenesaretCash.read(db,tx,auth.currentUser.uid):null;
+                    GenesaretCash.credit(tx,shift,cash);
                     const now=new Date();
-                    refs.forEach((ref,i)=>tx.update(ref,{estadoPago:'pagado',fechaVenta:docs[i].data().fechaVenta||docs[i].data().fecha||now,fecha:now,fechaPago:now}));
+                    refs.forEach((ref,i)=>tx.update(ref,{estadoPago:'pagado',fechaVenta:docs[i].data().fechaVenta||docs[i].data().fecha||now,fecha:now,fechaPago:now,...(shift&&docs[i].data().metodoPago==='efectivo'?{turnoCajaId:shift.id}:{})}));
                 });
                 playSound('success');showSuccess('Cobro registrado');loadMyTransactions();
             } catch(error){showError(error.message);} finally{btn.disabled=false;}
