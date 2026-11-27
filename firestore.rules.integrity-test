@@ -26,7 +26,7 @@ service cloud.firestore {
   function validLine(s,id,lid) {
     let l=getAfter(linePath(lid)).data;
     let p=get(productPath(l.articuloId)).data;
-    return !exists(linePath(lid)) && l.carritoId==id && l.vendedorId==uid() && l.eventId==s.eventId && l.metodoPago==s.metodoPago && l.estadoPago==s.estadoPago && l.pulseraId==s.pulseraId && l.cantidad is int && l.cantidad>0 && l.cantidad<=100 && p.eventId==s.eventId && p.get('recetaActiva',null)==null && closeMoney(l.precioUnitario,p.precio) && closeMoney(l.monto,p.precio*l.cantidad) && l.monto>0 && l.descuentoInsumos.size()==0 && (p.get('esInfinito',false)==true ? l.descuentoProducto==0 : (l.descuentoProducto==l.cantidad && getAfter(productPath(l.articuloId)).data.stock==p.stock-l.cantidad && getAfter(productPath(l.articuloId)).data.ultimaVentaId==id));
+    return !exists(linePath(lid)) && l.carritoId==id && l.lineasVenta==s.lineas && l.vendedorId==uid() && l.eventId==s.eventId && l.metodoPago==s.metodoPago && l.estadoPago==s.estadoPago && l.pulseraId==s.pulseraId && l.cantidad is int && l.cantidad>0 && l.cantidad<=100 && p.eventId==s.eventId && p.get('recetaActiva',null)==null && closeMoney(l.precioUnitario,p.precio) && closeMoney(l.monto,p.precio*l.cantidad) && l.monto>0 && l.descuentoInsumos.size()==0 && (p.get('esInfinito',false)==true ? l.descuentoProducto==0 : (l.descuentoProducto==l.cantidad && getAfter(productPath(l.articuloId)).data.stock==p.stock-l.cantidad && getAfter(productPath(l.articuloId)).data.ultimaVentaId==id));
   }
   function lineAmount(lid) { return getAfter(linePath(lid)).data.monto; }
   function distinctProducts(a,b) { return getAfter(linePath(a)).data.articuloId!=getAfter(linePath(b)).data.articuloId; }
@@ -43,7 +43,7 @@ service cloud.firestore {
   function linkedProduct(id) {
     let sid=request.resource.data.ultimaVentaId;
     let s=getAfter(salePath(sid)).data;
-    return newSale(sid) && ((getAfter(linePath(sid+'_0')).data.articuloId==id) || (s.lineas>=2 && getAfter(linePath(sid+'_1')).data.articuloId==id) || (s.lineas>=3 && getAfter(linePath(sid+'_2')).data.articuloId==id));
+    return resource.data.get('esInfinito',false)==false && newSale(sid) && ((getAfter(linePath(sid+'_0')).data.articuloId==id) || (s.lineas>=2 && getAfter(linePath(sid+'_1')).data.articuloId==id) || (s.lineas>=3 && getAfter(linePath(sid+'_2')).data.articuloId==id));
   }
   match /ventas_integridad/{id} {
     allow get: if admin() || (seller() && (resource==null || resource.data.vendedorId==uid()));
