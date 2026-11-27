@@ -109,5 +109,5 @@
             return transact(false);
         }
     }
-    root.GenesaretCheckout = {commit,customize,variantKey,escapeHtml};
+    root.GenesaretCheckout = {commit,customize,variantKey,escapeHtml,resolveRecipe};
 })(globalThis);
