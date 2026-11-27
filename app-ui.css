@@ -210,3 +210,15 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .screen-admin .qty-btn,.screen-vendedor .qty-btn{border-radius:12px;min-width:30px;min-height:30px}
 .screen-admin .carrito-item-subtotal,.screen-vendedor .carrito-item-subtotal{font-weight:800;color:var(--color-precio)}
 @media(max-width:480px){.cart-food-icon{width:32px;height:32px;font-size:21px}.screen-admin .carrito-item,.screen-vendedor .carrito-item{gap:5px;padding:7px}}
+
+/* Admin checkout matches the illustrated customer catalog. */
+.screen-admin #modalPOSAdmin #posGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,145px),1fr));gap:12px;align-content:start}
+.screen-admin #modalPOSAdmin .admin-product-tile{display:grid;gap:6px;text-align:left;min-width:0;min-height:165px;padding:10px;color:var(--text-main);font:inherit;cursor:pointer}
+.screen-admin #modalPOSAdmin .admin-product-tile:disabled{opacity:.48;cursor:not-allowed;filter:saturate(.35)}
+.screen-admin #modalPOSAdmin .admin-product-tile .prod-emoji{font-size:42px;min-height:65px;margin:0;width:100%}
+.screen-admin #modalPOSAdmin .admin-product-tile .prod-nombre{font-size:14px;white-space:normal;overflow-wrap:anywhere}
+.screen-admin #modalPOSAdmin .admin-product-tile .prod-precio{font-size:21px}
+.screen-admin #modalPOSAdmin .admin-product-stock,.screen-admin #modalPOSAdmin .admin-product-custom{font-size:11px;color:var(--text-muted)}
+.screen-admin #modalPOSAdmin .admin-product-custom{color:var(--color-precio);font-weight:700}
+.screen-admin:not(.light-mode) #modalPOSAdmin .pos-right{background:#102b43!important;border-radius:20px;border:1px solid #9ddfff38}
+.screen-admin:not(.light-mode) #modalPOSAdmin .carrito-header{background:linear-gradient(120deg,#2069ad66,#16344e);border-radius:20px 20px 0 0}
