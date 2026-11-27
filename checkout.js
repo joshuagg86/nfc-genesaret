@@ -5,10 +5,14 @@
     const money = n => Math.round(Number(n)*100);
     function resolveRecipe(p, selection={}) {
         const recipe=p.recetaActiva;
-        const removed=selection.removed||[], extra=selection.extra||[];
+        let removed=selection.removed||[], extra=selection.extra||[];
         if(!Array.isArray(removed)||!Array.isArray(extra)||new Set(removed).size!==removed.length||new Set(extra).size!==extra.length)throw Error('Personalización inválida');
         if(!recipe){if(removed.length||extra.length)throw Error('La receta cambió');return {price:money(p.precio),usage:[],notes:[]};}
         if(removed.some(id=>!recipe.lines.some(l=>l.id===id&&l.removable))||extra.some(id=>!recipe.extras.some(l=>l.id===id)))throw Error('La receta cambió; actualiza tu carrito');
+        // A removed included ingredient selected as extra restores its base portion.
+        const restored=new Set(removed.filter(id=>extra.includes(id)));
+        removed=removed.filter(id=>!restored.has(id));
+        extra=extra.filter(id=>!restored.has(id));
         const usage=recipe.lines.filter(l=>!removed.includes(l.id)).concat(recipe.extras.filter(l=>extra.includes(l.id)));
         const notes=recipe.lines.filter(l=>removed.includes(l.id)).map(l=>'Sin '+l.nombre).concat(recipe.extras.filter(l=>extra.includes(l.id)).map(l=>'Extra '+l.nombre));
         return {price:money(p.precio)+recipe.extras.filter(l=>extra.includes(l.id)).reduce((a,l)=>a+money(l.price),0),usage,notes};
@@ -18,16 +22,29 @@
         if(!recipe)return {...resolveRecipe(p),selection};
         const form=document.createElement('div');form.className='smart-modal-form';
         const total=document.createElement('strong');
+        const baseBoxes=new Map(),extraBoxes=new Map();
         function row(l,kind){
             const label=document.createElement('label');
             label.className='smart-modal-check';
             label.style.cssText='display:flex;align-items:center;gap:12px;padding:10px;text-align:left';
             const box=document.createElement('input');box.type='checkbox';box.style.width='auto';box.checked=kind==='removed';
+            (kind==='removed'?baseBoxes:extraBoxes).set(l.id,box);
             const name=document.createElement('span');
             name.textContent=l.nombre+(kind==='extra'?' · '+(money(l.price)?String.fromCharCode(36)+(money(l.price)/100).toFixed(2):'Sin costo'):'');
             box.onchange=()=>{
                 selection[kind]=selection[kind].filter(id=>id!==l.id);
                 if(kind==='removed'?!box.checked:box.checked)selection[kind].push(l.id);
+                if(kind==='extra'&&box.checked&&selection.removed.includes(l.id)){
+                    selection.removed=selection.removed.filter(id=>id!==l.id);
+                    selection.extra=selection.extra.filter(id=>id!==l.id);
+                    baseBoxes.get(l.id).checked=true;
+                    box.checked=false;
+                }else if(kind==='removed'&&!box.checked&&selection.extra.includes(l.id)){
+                    selection.extra=selection.extra.filter(id=>id!==l.id);
+                    selection.removed=selection.removed.filter(id=>id!==l.id);
+                    extraBoxes.get(l.id).checked=false;
+                    box.checked=true;
+                }
                 total.textContent='Total: '+String.fromCharCode(36)+(resolveRecipe(p,selection).price/100).toFixed(2);
             };
             label.append(box,name);form.append(label);
