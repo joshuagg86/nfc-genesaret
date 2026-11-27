@@ -12,12 +12,40 @@ async function createStation(){
  const id=String(crypto.getRandomValues(new Uint32Array(1))[0]%900000+100000);
  await db.runTransaction(async tx=>{
  const assignment=db.collection('estaciones_asignaciones').doc(event+'_'+vendor);
- const [a,e,v,d,assigned]=await Promise.all([tx.get(db.collection('usuarios').doc(auth.currentUser.uid)),tx.get(db.collection('eventos').doc(event)),tx.get(db.collection('usuarios').doc(vendor)),tx.get(ref(id)),tx.get(assignment)]);
- if(!a.exists||!['admin','administrador'].includes(a.data().role)||a.data().activo===false||!e.exists||e.data().activo!==true||!v.exists||v.data().activo===false||!['vendedor','admin','administrador'].includes(v.data().role)||d.exists||assigned.exists)throw Error('No se pudo crear la estación; revisa los datos e intenta otra vez');
- tx.set(assignment,{estacionId:id,eventId:event,vendedorId:vendor});
+ const reserved=db.collection('estaciones_codigos').doc(id);
+ const [a,e,v,d,assigned,codeDoc]=await Promise.all([tx.get(db.collection('usuarios').doc(auth.currentUser.uid)),tx.get(db.collection('eventos').doc(event)),tx.get(db.collection('usuarios').doc(vendor)),tx.get(ref(id)),tx.get(assignment),tx.get(reserved)]);
+ if(!a.exists||!['admin','administrador'].includes(a.data().role)||a.data().activo===false||!e.exists||e.data().activo!==true||!v.exists||v.data().activo===false||!['vendedor','admin','administrador'].includes(v.data().role)||d.exists||assigned.exists||codeDoc.exists)throw Error('No se pudo crear la estación; revisa los datos e intenta otra vez');
+ tx.set(reserved,{estacionId:id});tx.set(assignment,{estacionId:id,eventId:event,vendedorId:vendor});
  tx.set(ref(id),{nombre:name,eventId:event,vendedorId:vendor,activo:true,fecha:firebase.firestore.FieldValue.serverTimestamp()});
  });$('stationName').value='';showSuccess('Estación creada');
  }catch(e){showError(e.message);}
+}
+async function manageStation(id,action,users){
+ const r=ref(id),initial=await r.get({source:'server'});if(!initial.exists)return;const old=initial.data();
+ let name=old.nombre,vendor=old.vendedorId,newCode=null;
+ if(action==='edit'){
+ const form=node('div'),n=node('input'),v=node('select');n.value=name;n.maxLength=80;n.setAttribute('aria-label','Nombre de estación');v.setAttribute('aria-label','Vendedor asignado');for(const d of users.docs.filter(d=>d.data().activo!==false&&['admin','administrador','vendedor'].includes(d.data().role)))v.add(new Option((d.data().name||'Cuenta')+' · '+(d.data().email||''),d.id));v.value=vendor;form.append(node('p','Nombre de estación'),n,node('p','Vendedor asignado'),v);
+ const result=await Swal.fire({title:'Editar estación',html:form,showCancelButton:true,confirmButtonText:'Guardar',cancelButtonText:'Cancelar',preConfirm:()=>{if(!n.value.trim()||!v.value){Swal.showValidationMessage('Completa los datos');return false;}return {name:n.value.trim(),vendor:v.value};}});if(!result.isConfirmed)return;({name,vendor}=result.value);
+ }else{
+ const result=await Swal.fire({title:action==='delete'?'¿Retirar estación?':'¿Regenerar código?',text:action==='delete'?'Se conservará el historial de pedidos.':'Las tablets vinculadas deberán introducir el código nuevo.',showCancelButton:true,confirmButtonText:action==='delete'?'Retirar':'Regenerar',cancelButtonText:'Volver'});if(!result.isConfirmed)return;
+ if(action==='rotate')newCode=String(crypto.getRandomValues(new Uint32Array(1))[0]%900000+100000);
+ }
+ if((action==='delete'||vendor!==old.vendedorId)&&old.activo)throw Error('Deshabilita la estación antes de cambiar vendedor o retirarla.');
+ if(action==='delete'||vendor!==old.vendedorId){const orders=await db.collection('pedidos_autoservicio').where('estacionId','==',id).get({source:'server'});if(orders.docs.some(o=>o.data().estado==='pendiente'))throw Error('Hay pedidos pendientes. Habilita la estación y resuélvelos primero.');}
+ await db.runTransaction(async tx=>{
+ const uid=auth.currentUser.uid,admin=await tx.get(db.collection('usuarios').doc(uid)),current=await tx.get(r);
+ if(!admin.exists||admin.data().role!=='admin'||admin.data().activo===false||!current.exists||current.data().archivada||current.data().vendedorId!==old.vendedorId||current.data().activo!==old.activo||(current.data().codigoVinculacion||id)!==(old.codigoVinculacion||id))throw Error('La estación cambió; vuelve a intentarlo.');
+ const prior=db.collection('estaciones_asignaciones').doc(old.eventId+'_'+old.vendedorId),priorDoc=await tx.get(prior);
+ if(priorDoc.exists&&priorDoc.data().estacionId!==id)throw Error('Asignación inconsistente');
+ if(action==='delete'){tx.update(r,{archivada:true,activo:false,archivadaAt:firebase.firestore.FieldValue.serverTimestamp()});if(priorDoc.exists)tx.delete(prior);return;}
+ if(action==='rotate'){
+ const reserve=db.collection('estaciones_codigos').doc(newCode),reserved=await tx.get(reserve),legacy=await tx.get(ref(newCode));
+ if(reserved.exists||legacy.exists)throw Error('Código ocupado; vuelve a intentar');
+ tx.set(reserve,{estacionId:id});tx.update(r,{codigoVinculacion:newCode});return;
+ }
+ if(vendor!==old.vendedorId){const dest=db.collection('estaciones_asignaciones').doc(old.eventId+'_'+vendor),assigned=await tx.get(dest),v=await tx.get(db.collection('usuarios').doc(vendor));if(assigned.exists||!v.exists||v.data().activo===false||!['admin','administrador','vendedor'].includes(v.data().role))throw Error('Vendedor no disponible o ya asignado');if(priorDoc.exists)tx.delete(prior);tx.set(dest,{estacionId:id,eventId:old.eventId,vendedorId:vendor});}
+ tx.update(r,{nombre:name,vendedorId:vendor});
+ });showSuccess('Estación actualizada');
 }
 let stop=null,stopUsers=null,opening=false;
 async function open(){
@@ -31,7 +59,7 @@ async function open(){
  $('stationCreate').onclick=createStation;
  function renderStations(snap){
  const list=$('stationList');list.replaceChildren();
- for(const d of [...snap.docs].sort((a,b)=>String(a.data().nombre).localeCompare(String(b.data().nombre),'es',{numeric:true}))){
+ for(const d of [...snap.docs].filter(d=>!d.data().archivada).sort((a,b)=>String(a.data().nombre).localeCompare(String(b.data().nombre),'es',{numeric:true}))){
  const s=d.data(),card=node('article',null,'station-config-card');
  const header=node('div',null,'station-config-head'),icon=node('span',null,'station-config-icon');
  const glyph=node('i',null,'fas fa-cash-register');glyph.setAttribute('aria-hidden','true');icon.append(glyph);
@@ -39,10 +67,10 @@ async function open(){
  header.append(icon,title,node('span',s.activo?'Habilitada':'Deshabilitada','station-config-state '+(s.activo?'enabled':'disabled')));card.append(header);
  const seller=users.docs.find(x=>x.id===s.vendedorId)?.data(),account=node('div',null,'station-config-account');
  account.append(node('small','Vendedor asignado'),node('strong',seller?.name||seller?.nombre||'Cuenta no disponible'));if(seller?.email)account.append(node('small',seller.email));card.append(account);
- const code=node('div',null,'station-config-code');code.append(node('small','Código de vinculación'),node('strong',d.id),node('small','Introdúcelo en la tablet de Autoservicio'));card.append(code);
+ const code=node('div',null,'station-config-code');code.append(node('small','Código de vinculación'),node('strong',s.codigoVinculacion||d.id),node('small','Introdúcelo en la tablet de Autoservicio'));card.append(code);
  const actions=node('div',null,'station-config-actions');
- if(s.activo){const launch=node('a','Vista previa', 'btn-secondary');launch.href='autoservicio.html?estacion='+encodeURIComponent(d.id)+'&evento='+encodeURIComponent(s.eventId);launch.target='_blank';launch.rel='noopener';launch.title='Probar como administrador';actions.append(launch);}
- const toggle=btn(s.activo?'Deshabilitar':'Habilitar',async()=>{const result=await Swal.fire({title:s.activo?'¿Deshabilitar estación?':'¿Habilitar estación?',text:s.activo?'La estación dejará de recibir pedidos. Revisa antes que no haya pedidos pendientes.':'La estación podrá recibir pedidos nuevamente.',showCancelButton:true,confirmButtonText:s.activo?'Deshabilitar':'Habilitar',cancelButtonText:'Volver'});if(!result.isConfirmed)return;try{if(s.activo){const orders=await db.collection('pedidos_autoservicio').where('estacionId','==',d.id).get({source:'server'});if(orders.docs.some(o=>o.data().estado==='pendiente'))throw Error('Cobra o cancela los pedidos pendientes antes de deshabilitar la estación');}await d.ref.update({activo:!s.activo});}catch(e){showError(e.message);}});actions.append(toggle);card.append(actions);list.append(card);
+ if(s.activo){const launch=node('a','Vista previa', 'btn-secondary');launch.href='autoservicio.html?estacion='+encodeURIComponent(d.id)+'&evento='+encodeURIComponent(s.eventId)+'&preview=1';launch.target='_self';launch.rel='noopener';launch.title='Probar como administrador';actions.append(launch);}
+ const toggle=btn(s.activo?'Deshabilitar':'Habilitar',async()=>{const result=await Swal.fire({title:s.activo?'¿Deshabilitar estación?':'¿Habilitar estación?',text:s.activo?'La estación dejará de recibir pedidos. Revisa antes que no haya pedidos pendientes.':'La estación podrá recibir pedidos nuevamente.',showCancelButton:true,confirmButtonText:s.activo?'Deshabilitar':'Habilitar',cancelButtonText:'Volver'});if(!result.isConfirmed)return;try{if(s.activo){const orders=await db.collection('pedidos_autoservicio').where('estacionId','==',d.id).get({source:'server'});if(orders.docs.some(o=>o.data().estado==='pendiente'))throw Error('Cobra o cancela los pedidos pendientes antes de deshabilitar la estación');}await d.ref.update({activo:!s.activo});}catch(e){showError(e.message);}});actions.append(toggle);for(const [label,action] of [['Editar','edit'],['Regenerar código','rotate'],['Eliminar','delete']])actions.append(btn(label,async()=>{try{await manageStation(d.id,action,users);}catch(e){showError(e.message);}}));card.append(actions);list.append(card);
  }
  if(!list.children.length)list.append(node('p','Crea tu primera estación.'));
  }
