@@ -1,0 +1,64 @@
+/* Light theme: blue identity, tinted surfaces, readable contrast. */
+body.light-mode:is(.screen-admin,.screen-vendedor,.screen-reportes){
+ --bg-body:radial-gradient(ellipse at 0% 0%,#c6e7ff 0%,transparent 55%),radial-gradient(ellipse at 100% 80%,#d0e9ff 0%,transparent 60%),#eaf4fc;
+ --bg-card:#f6fbff;--bg-header:#f2f9ff;--bg-input:#f5faff;--bg-item-list:#e7f3fd;--bg-th:#dceefd;
+ --text-main:#143451;--text-muted:#42617d;--text-label:#345a7a;--color-titulo:#123d66;--color-destacado:#075fae;--color-precio:#075ca9;--app-accent:#0763b7;
+ --border-color:#b7d4eb;--app-gradient:linear-gradient(135deg,#0761c7,#008bcb);--shadow-card:0 8px 24px #1a5b8820;
+ background:var(--bg-body)!important;color:var(--text-main);
+}
+body.light-mode:is(.screen-admin,.screen-vendedor,.screen-reportes) .container>header{
+ background:linear-gradient(110deg,#0b3e68,#0867b3 65%,#07578d)!important;color:#fff!important;
+ border-bottom:1px solid #b1ddff55!important;box-shadow:0 4px 18px #164e7930!important;
+}
+body.light-mode .container>header :is(.shell-brand,.shell-brand strong,.shell-brand small,.header-center-title,.role-label,.name-label,.name-label span,.user-info,.icon-action,.theme-toggle-btn,.hamburger){color:#fff!important}
+body.light-mode .container>header :is(.actions-pill,.theme-toggle-btn,.header-nav .btn-secondary){background:#ffffff18!important;border:1px solid #ffffff45!important;color:white!important}
+body.light-mode .container>header .pill-separator{background:#ffffff45}
+body.light-mode:is(.screen-admin,.screen-vendedor,.screen-reportes) :is(.card,.overview-panel,.overview-secondary,.pos-right,.station-config-card,.smart-card,.smart-tile,.stat-card,.recipe-list-card){
+ background:linear-gradient(145deg,#f9fcff,#eaf5ff)!important;border-color:#bdd9ef!important;box-shadow:0 7px 20px #205d8a12!important;
+}
+body.light-mode:is(.screen-admin,.screen-vendedor,.screen-reportes) :is(.shell-menu button,.shell-shortcuts button,.overview-kpi,.producto-card,.station-create-form,.station-queue){
+ background:linear-gradient(145deg,#e0f0ff,#f3faff)!important;border-color:#b0d3ee!important;box-shadow:0 4px 12px #205d8a10!important;
+}
+body.light-mode:is(.screen-admin,.screen-vendedor,.screen-reportes) :is(.shell-heading h2,.overview-hero h2,.overview-panel h3,.card h3,.smart-card h3,.station-config-title h3,.producto-card .prod-nombre){color:#104d80}
+body.light-mode .overview-kpi.ventas,body.light-mode .screen-reportes #rep-resumen .stat-card:first-child,body.screen-reportes.light-mode #rep-resumen>.grid:first-of-type>.stat-card:first-child{
+ background:linear-gradient(135deg,#085bbf,#008fc9)!important;color:white!important;border-color:#0780cb!important;
+}
+body.light-mode .overview-kpi.ventas :is(span,small,strong,i),body.screen-reportes.light-mode #rep-resumen>.grid:first-of-type>.stat-card:first-child :is(.stat-label,.stat-value){color:#fff!important}
+body.light-mode .overview-kpi:not(.ventas) strong,body.light-mode .smart-amount,body.light-mode .stat-value{color:#075ca9}
+body.light-mode :is(.native-tabs,.screen-vendedor .container>.sub-nav-container,.screen-reportes .sub-nav-container){background:#e6f3ffed!important;border-color:#b3d4ee!important;box-shadow:0 8px 26px #1c527b20!important}
+body.light-mode :is(.native-tabs button,.sub-tab-btn,.admin-sales-tabs button){color:#345c80}
+body.light-mode :is(.native-tabs button[aria-current=page],.sub-tab-btn.active,.admin-sales-tabs button.active){background:var(--app-gradient)!important;color:#fff!important}
+body.light-mode :is(.btn-secondary,.station-config-actions a){background:#e1effc;color:#174f80;border-color:#bdd8ed}
+body.light-mode .station-config-code{background:linear-gradient(135deg,#d7ebff,#edf8ff);border-color:#88bce7}
+body.light-mode .station-config-icon{background:#d1e8fc;color:#0866b8}
+body.light-mode :is(.carrito-header,.screen-admin #modalPOSAdmin .carrito-header){background:linear-gradient(120deg,#c7e5ff,#e0f1ff);color:#164e7e;border-color:#afd1ed}
+body.light-mode :is(.product-icon,.prod-emoji,.cart-food-icon){background:linear-gradient(145deg,#c9e6ff,#e0f3ff);border-color:#badbf5}
+body.light-mode .pm-btn.active{background:#d0e9ff;border-color:#0878c8;color:#075ca9}
+body.light-mode .table th{background:#deedfc;color:#315a7c}
+body.light-mode .table td{border-color:#d1e4f3}
+body.light-mode .badge-success{color:#08683d}
+body.light-mode .connection-state.online,body.light-mode .station-config-state.enabled{color:#087452}
+body.light-mode .btn-danger{color:#a8133b}
+body.light-mode .chart-bar-wrapper{background:#d6e8f8}
+body.light-mode :is(.chart-bar-label,.chart-line-label){color:#345a7a}
+/* Reports matches the POS styling in both modes. */
+body.screen-reportes:not(.light-mode){
+ --bg-body:radial-gradient(ellipse at 0% 0%,#155e99 0%,transparent 48%),radial-gradient(ellipse at 95% 85%,#113e69 0%,transparent 50%),#091a2e;
+ --bg-card:#102d48;--bg-header:#102d48;--bg-input:#10283e;--bg-item-list:#163b57;--bg-th:#102b43;--text-main:#f4faff;--text-muted:#b6d4eb;--text-label:#d2eaff;--border-color:#82caff38;--color-precio:#83d5ff;--color-destacado:#54bcff;--app-gradient:linear-gradient(135deg,#0964dc,#209fe7);
+}
+body.screen-reportes:not(.light-mode) .container>header{background:#102d48eF!important}
+body.screen-reportes:not(.light-mode) :is(.card,.stat-card,.sub-nav-container){background:linear-gradient(145deg,#194567,#102b43);border-color:#82caff45;box-shadow:0 8px 22px #06182b35}
+body.screen-reportes .container>header .header-center-title{color:white}
+body.screen-reportes .container>header{padding-inline:clamp(14px,3vw,48px)}
+body.screen-reportes .header-nav{gap:8px}
+body.screen-reportes :is(.card,.stat-card,.sub-nav-container){border-radius:22px}
+body.screen-reportes .stat-card{padding:20px 14px;min-height:104px}
+body.screen-reportes .stat-value{font-size:clamp(22px,3vw,30px);font-weight:800;letter-spacing:-.035em}
+body.screen-reportes :is(.btn-primary,.sub-tab-btn.active,.chart-bar,.chart-line-bar){background:var(--app-gradient)!important}
+body.screen-reportes .card h3{margin-bottom:15px}
+body.screen-reportes.light-mode footer{background:#e0effc;color:#42617d;border-color:#b7d4eb}
+body.screen-reportes.light-mode footer a{color:#075ca9}
+body.screen-reportes.light-mode .stat-label[style*="22c55e"]{color:#087452!important}
+body.screen-reportes.light-mode .stat-value[style*="22c55e"],body.screen-reportes.light-mode td[style*="22c55e"]{color:#087452!important}
+body.screen-reportes.light-mode .stat-value[style*="ef4444"]{color:#b02040!important}
+@media(max-width:480px){body.screen-reportes .header-nav .btn-secondary{font-size:12px;padding:8px}body.screen-reportes .logo-header{width:40px;height:40px}}
