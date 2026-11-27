@@ -1,6 +1,8 @@
 // --- CONFIGURACIÓN CENTRAL DE FIREBASE ---
 
-const firebaseConfig = {
+const genesaretLocalTest = ['localhost','127.0.0.1'].includes(location.hostname) && location.port === '8001';
+window.GenesaretLocalTest = genesaretLocalTest;
+const firebaseConfig = genesaretLocalTest ? {apiKey:'demo-local-only',authDomain:'localhost',projectId:'demo-genesaret-security',appId:'demo-local'} : {
     apiKey: "AIzaSyC56h2z_HnfFH6h0QEqYjOFoUolNwDeJDQ",
     authDomain: "nfc-genesaret.firebaseapp.com",
     projectId: "nfc-genesaret",
@@ -20,9 +22,19 @@ if (!firebase.apps.length) {
 const auth = firebase.auth();
 const db = firebase.firestore();
 
+if (genesaretLocalTest) {
+    auth.useEmulator('http://127.0.0.1:9099');
+    db.useEmulator('127.0.0.1',8080);
+    window.addEventListener('DOMContentLoaded',()=>{
+        const badge=document.createElement('div');
+        badge.textContent='ENTORNO DE PRUEBA LOCAL · SIN DATOS REALES';
+        badge.style.cssText='position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#92400e;color:white;text-align:center;font:11px sans-serif;pointer-events:none';
+        document.body.append(badge);
+    });
+}
 // 3. ACTIVAR MODO OFFLINE (Persistencia)
 // Esto permite que la app funcione si se va el internet y sincronice cuando vuelva.
-db.enablePersistence()
+if (!genesaretLocalTest) db.enablePersistence()
     .catch((err) => {
         if (err.code == 'failed-precondition') {
             console.warn('La persistencia falló: Múltiples pestañas abiertas.');
@@ -34,7 +46,7 @@ db.enablePersistence()
 console.log("✅ Sistema Genesaret inicializado (Modo Offline activo)");
 
 // --- 4. REGISTRAR PWA (Service Worker) ---
-if ('serviceWorker' in navigator) {
+if (!genesaretLocalTest && 'serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
             .then((reg) => console.log('📱 App lista para instalar:', reg.scope))
