@@ -19,6 +19,7 @@ function toggleTheme() {
 
         if (localStorage.getItem('themePreference') === 'light') { document.body.classList.add('light-mode'); }
         updateThemeIcon();
+        window.addEventListener('storage',e=>{if(e.key==='themePreference'){document.body.classList.toggle('light-mode',e.newValue==='light');updateThemeIcon();}});
 
         let allRecargas = null;
         let allTransactions = [], allPulseras = [], allEventos = [], filteredTransactions = [];
@@ -36,7 +37,7 @@ function toggleTheme() {
         document.getElementById('fechaHasta').value = hoy;
 
         auth.onAuthStateChanged(user => {
-            if (!user) { localStorage.clear(); window.location.replace('index.html'); return; }
+            if (!user) { localStorage.removeItem('userRole'); localStorage.removeItem('userName'); window.location.replace('index.html'); return; }
             cargarEventos(); 
             cargarTransacciones(); 
             cargarPulseras();
@@ -403,7 +404,7 @@ function toggleTheme() {
                 byWallet.set(t.pulseraId,(byWallet.get(t.pulseraId)||0)+(Number(t.monto)||0));
             });
             const rechargeTotal = allRecargas === null ? null : allRecargas.filter(r=>(!ev||r.eventId===ev||(!r.eventId&&ids.has(r.pulseraId)))&&ids.has(r.pulseraId)).reduce((sum,r)=>sum+(Number(r.monto)||0),0);
-            document.getElementById('pulsRecargasTotal').textContent = rechargeTotal === null ? '—' : '
+            document.getElementById('pulsRecargasTotal').textContent = rechargeTotal === null ? '—' : '$'+rechargeTotal.toFixed(2);
             let html = '<table class="table"><thead><tr><th>ID</th><th>Nombre</th><th>Saldo Inicial</th><th>Gastado</th><th>Saldo Actual</th><th>Estado</th></tr></thead><tbody>';
             
             if(!lista.length) html='<div style="text-align:center;padding:20px;color:var(--text-muted);">Sin pulseras</div>';
@@ -412,96 +413,6 @@ function toggleTheme() {
                     const sIni = p.saldoInicial || 0;
                     const sAct = p.saldoActual || 0;
                     const gastado = byWallet.get(p.docId) ?? byWallet.get(p.id) ?? 0;
-                    totalRestante += sAct; totalGastado += gastado;
-                    const estado = p.bloqueada ? '<span class="badge badge-pendiente">Bloqueada</span>' : '<span class="badge badge-success">Activa</span>';
-                    html += `<tr><td>${p.id}</td><td>${p.nombre}</td><td>$${sIni.toFixed(2)}</td><td style="color:#ef4444;">-$${gastado.toFixed(2)}</td><td style="font-weight:bold;">$${sAct.toFixed(2)}</td><td>${estado}</td></tr>`;
-                });
-                html += '</tbody></table>';
-            }
-
-            document.getElementById('reportePulserasList').innerHTML = html;
-            document.getElementById('pulsSaldoRestante').textContent = totalRestante.toFixed(2);
-            document.getElementById('pulsSaldoGastado').textContent = totalGastado.toFixed(2);
-            document.getElementById('pulsTotalCount').textContent = lista.length;
-        }
-
-        function openDownloadModal(){ document.getElementById('downloadModal').style.display='flex'; }
-        function closeDownloadModal(){ document.getElementById('downloadModal').style.display='none'; }
-
-        function downloadExcelReport() {
-            if (typeof XLSX === 'undefined') { alert('⚠️ Error al cargar librería Excel.'); return; }
-            try {
-                const isInv = document.getElementById('rep-inventario').classList.contains('active');
-                const isPuls = document.getElementById('rep-pulseras').classList.contains('active');
-                let dataToExport = [], sheetName = "Reporte", fileName = "Reporte";
-
-                if (isInv) {
-                    sheetName = "Inventario"; fileName = "Inventario";
-                    dataToExport = (filteredInventario.length?filteredInventario:inventarioData).map(i => ({ Producto: i.nombre, Categoria: i.categoria, Precio: i.precio, Stock: i.esInfinito?'Infinito':i.stock, Valor: i.esInfinito?0:(i.stock*i.precio) }));
-                } else if (isPuls) {
-                    sheetName = "Pulseras"; fileName = "Pulseras";
-                    dataToExport = (filteredPulserasReport.length?filteredPulserasReport:allPulseras).map(p => ({ ID: p.id, Nombre: p.nombre, 'Saldo Inicial': p.saldoInicial, 'Saldo Actual': p.saldoActual, 'Gastado': (p.saldoInicial||0)-(p.saldoActual||0), Estado: p.bloqueada?'Bloqueada':'Activa' }));
-                } else {
-                    sheetName = "Ventas"; fileName = "Ventas";
-                    dataToExport = (filteredTransactions.length?filteredTransactions:allTransactions).map(t => ({ Fecha: t.fecha?.toDate?t.fecha.toDate().toLocaleString():'', Vendedor: t.vendedor, Cliente: t.pulsera, Producto: t.articulo, Cantidad: t.cantidad||1, Metodo: t.metodoPago, Monto: t.monto }));
-                }
-
-                if(!dataToExport.length) { alert('Sin datos para exportar'); return; }
-                const wb = XLSX.utils.book_new(); const ws = XLSX.utils.json_to_sheet(dataToExport);
-                XLSX.utils.book_append_sheet(wb, ws, sheetName); XLSX.writeFile(wb, `Reporte_${fileName}_${hoy}.xlsx`);
-                closeDownloadModal();
-            } catch(e) { console.error(e); alert('Error generando Excel: '+e.message); }
-        }
-
-        function downloadHTMLReport() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            
-            doc.text("Reporte Genesaret", 14, 15);
-            doc.setFontSize(10);
-            doc.text(`Fecha impresión: ${new Date().toLocaleDateString()}`, 14, 22);
-
-            let head = [], body = [];
-            
-            if(document.getElementById('rep-inventario').classList.contains('active')) {
-                head = [['Producto', 'Categoría', 'Stock', 'Valor']];
-                body = (filteredInventario.length ? filteredInventario : inventarioData).map(i => [
-                    i.nombre, 
-                    i.categoria, 
-                    i.esInfinito ? 'Inf' : i.stock, 
-                    i.esInfinito ? '-' : `$${(i.stock*i.precio).toFixed(2)}`
-                ]);
-            } else {
-                head = [['Fecha', 'Vendedor', 'Producto', 'Cant', 'Método', 'Monto']];
-                body = (filteredTransactions.length ? filteredTransactions : allTransactions).map(t => [
-                    t.fecha?.toDate ? t.fecha.toDate().toLocaleDateString() : '-',
-                    t.vendedor || 'Sistema',
-                    t.articulo,
-                    t.cantidad || 1,
-                    t.metodoPago,
-                    `$${t.monto.toFixed(2)}`
-                ]);
-            }
-
-            doc.autoTable({
-                head: head,
-                body: body,
-                startY: 30,
-                theme: 'grid'
-            });
-
-            doc.save('Reporte_Genesaret.pdf');
-            closeDownloadModal();
-        }
-+rechargeTotal.toFixed(2);
-            let html = '<table class="table"><thead><tr><th>ID</th><th>Nombre</th><th>Saldo Inicial</th><th>Gastado</th><th>Saldo Actual</th><th>Estado</th></tr></thead><tbody>';
-            
-            if(!lista.length) html='<div style="text-align:center;padding:20px;color:var(--text-muted);">Sin pulseras</div>';
-            else {
-                lista.forEach(p => {
-                    const sIni = p.saldoInicial || 0;
-                    const sAct = p.saldoActual || 0;
-                    const gastado = sIni - sAct;
                     totalRestante += sAct; totalGastado += gastado;
                     const estado = p.bloqueada ? '<span class="badge badge-pendiente">Bloqueada</span>' : '<span class="badge badge-success">Activa</span>';
                     html += `<tr><td>${p.id}</td><td>${p.nombre}</td><td>$${sIni.toFixed(2)}</td><td style="color:#ef4444;">-$${gastado.toFixed(2)}</td><td style="font-weight:bold;">$${sAct.toFixed(2)}</td><td>${estado}</td></tr>`;
