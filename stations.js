@@ -11,8 +11,10 @@ async function createStation(){
  try{
  const id=String(crypto.getRandomValues(new Uint32Array(1))[0]%900000+100000);
  await db.runTransaction(async tx=>{
- const [a,e,v,d]=await Promise.all([tx.get(db.collection('usuarios').doc(auth.currentUser.uid)),tx.get(db.collection('eventos').doc(event)),tx.get(db.collection('usuarios').doc(vendor)),tx.get(ref(id))]);
- if(!a.exists||!['admin','administrador'].includes(a.data().role)||a.data().activo===false||!e.exists||e.data().activo!==true||!v.exists||v.data().activo===false||!['vendedor','admin','administrador'].includes(v.data().role)||d.exists)throw Error('No se pudo crear la estación; revisa los datos e intenta otra vez');
+ const assignment=db.collection('estaciones_asignaciones').doc(event+'_'+vendor);
+ const [a,e,v,d,assigned]=await Promise.all([tx.get(db.collection('usuarios').doc(auth.currentUser.uid)),tx.get(db.collection('eventos').doc(event)),tx.get(db.collection('usuarios').doc(vendor)),tx.get(ref(id)),tx.get(assignment)]);
+ if(!a.exists||!['admin','administrador'].includes(a.data().role)||a.data().activo===false||!e.exists||e.data().activo!==true||!v.exists||v.data().activo===false||!['vendedor','admin','administrador'].includes(v.data().role)||d.exists||assigned.exists)throw Error('No se pudo crear la estación; revisa los datos e intenta otra vez');
+ tx.set(assignment,{estacionId:id,eventId:event,vendedorId:vendor});
  tx.set(ref(id),{nombre:name,eventId:event,vendedorId:vendor,activo:true,fecha:firebase.firestore.FieldValue.serverTimestamp()});
  });$('stationName').value='';showSuccess('Estación creada');
  }catch(e){showError(e.message);}
@@ -41,7 +43,7 @@ function queue({container,eventId,canLoad,load,cancel,onError}){
  target.replaceChildren();
  target.append(node('strong',station?'Estación '+station.nombre:'Sin estación asignada'));
  target.append(node('small',station?(confirmed?'Cola sincronizada':'Sin conexión confirmada'):'Configura una estación desde Administración'));
- if(station){target.append(node('small',orders.length+' pedidos pendientes'));for(const o of orders){const row=node('div',null,'station-order');row.append(node('span',o.items.reduce((a,i)=>a+i.cantidad,0)+' productos · '+money(o.total)));row.append(btn('Cargar',()=>{paused=false;failed=null;next(o);}),btn('Cancelar',()=>cancel(o.id,station.id)));target.append(row);}target.append(btn(paused?'Reanudar cola':'Pausar carga automática',()=>{paused=!paused;draw();if(!paused){failed=null;next();}}));}
+ if(station){target.append(node('small',orders.length+' pedidos pendientes'));for(const o of orders){const row=node('div',null,'station-order');row.append(node('span',o.items.reduce((a,i)=>a+i.cantidad,0)+' productos · '+money(o.total)));row.append(btn('Cargar',()=>{paused=false;failed=null;next();}),btn('Cancelar',()=>cancel(o.id,station.id)));target.append(row);}target.append(btn(paused?'Reanudar cola':'Pausar carga automática',()=>{paused=!paused;draw();if(!paused){failed=null;next();}}));}
  };
  async function next(o=orders[0]){
  if(closed||!confirmed||loading||paused||!o||o.id===failed||!canLoad())return;
