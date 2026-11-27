@@ -33,11 +33,11 @@ service cloud.firestore {
     let sel=l.seleccionIntegridad;
     return (r.lines.size()>0 && r.lines[0].id==i && !(i in sel.removed) ? r.lines[0].amount*l.cantidad : 0) + (r.lines.size()>1 && r.lines[1].id==i && !(i in sel.removed) ? r.lines[1].amount*l.cantidad : 0) + (r.extras.size()>0 && r.extras[0].id==i && i in sel.extra ? r.extras[0].amount*l.cantidad : 0) + (r.extras.size()>1 && r.extras[1].id==i && i in sel.extra ? r.extras[1].amount*l.cantidad : 0);
   }
-  function supplyDelta(i,l,r,id) {
-    let n=usedAmount(r,l,i);
-    let p=get(supplyPath(i)).data;
-    let q=getAfter(supplyPath(i)).data;
-    return n is int && n>0 && p.eventId==l.eventId && q.stock==p.stock-n && q.stock>=0 && q.ultimaVentaId==id;
+  // The supply update rule verifies exact quantity and movement. Here we
+  // require that each selected supply was actually updated in this commit.
+  function supplyTouched(i,id) {
+    return get(supplyPath(i)).data.get('ultimaVentaId',null)!=id &&
+      getAfter(supplyPath(i)).data.ultimaVentaId==id;
   }
   function recipeValid(p,l,id,s) {
     let r=p.recetaActiva;
@@ -52,10 +52,10 @@ service cloud.firestore {
       removable.hasAll(sel.removed) && extras.hasAll(sel.extra) && !sel.removed.hasAny(sel.extra) &&
       l.descuentoInsumos==usage && closeMoney(l.precioUnitario,p.precio+extraPrice) &&
       closeMoney(l.monto,l.precioUnitario*l.cantidad) &&
-      (usage.size()<=0 || supplyDelta(usage[0].id,l,r,id)) &&
-      (usage.size()<=1 || usage[1].id==usage[0].id || supplyDelta(usage[1].id,l,r,id)) &&
-      (usage.size()<=2 || usage[2].id==usage[0].id || usage[2].id==usage[1].id || supplyDelta(usage[2].id,l,r,id)) &&
-      (usage.size()<=3 || usage[3].id==usage[0].id || usage[3].id==usage[1].id || usage[3].id==usage[2].id || supplyDelta(usage[3].id,l,r,id));
+      (usage.size()<=0 || supplyTouched(usage[0].id,id)) &&
+      (usage.size()<=1 || usage[1].id==usage[0].id || supplyTouched(usage[1].id,id)) &&
+      (usage.size()<=2 || usage[2].id==usage[0].id || usage[2].id==usage[1].id || supplyTouched(usage[2].id,id)) &&
+      (usage.size()<=3 || usage[3].id==usage[0].id || usage[3].id==usage[1].id || usage[3].id==usage[2].id || supplyTouched(usage[3].id,id));
   }
   function linkedSupply(i) {
     let id=request.resource.data.ultimaVentaId;
@@ -63,7 +63,7 @@ service cloud.firestore {
     let p=get(productPath(l.articuloId)).data;
     let n=usedAmount(p.recetaActiva,l,i);
     let m=getAfter(movementPath(id+'_'+i)).data;
-    return newSale(id) && n is int && n>0 &&
+    return newSale(id) && resource.data.eventId==l.eventId && n is int && n>0 &&
       request.resource.data.stock==resource.data.stock-n && request.resource.data.stock>=0 &&
       m.carritoId==id && m.insumoId==i && m.usuarioId==uid() && m.eventId==resource.data.eventId && m.delta==-n && m.stockFinal==request.resource.data.stock && m.motivo=='Venta';
   }
