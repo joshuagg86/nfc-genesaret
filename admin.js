@@ -1113,15 +1113,19 @@ function guardarArticuloFinal() {
         return showError(`❌ No puedes restar tanto. El stock quedaría en ${nuevoStockTotal}.`);
     }
 
-    db.collection('articulos').doc(id).update({
+    const ref=db.collection('articulos').doc(id);
+    const precio=Number(document.getElementById('articuloPrice').value);
+    if(!Number.isFinite(precio)||precio<0)return showError('Precio inválido');
+    db.runTransaction(async tx=>{const doc=await tx.get(ref);if(!doc.exists)throw Error('Producto inexistente');const current=doc.data();const stock=Number(current.stock||0)+stockSumar;if(!inf&&stock<0)throw Error('Stock insuficiente');tx.update(ref,{
     nombre: nombre, 
-    precio: parseFloat(document.getElementById('articuloPrice').value),
+    precio,
+    catalogoIntegridad:GenesaretCheckout.tryIntegrityCatalog({...current,precio}),
     categoria: document.getElementById('editArticuloCategoria').value,
     vendedorAsignadoId: document.getElementById('editArticuloVendedor').value || 'todos',
     requiereCocina: document.getElementById('artCocina').checked,
     esInfinito: inf, 
-    stock: inf ? 99999 : nuevoStockTotal
-}).then(() => {
+    stock: inf ? 99999 : stock
+});return stock;}).then((stockFinal) => {
         // ... (resto del código de bitácora igual que tenías) ...
         if (stockSumar !== 0 && !inf) {
             const tipo = stockSumar > 0 ? 'entrada' : 'salida/ajuste'; // Detectamos tipo
@@ -1129,7 +1133,7 @@ function guardarArticuloFinal() {
                 fecha: new Date(),
                 articulo: nombre,
                 cantidad: stockSumar,
-                stockFinal: nuevoStockTotal,
+                stockFinal,
                 usuario: localStorage.getItem('userName') || 'Admin',
                 tipo: tipo
             });
