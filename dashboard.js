@@ -1,7 +1,7 @@
 (function(root){
 'use strict';
 let stops=[], data={}, failed=false, ready=new Set();
-const collections=['eventos','pulseras','recargas','transacciones','articulos'];
+const collections=['eventos','pulseras','recargas','transacciones','articulos','insumos'];
 const el=id=>document.getElementById(id);
 const num=v=>Number.isFinite(Number(v))?Number(v):0;
 const mx=n=>new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(n);
@@ -49,11 +49,14 @@ function render(){
  set('recargas',mx(loads.reduce((n,x)=>n+Math.max(0,num(x.monto)),0)));set('ventas',mx(sum(paid,'monto')));set('saldo',mx(sum(wallets,'saldoActual')));set('operaciones',new Set(sales.map(s=>s.carritoId||s.key)).size+loads.length);set('pulseras',wallets.length);set('nfc',mx(methods.nfc));set('pendientes',mx(sum(sales.filter(s=>s.estadoPago==='pendiente'),'monto')));
  bars('overviewRanking',[...ranking].sort((a,b)=>b[1]-a[1]).slice(0,5),v=>v+' uds.');paymentDonut([['NFC / QR',methods.nfc],['Efectivo',methods.efectivo],['Transferencia',methods.transferencia],['Otros',methods.otro]]);
  const feed=el('overviewFeed');feed.replaceChildren();
- const activity=[...sales.map(s=>({label:s.articulo||'Venta',amount:s.monto,date:s.fecha,sub:s.estadoPago==='pendiente'?'Pendiente':'Venta'})),...loads.map(s=>({label:'Recarga de pulsera',amount:s.monto,date:s.fecha,sub:'Recarga'}))].sort((a,b)=>time(b.date)-time(a.date)).slice(0,12);
+ const activity=[...sales.map(s=>({label:s.articulo||'Venta',amount:s.monto,date:s.fecha,sub:['cancelado','anulado'].includes(s.estadoPago)?'Cancelada':s.estadoPago==='pendiente'?'Pendiente':'Venta'})),...loads.map(s=>({label:'Recarga de pulsera',amount:s.monto,date:s.fecha,sub:'Recarga'}))].sort((a,b)=>time(b.date)-time(a.date)).slice(0,12);
  for(const x of activity)row(feed,x.label,mx(num(x.amount)),x.sub+' · '+time(x.date).toLocaleString('es-MX',{dateStyle:'short',timeStyle:'short'}));
  if(!activity.length)feed.textContent='Sin actividad reciente';
  const stock=el('overviewStock');stock.replaceChildren();
- for(const p of products.filter(p=>!p.esInfinito&&p.stock!=null&&num(p.stock)<=5).sort((a,b)=>num(a.stock)-num(b.stock)))row(stock,p.nombre||'Producto',num(p.stock)<=0?'Agotado':num(p.stock)+' disponibles');
+ const activeIds=new Set(data.eventos.filter(e=>e.activo===true).map(e=>e.key));
+ const relevant=x=>select.value?x.eventId===select.value:activeIds.has(x.eventId);
+ for(const i of scope(data.insumos).filter(i=>relevant(i)&&num(i.stock)<=num(i.minStock)).sort((a,b)=>num(a.stock)-num(b.stock)))row(stock,i.nombre||'Insumo',num(i.stock)<=0?'Agotado':num(i.stock)+' '+(i.unit||''),'Insumo · mínimo '+num(i.minStock));
+ for(const p of products.filter(p=>relevant(p)&&!p.esInfinito&&p.stock!=null&&num(p.stock)<=5).sort((a,b)=>num(a.stock)-num(b.stock)))row(stock,p.nombre||'Producto',num(p.stock)<=0?'Agotado':num(p.stock)+' disponibles');
  if(!stock.children.length)stock.textContent='Sin alertas de inventario';
  el('overviewStatus').textContent='Datos recibidos · '+(select.selectedOptions[0]?.textContent||'Todos los eventos');
 }
