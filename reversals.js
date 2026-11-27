@@ -37,12 +37,12 @@ async function cancelSale(id){
  const kitchenOrder=key&&initial.eventId?await tx.get(db.collection('eventos').doc(initial.eventId).collection('pedidos_cocina').doc(key)):null;
  const now=firebase.firestore.FieldValue.serverTimestamp();
  if(kitchenOrder?.exists)tx.update(kitchenOrder.ref,{estado:'cancelado'});
- if(refundShift)tx.update(refundShift.ref,{efectivoVentas:firebase.firestore.FieldValue.increment(-total)});
+ if(refundShift){const v=refundShift.data();if(v.efectivoVentas<total||v.fondoInicial+v.efectivoVentas+v.entradas-v.salidas<total)throw Error('Efectivo insuficiente en el turno para devolver la venta');tx.update(refundShift.ref,{efectivoVentas:firebase.firestore.FieldValue.increment(-total),ultimaAnulacionId:audit.id});}
  if(wallet)tx.update(wallet.ref,{saldoActual:(cents(wallet.data().saldoActual)+total)/100});
  for(const {d,n} of stock)tx.update(d.ref,{stock:Number(d.data().stock)+n});
  for(const {d,n} of ingredients){const v=d.data(),stock=v.stock+n;tx.update(d.ref,{stock});tx.set(db.collection('movimientos_insumos').doc(),{eventId:initial.eventId,insumoId:d.id,nombre:v.nombre,unit:v.unit,delta:n,stockFinal:stock,motivo:'Cancelación',usuarioId:uid,fecha:now,carritoId:key||id});}
  for(const d of docs)tx.update(d.ref,{estadoPago:'cancelado',estadoPagoAnterior:initial.estadoPago,canceladoPor:uid,canceladoAt:now,motivoCancelacion:result.value.trim(),anulacionId:audit.id});
- tx.set(audit,{eventId:initial.eventId||null,carritoId:key||id,transacciones:refs.map(r=>r.id),monto:total/100,metodo:initial.metodoPago||null,estadoAnterior:initial.estadoPago,recuperarStock:restore.isConfirmed,usuarioId:uid,motivo:result.value.trim(),fecha:now});
+ tx.set(audit,{...(refundShift?{turnoCajaId:refundShift.id}:{}),eventId:initial.eventId||null,carritoId:key||id,transacciones:refs.map(r=>r.id),monto:total/100,metodo:initial.metodoPago||null,estadoAnterior:initial.estadoPago,recuperarStock:restore.isConfirmed,usuarioId:uid,motivo:result.value.trim(),fecha:now});
  });return true;
 }
 let salesStop=null,rows=[],events=[];
