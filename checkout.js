@@ -167,6 +167,9 @@
                 const signature=rows=>JSON.stringify(rows.map(i=>[variantKey(i.id,i.selection),i.cantidad,money(i.precio)]).sort((a,b)=>a[0].localeCompare(b[0])));
                 tx.update(orderRef,{estado:'cobrado',carritoId,numeroPedido,cobradoPor:user.uid,cobradoAt:new Date(),itemsFinales:finalItems,totalFinal:total/100,modificadoEnCaja:signature(order.data().items)!==signature(finalItems)});
             }
+            const kitchenItems=products.flatMap((doc,index)=>doc.data().requiereCocina===true?[{name:doc.data().nombre,qty:items[index].cantidad,notes:resolved[index].notes}]:[]);
+            if(kitchenItems.length)tx.set(eventRef.collection('pedidos_cocina').doc(carritoId),{items:kitchenItems,numeroPedido,fecha:firebase.firestore.FieldValue.serverTimestamp(),estado:'activo',vendedorId:user.uid,pagoPendiente:estado==='pendiente'});
+            if(estado==='pagado')tx.set(eventRef.collection('confirmaciones_caja').doc(user.uid),{carritoId,total:total/100,kitchen:kitchenItems.length>0,numeroPedido,fecha:firebase.firestore.FieldValue.serverTimestamp(),vendedorId:user.uid});
             GenesaretCash.credit(tx,shift,total);
             if (numbered) tx.set(counterRef,{ultimo:numeroPedido},{merge:true});
             if (walletRef) tx.update(walletRef,{saldoActual:after/100});
@@ -177,13 +180,7 @@
             });
             return {saldoNuevo:after/100,numeroPedido};
         });
-        try { return await transact(true); }
-        catch (error) {
-            // A denied atomic transaction commits nothing. Preserve checkout until the new counter rules are deployed.
-            if (error.code !== 'permission-denied' && error.code !== 'firestore/permission-denied') throw error;
-            console.warn('Numeración de pedidos no autorizada; registrando sin folio.', error);
-            return transact(false);
-        }
+        return transact(true);
     }
     root.GenesaretCheckout = {commit,customize,variantKey,escapeHtml,resolveRecipe,foodIcon,ingredientAvailability};
 })(globalThis);
