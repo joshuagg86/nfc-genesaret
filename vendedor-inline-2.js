@@ -251,7 +251,7 @@ function showError(message) {
                 let primerEventoId = '';
                 
                 snap.forEach((doc, idx) => {
-                    if (idx === 0) primerEventoId = doc.id;
+                    if (!primerEventoId) primerEventoId = doc.id;
                     html += `<option value="${doc.id}">${doc.data().nombre}</option>`;
                 });
                 
@@ -274,7 +274,7 @@ function showError(message) {
         }
         let catalogUnsubscribe = null;
 let catalogEvent = '';
-let showAllProducts = false;
+let showAllProducts = true;
 function toggleCatalogScope() {
     showAllProducts = !showAllProducts;
     const button = document.getElementById('catalogScope');
