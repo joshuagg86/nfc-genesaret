@@ -216,6 +216,7 @@ function switchTab(tab) {
     // --- AQUÍ ESTABA EL ERROR ---
     // Usamos 'tab' en lugar de 'tabId' y agrupamos las cargas:
     if(tab==='dispositivos')GenesaretStations.open();
+    if(tab==='ventas')GenesaretReversals.open();
     if (tab === 'reportes') {
         cargarReporteMensual();
         cargarGraficaVentas();
