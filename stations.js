@@ -19,16 +19,17 @@ async function createStation(){
  });$('stationName').value='';showSuccess('Estación creada');
  }catch(e){showError(e.message);}
 }
-let stop=null;
+let stop=null,stopUsers=null,opening=false;
 async function open(){
- if(stop)return;
+ if(stop||opening)return;opening=true;
  try{
- const [events,users]=await Promise.all([db.collection('eventos').where('activo','==',true).get(),db.collection('usuarios').get()]);
- for(const [key,docs,filter] of [['stationEvent',events.docs,()=>true],['stationVendor',users.docs,d=>d.data().activo!==false&&['vendedor','admin','administrador'].includes(d.data().role)]]){
- const sel=$(key);sel.replaceChildren();for(const d of docs.filter(filter))sel.add(new Option(d.data().nombre||d.data().name||d.data().email||d.id,d.id));
- }
+ const [events,initialUsers]=await Promise.all([db.collection('eventos').where('activo','==',true).get(),db.collection('usuarios').get()]);
+ let users=initialUsers,stationSnapshot=null;
+ const eventSelect=$('stationEvent');eventSelect.replaceChildren();for(const d of events.docs)eventSelect.add(new Option(d.data().nombre||d.id,d.id));
+ function refreshVendors(){const sel=$('stationVendor'),old=sel.value;sel.replaceChildren();for(const d of users.docs.filter(d=>d.data().activo!==false&&['vendedor','admin','administrador'].includes(d.data().role))){const u=d.data();sel.add(new Option((u.name||u.nombre||'Sin nombre')+(u.email?' · '+u.email:''),d.id));}if([...sel.options].some(o=>o.value===old))sel.value=old;}
+ refreshVendors();
  $('stationCreate').onclick=createStation;
- stop=db.collection('estaciones_venta').onSnapshot(snap=>{
+ function renderStations(snap){
  const list=$('stationList');list.replaceChildren();
  for(const d of snap.docs){const s=d.data(),card=node('article',null,'smart-card');card.append(node('h3',s.nombre),node('strong',d.id,'smart-amount'),node('small',(events.docs.find(x=>x.id===s.eventId)?.data().nombre||'Evento')+' · '+(users.docs.find(x=>x.id===s.vendedorId)?.data().name||'Caja')),node('small',s.activo?'Habilitada':'Deshabilitada'));
  const auto=node('div',null,'station-autoservice');auto.append(node('h3','Autoservicio · '+s.nombre),node('small','Acceso independiente para esta estación'));
@@ -36,8 +37,10 @@ async function open(){
  const launch=node('a','Abrir Autoservicio','btn-primary');launch.href=url;launch.target='_blank';launch.rel='noopener';launch.style.cssText='display:block;text-align:center;text-decoration:none;padding:12px;border-radius:12px';if(s.activo){auto.append(launch,btn('Copiar enlace',async()=>{try{await navigator.clipboard.writeText(new URL(url,location.href).href);showSuccess('Enlace copiado');}catch(e){await Swal.fire({title:'Enlace de Autoservicio',text:new URL(url,location.href).href});}}));}else auto.append(node('small','Estación deshabilitada'));card.append(auto);
  card.append(btn(s.activo?'Deshabilitar':'Habilitar',async()=>{try{await d.ref.update({activo:!s.activo});}catch(e){showError(e.message);}}));list.append(card);}
  if(!list.children.length)list.append(node('p','Crea tu primera estación.'));
- },e=>{$('stationList').textContent=e.message;stop=null;});
- }catch(e){showError(e.message);}
+ }
+ stop=db.collection('estaciones_venta').onSnapshot(snap=>{stationSnapshot=snap;renderStations(snap);},e=>{$('stationList').textContent=e.message;stop=null;if(stopUsers){stopUsers();stopUsers=null;}});
+ stopUsers=db.collection('usuarios').onSnapshot(snap=>{users=snap;refreshVendors();if(stationSnapshot)renderStations(stationSnapshot);},e=>showError('No se pudieron actualizar las cuentas: '+e.message));
+ }catch(e){showError(e.message);}finally{opening=false;}
 }
 function queue({container,eventId,canLoad,load,cancel,onError}){
  let stops=[],station=null,orders=[],loading=false,paused=false,failed=null,closed=false,confirmed=false;
