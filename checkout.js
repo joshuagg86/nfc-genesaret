@@ -22,16 +22,24 @@
         for(const [pattern,icon] of [[/aguacate/,'🥑'],[/queso/,'🧀'],[/carne|hamburguesa/,'🍔'],[/sandwich|chapata|torta/,'🥪'],[/jitomate|tomate/,'🍅'],[/cebolla/,'🧅'],[/lechuga|verdura/,'🥬'],[/jamon|tocino/,'🥓'],[/pollo/,'🍗'],[/huevo/,'🥚'],[/pan dulce|dona/,'🍩'],[/pan/,'🍞'],[/agua/,'🧴'],[/cafe/,'☕'],[/refresco|jugo/,'🥤'],[/papa/,'🍟'],[/chocolate/,'🍫']])if(pattern.test(n))return icon;
         return fallback;
     }
+    function ingredientAvailability(p,stocks,selection={}){
+        const detail=resolveRecipe(p,selection),needs=new Map();
+        for(const l of detail.usage)needs.set(l.id,(needs.get(l.id)||0)+l.amount);
+        return [...needs].filter(([id,n])=>!stocks.has(id)||stocks.get(id)<n).map(([id])=>id);
+    }
     async function customize(p) {
         const recipe=p.recetaActiva?(p.produccionPorLotes?{...p.recetaActiva,lines:[]}:p.recetaActiva):null, selection={removed:[],extra:[]};
         if(!recipe||(!recipe.lines.length&&!recipe.extras.length))return {...resolveRecipe(p),selection};
         const el=(tag,cls,txt)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(txt!=null)n.textContent=txt;if(txt==='🧴')n.classList.add('water-bottle-icon');return n;};
         const fmt=n=>new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(n/100);
+        const stocks=new Map();
+        const ids=[...new Set([...recipe.lines,...recipe.extras].map(l=>l.id))];
+        await Promise.all(ids.map(async id=>{const d=await db.collection('insumos').doc(id).get({source:'server'});if(d.exists&&d.data().eventId===p.eventId)stocks.set(id,Number(d.data().stock));}));
         const form=el('div','modifier-form');
         const hero=el('div','modifier-hero');
         const heroText=el('div');heroText.append(el('strong','','A tu gusto'),el('small','','Personaliza tu pedido'));
         hero.append(el('span','modifier-hero-icon',foodIcon(p.nombre)),heroText,el('strong','modifier-base-price',fmt(money(p.precio))));form.append(hero);
-        const rows=[];
+        const rows=[];const warning=el('p','modifier-hint');warning.setAttribute('role','status');
         const summary=el('div','modifier-summary');
         const breakdown=el('small','',''),total=el('strong','','');const copy=el('div');copy.append(el('small','','Total del producto'),total);summary.append(copy,breakdown);
         function refresh(){
@@ -43,6 +51,16 @@
                 detail.textContent=isBase?(selected?'Incluido':'Sin ingrediente'):(restored?'Reincorporar · sin costo':money(l.price)?'+'+fmt(money(l.price)):'Sin costo');
             }
             const d=resolveRecipe(p,selection);total.textContent=fmt(d.price);
+            const unavailable=ingredientAvailability(p,stocks,selection);
+            warning.textContent=unavailable.length?'Sin existencias: '+unavailable.map(id=>[...recipe.lines,...recipe.extras].find(l=>l.id===id)?.nombre||'ingrediente').join(', '):'';
+            for(const {l,kind,b,detail} of rows){
+                if(kind!=='extra')continue;
+                const selected=selection.extra.includes(l.id),restoring=selection.removed.includes(l.id);
+                const candidate=restoring?{removed:selection.removed.filter(id=>id!==l.id),extra:selection.extra.filter(id=>id!==l.id)}:{removed:selection.removed,extra:[...new Set([...selection.extra,l.id])]};
+                const blocked=!selected&&ingredientAvailability(p,stocks,candidate).includes(l.id);
+                b.disabled=blocked;if(blocked)detail.textContent='Agotado';
+            }
+            const confirm=Swal.getConfirmButton?.();if(confirm)confirm.disabled=unavailable.length>0;
             breakdown.textContent=d.price===money(p.precio)?'Precio base': 'Base '+fmt(money(p.precio))+' · Extras '+fmt(d.price-money(p.precio));
         }
         function section(title,hint,lines,kind){
@@ -69,8 +87,8 @@
         }
         if(recipe.lines.length)section('Ingredientes incluidos','Toca para quitar o volver a incluir.',recipe.lines,'removed');
         if(recipe.extras.length)section('Hazlo extra','Añade una porción adicional a tu gusto.',recipe.extras,'extra');
-        form.append(summary);refresh();
-        const res=await Swal.fire({titleText:p.nombre,html:form,width:680,customClass:{popup:'genesaret-smart-modal genesaret-modifier'},showCancelButton:true,confirmButtonText:'Agregar al carrito',cancelButtonText:'Cancelar'});
+        form.append(warning,summary);refresh();
+        const res=await Swal.fire({titleText:p.nombre,html:form,width:680,customClass:{popup:'genesaret-smart-modal genesaret-modifier'},showCancelButton:true,confirmButtonText:'Agregar al carrito',cancelButtonText:'Cancelar',didOpen:refresh,preConfirm:()=>{if(ingredientAvailability(p,stocks,selection).length){Swal.showValidationMessage('No hay existencias suficientes');return false;}}});
         return res.isConfirmed?{...resolveRecipe(p,selection),selection}:null;
     }
     const variantKey=(id,sel={})=>JSON.stringify([id,[...(sel.removed||[])].sort(),[...(sel.extra||[])].sort()]);
@@ -153,5 +171,5 @@
             return transact(false);
         }
     }
-    root.GenesaretCheckout = {commit,customize,variantKey,escapeHtml,resolveRecipe,foodIcon};
+    root.GenesaretCheckout = {commit,customize,variantKey,escapeHtml,resolveRecipe,foodIcon,ingredientAvailability};
 })(globalThis);
