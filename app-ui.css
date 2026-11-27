@@ -228,3 +228,80 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .recipe-management{margin-bottom:16px}.recipe-list-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.recipe-list-heading span{color:var(--text-muted);font-size:13px}.recipe-list-card{display:grid;gap:12px;padding:16px;background:var(--bg-item-list);border:1px solid var(--border-color);border-radius:20px}.recipe-list-head{display:flex;align-items:center;gap:12px}.recipe-list-head h3{margin:0 0 5px;font-size:16px}.recipe-list-head small{color:var(--text-muted);font-size:12px}.recipe-list-icon{display:grid;place-items:center;width:52px;height:52px;border-radius:16px;background:#168dea28;font-size:29px;flex:none}.recipe-list-state{justify-self:start;font-size:12px;font-weight:700;color:var(--text-muted)}.recipe-list-state.is-active{color:#168dea}.recipe-list-card .btn-danger,#recipeDelete{border-radius:12px;min-height:44px}#recipeEditor{scroll-margin-top:95px}#sec-recetas .shell-heading{scroll-margin-top:95px}
 
 .station-queue{display:grid;gap:8px;margin:10px 0;padding:12px;border-radius:18px;border:1px solid var(--border-color);background:var(--bg-item-list)}.station-queue small{color:var(--text-muted);font-size:12px}.station-order{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:8px;border-radius:12px;background:var(--bg-card)}.station-order span{flex:1;font-size:12px}.station-order button{font-size:11px;padding:6px;min-height:32px}
+
+/* Bounded POS panels: only the product list and queue scroll, not the checkout. */
+.screen-vendedor #tab-venta .pos-layout{align-items:start}
+.screen-vendedor #tab-venta .pos-right{
+  display:flex;flex-direction:column;min-width:0;min-height:0;
+  height:calc(100vh - 190px);height:calc(100dvh - 190px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  max-height:none;overflow:hidden;position:sticky;top:calc(72px + env(safe-area-inset-top));
+  container-type:inline-size;
+}
+.screen-vendedor #tab-venta .carrito-header{flex:0 0 auto;padding:12px 14px;min-height:54px}
+.screen-vendedor #sellerStationQueue{
+ flex:0 1 auto;min-height:0;max-height:min(150px,22dvh);overflow:auto;overscroll-behavior:contain;
+ padding:8px 10px;margin:6px 8px;gap:4px;border-radius:14px
+}
+.screen-vendedor #sellerStationQueue:empty{display:none}
+.screen-vendedor #sellerStationQueue>.btn-secondary{min-height:32px;padding:5px 8px;font-size:12px}
+.screen-vendedor #tab-venta .carrito-columns,
+.screen-vendedor #tab-venta .carrito-item{
+ display:grid!important;grid-template-columns:34px minmax(0,1fr) 92px minmax(64px,78px) 32px;
+ align-items:center;gap:8px;justify-content:initial;
+}
+.screen-vendedor #tab-venta .carrito-columns{
+ flex:0 0 auto;padding:7px 12px;color:var(--text-muted);font-size:10px;font-weight:700;
+ border-bottom:1px solid var(--border-color)
+}
+.screen-vendedor .carrito-columns span:nth-child(3){text-align:center}
+.screen-vendedor .carrito-columns span:nth-child(4){text-align:right}
+.screen-vendedor #carritoItems{
+ flex:1 1 0;min-height:72px;max-height:none!important;overflow-y:auto!important;overflow-x:hidden;
+ display:block!important;overscroll-behavior:contain;scrollbar-gutter:stable;padding:4px 10px!important;
+ margin:0!important
+}
+.screen-vendedor #carritoItems .carrito-item{
+ width:100%;padding:8px!important;margin:5px 0!important;min-height:54px;border-radius:12px!important;
+}
+.screen-vendedor #carritoItems .cart-food-icon{width:34px;height:34px;font-size:23px;border-radius:10px}
+.screen-vendedor #carritoItems .cart-food-icon.water-bottle-icon:after{font-size:27px}
+.screen-vendedor #carritoItems .carrito-item-info{min-width:0;width:100%;padding:0}
+.screen-vendedor #carritoItems .carrito-item-nombre{font-weight:650;white-space:normal;overflow-wrap:anywhere;line-height:1.25;text-align:left}
+.screen-vendedor #carritoItems .carrito-item-info small{overflow-wrap:anywhere;line-height:1.25}
+.screen-vendedor #carritoItems .carrito-item-cantidad{display:grid;grid-template-columns:30px 24px 30px;gap:4px;align-items:center;justify-content:center}
+.screen-vendedor #carritoItems .qty-btn{width:30px;height:32px;min-width:30px;min-height:32px;margin:0;padding:0}
+.screen-vendedor #carritoItems .qty-val{text-align:center;font-variant-numeric:tabular-nums}
+.screen-vendedor #carritoItems .carrito-item-subtotal{min-width:0;width:100%;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.screen-vendedor #carritoItems .btn-eliminar-item{width:32px;height:34px;margin:0;padding:0;justify-self:end}
+.screen-vendedor #tab-venta .payment-section{
+ flex:0 0 auto;max-height:44dvh;overflow-y:auto;overscroll-behavior:contain;
+ padding:10px 12px;border-radius:0 0 22px 22px
+}
+.screen-vendedor #tab-venta .payment-section .pm-btn{min-height:44px;padding:6px}
+.screen-vendedor #tab-venta #nfcReader>div[style*="flex"]{flex-direction:row!important;max-width:none!important;gap:8px!important;margin:6px 0 0!important}
+.screen-vendedor #tab-venta #nfcReader>div[style*="flex"] button{min-width:0;flex:1;font-size:11px;padding:9px 4px!important}
+.screen-vendedor #tab-venta #nfcReader .nfc-icon{display:none}
+.screen-vendedor #tab-venta #nfcReader{padding:8px!important;margin-bottom:5px!important}
+@container (max-width:420px){
+ .screen-vendedor #tab-venta .carrito-columns,.screen-vendedor #tab-venta .carrito-item{grid-template-columns:28px minmax(0,1fr) 78px 65px 28px;gap:5px}
+ .screen-vendedor #carritoItems .cart-food-icon{width:28px;height:28px;font-size:20px}
+ .screen-vendedor #carritoItems .carrito-item-cantidad{grid-template-columns:25px 20px 25px;gap:3px}
+ .screen-vendedor #carritoItems .qty-btn{min-width:25px;width:25px;height:30px}
+ .screen-vendedor #carritoItems .btn-eliminar-item{width:28px}
+}
+@media(max-width:768px){
+ .screen-vendedor #tab-venta .pos-layout{display:block}
+ .screen-vendedor #tab-venta .pos-right{
+   position:static!important;inset:auto!important;width:100%!important;
+   height:auto!important;max-height:none!important;overflow:hidden!important;
+   padding:0!important;margin:16px 0 0!important;z-index:auto!important;border-radius:20px!important;
+ }
+ .screen-vendedor #tab-venta #carritoItems{flex:none;height:clamp(140px,28dvh,280px)}
+ .screen-vendedor #tab-venta .payment-section{max-height:none;overflow:visible}
+ .screen-vendedor #tab-venta #contenedorProductos{max-height:42dvh;overflow-y:auto;overscroll-behavior:contain}
+}
+@media(min-width:769px) and (max-height:600px){
+ .screen-vendedor #tab-venta .pos-right{height:auto;position:static}
+ .screen-vendedor #tab-venta #carritoItems{flex:none;height:180px}
+ .screen-vendedor #tab-venta .payment-section{max-height:none;overflow:visible}
+}
