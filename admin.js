@@ -1386,27 +1386,28 @@ function renderizarTablaCuentas() {
             // B. Cambiar Rol (NUEVO - Azul) 
             // Calcula el rol contrario para enviarlo a la función
             const siguienteRol = u.role;
+            const btnNombre = `<button onclick="renombrarCuenta('${u.id}')" title="Editar nombre" aria-label="Editar nombre" class="btn-icon-action action-role"><i class="fas fa-pen"></i></button>`;
             const btnRol = `<button onclick="cambiarRolUsuario('${u.id}')" title="Cambiar rol" class="btn-icon-action action-role"><i class="fas fa-user-tag"></i></button>`;
 
             // C. Reset Password (Amarillo)
             const btnReset = `<button onclick="resetPass('${u.email}')" title="Restablecer Contraseña" class="btn-icon-action action-reset"><i class="fas fa-key"></i></button>`;
 
             // D. Borrar (Rojo)
-            const btnBorrar = `<button onclick="borrarUsuario('${u.id}', '${u.name}')" title="Eliminar Usuario" class="btn-icon-action action-delete"><i class="fas fa-trash-alt"></i></button>`;
+            const btnBorrar = `<button onclick="borrarUsuario('${u.id}')" title="Eliminar Usuario" class="btn-icon-action action-delete"><i class="fas fa-trash-alt"></i></button>`;
 
             html += `
                 <tr>
                     <td data-label="Nombre" style="vertical-align: middle;">
                         <div style="display:flex; flex-direction:column;">
-                            <strong style="font-size:14px; color:var(--text-main);">${u.name || 'Sin Nombre'}</strong>
+                            <strong style="font-size:14px; color:var(--text-main);">${GenesaretCheckout.escapeHtml(u.name || 'Sin Nombre')}</strong>
                         </div>
                     </td>
-                    <td data-label="Email" style="vertical-align: middle; color:var(--text-muted); font-size:13px;">${u.email}</td>
+                    <td data-label="Email" style="vertical-align: middle; color:var(--text-muted); font-size:13px;">${GenesaretCheckout.escapeHtml(u.email||'')}</td>
                     <td data-label="Rol" style="vertical-align: middle;">${rol}</td>
                     <td data-label="Estado" style="vertical-align: middle;">${estado}</td>
                     <td class="actions-cell" style="vertical-align: middle; text-align: right;">
                         <div style="display:flex; justify-content:flex-end; gap:8px;">
-                            ${btnRol}   ${btnEstado}
+                            ${btnNombre} ${btnRol}   ${btnEstado}
                             ${btnReset}
                             ${btnBorrar}
                         </div>
@@ -1425,6 +1426,20 @@ function renderizarTablaCuentas() {
 }
 
 // --- FUNCIÓN PARA CAMBIAR ROL (AGREGAR AL FINAL DE ADMIN.JS) ---
+async function renombrarCuenta(id){
+ try{
+  const ref=db.collection('usuarios').doc(id),d=await ref.get({source:'server'});
+  if(!d.exists)throw Error('Cuenta no encontrada');
+  const result=await Swal.fire({title:'Editar nombre de cuenta',text:'Correo: '+(d.data().email||'Sin correo')+' · No cambia tu contraseña ni tus permisos.',input:'text',inputValue:d.data().name||'',inputAttributes:{maxlength:100,autocomplete:'off'},showCancelButton:true,confirmButtonText:'Guardar nombre',cancelButtonText:'Cancelar',customClass:{popup:'genesaret-smart-modal'},inputValidator:v=>!v.trim()||v.trim().length>100?'Escribe un nombre de 1 a 100 caracteres':undefined});
+  if(!result.isConfirmed)return;
+  const name=result.value.trim(),uid=auth.currentUser?.uid;
+  if(!uid)throw Error('Inicia sesión nuevamente');
+  await db.runTransaction(async tx=>{const [admin,target]=await Promise.all([tx.get(db.collection('usuarios').doc(uid)),tx.get(ref)]);if(!admin.exists||admin.data().role!=='admin'||admin.data().activo===false||!target.exists)throw Error('No autorizado o cuenta inexistente');tx.update(ref,{name});});
+  if(id===uid){localStorage.setItem('userName',name);for(const k of ['userName','userNameMobile']){const el=document.getElementById(k);if(el)el.textContent=name;}}
+  cargarSelectoresVendedores();
+  showSuccess('Nombre actualizado');
+ }catch(e){showError(e.message);}
+}
 async function cambiarRolUsuario(id){
  try{if(id===auth.currentUser.uid)throw Error('No puedes cambiar tu propio rol');const d=await db.collection('usuarios').doc(id).get();if(!d.exists)throw Error('Usuario no encontrado');const r=await Swal.fire({title:'Cambiar rol',input:'select',inputOptions:{admin:'Administrador',vendedor:'Caja / vendedor',cocina:'Cocina',tv:'TV de pedidos',autoservicio:'Autoservicio'},inputValue:d.data().role,showCancelButton:true,confirmButtonText:'Guardar',cancelButtonText:'Cancelar'});if(r.isConfirmed){await d.ref.update({role:r.value});showSuccess('Rol actualizado');}}catch(e){showError(e.message);}
 }
@@ -1495,6 +1510,7 @@ function cambiarEstadoUsuario(id, nuevoEstado) {
 }
 
 function borrarUsuario(id, nombre) {
+    nombre=nombre||cuentasGlobales.find(u=>u.id===id)?.name||'Usuario';
     if(confirm(`¿Estás seguro de eliminar al usuario ${nombre}? Esta acción no se puede deshacer.`)) {
         // Nota: Borrar de Auth requiere Cloud Functions, aquí solo borramos de BD por ahora
         db.collection('usuarios').doc(id).delete()
@@ -3207,7 +3223,7 @@ function cargarSelectoresVendedores() {
         
         snap.forEach(doc => {
             const u = doc.data();
-            opciones += `<option value="${doc.id}">🏪 ${u.name || u.email}</option>`;
+            opciones += `<option value="${doc.id}">🏪 ${GenesaretCheckout.escapeHtml(u.name || u.email || '')}</option>`;
         });
 
         const s1 = document.getElementById('articuloVendedor');
