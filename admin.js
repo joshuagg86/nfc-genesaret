@@ -182,7 +182,7 @@ function actualizarSaludo() {
 // --- NAVEGACIÓN ---
 function switchTab(tab) {
     if(adminCheckoutBusy)return;
-    if(tab!=='ventas'&&document.getElementById('ventas').classList.contains('active'))stopAdminSaleView();
+    if(tab!=='ventas'&&document.getElementById('ventas').classList.contains('active')){stopAdminSaleView();if(adminPendingStop){adminPendingStop();adminPendingStop=null;}if(adminCutStop){adminCutStop();adminCutStop=null;}}
     
     if (!document.getElementById(tab)) tab = 'dashboard';
     const group = ['eventos','cuentas','reportes','mas','dispositivos'].includes(tab) ? 'mas' : tab;
@@ -2824,6 +2824,8 @@ function switchPOSTab(tabName){
  if(adminCheckoutBusy)return;
  if(!['historial','venta','pendientes','corte'].includes(tabName))return;
  if(tabName!=='venta')stopAdminSaleView();
+ if(adminPendingStop){adminPendingStop();adminPendingStop=null;}
+ if(adminCutStop){adminCutStop();adminCutStop=null;}
  const pos=document.getElementById('modalPOSAdmin');
  pos.classList.toggle('active',tabName!=='historial');
  document.querySelector('.admin-sale-grid').style.display=tabName==='venta'?'grid':'none';
@@ -2989,13 +2991,15 @@ function cerrarConfirmacionAdmin() {
     document.getElementById('adminPagoOverlay').classList.remove('active');adminQueue?.next();
 }
 
+let adminPendingStop=null;
 function cargarPendientesAdmin() {
+    if(adminPendingStop)adminPendingStop();
     const list = document.getElementById('posListaPendientes');
     const myId = localStorage.getItem('userId');
     
     list.innerHTML = '<p style="text-align:center; padding:20px;"><i class="fas fa-spinner fa-spin"></i> Buscando deudas...</p>';
     
-    db.collection('transacciones')
+    adminPendingStop=db.collection('transacciones')
         .where('vendedorId', '==', myId)
         .where('estadoPago', '==', 'pendiente')
         .onSnapshot(snap => { 
@@ -3078,24 +3082,27 @@ function confirmarCobroAdmin(idsEncoded, monto) {
     }
 }
 
+let adminCutStop=null;
 function cargarCorteAdmin() {
+    if(adminCutStop)adminCutStop();
     const myId = localStorage.getItem('userId');
     const hoy = new Date();
     hoy.setHours(0,0,0,0);
     
-    db.collection('transacciones')
+    adminCutStop=db.collection('transacciones')
         .where('vendedorId', '==', myId)
         .where('fecha', '>=', hoy)
         .orderBy('fecha', 'desc')
         .onSnapshot(snap => { 
             let totalCobrado = 0;
             let totalPendiente = 0; // NUEVO CONTADOR
-            let count = 0;
+            const salesKeys=new Set();let count = 0;
             let htmlList = '<table class="table" style="margin-top:0;"><thead><tr><th>Hora</th><th>Items</th><th>Monto</th></tr></thead><tbody>';
             
             snap.forEach(d => {
                 const t = d.data();
-                count++;
+                if(['cancelado','anulado'].includes(t.estadoPago))return;
+                salesKeys.add(t.carritoId||d.id);count=salesKeys.size;
                 
                 // SEPARAMOS EL DINERO REAL DE LA DEUDA
                 if(t.estadoPago === 'pendiente') {
@@ -3127,7 +3134,7 @@ function cargarCorteAdmin() {
             // REGENERAMOS EL HTML DE LAS TARJETAS (STATS GRID) DESDE JS
             // Así no tienes que editar el HTML manualmente
             const statsHTML = `
-            <h4>Resumen de Ventas (Sesión Actual)</h4>
+            <h4>Resumen de ventas de hoy</h4>
             <div class="stats-grid" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-bottom: 20px;">
                 <div class="stat-box" style="background:var(--bg-input); padding:10px; border-radius:8px; text-align:center; border:1px solid var(--border-color);">
                     <div style="font-size:20px; font-weight:bold; color:#22c55e;">$${totalCobrado.toFixed(2)}</div>
