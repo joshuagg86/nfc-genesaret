@@ -106,8 +106,8 @@ function queue({container,eventId,canLoad,load,cancel,onError}){
  const sel=matches[0];if(station?.id===sel?.id&&station)return;
  if(stopOrders)stopOrders();if(stopPresence)stopPresence();stopPresence=null;station=sel?{id:sel.id,...sel.data()}:null;orders=[];confirmed=false;draw();
  if(station&&root.GenesaretPresence)stopPresence=root.GenesaretPresence.start(station.id,'caja');
- if(station)stopOrders=db.collection('pedidos_autoservicio').where('estacionId','==',station.id).onSnapshot({includeMetadataChanges:true},snap=>{
- confirmed=!snap.metadata.fromCache&&!snap.metadata.hasPendingWrites;orders=snap.docs.filter(d=>d.data().estado==='pendiente'&&d.data().eventId===eventId).map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.fecha?.toMillis?.()||0)-(b.fecha?.toMillis?.()||0)||a.id.localeCompare(b.id));draw();next();
+ if(station)stopOrders=db.collection('pedidos_autoservicio').where('vendedorId','==',uid).onSnapshot({includeMetadataChanges:true},snap=>{
+ confirmed=!snap.metadata.fromCache&&!snap.metadata.hasPendingWrites;orders=snap.docs.filter(d=>d.data().estado==='pendiente'&&d.data().eventId===eventId&&d.data().estacionId===station.id).map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.fecha?.toMillis?.()||0)-(b.fecha?.toMillis?.()||0)||a.id.localeCompare(b.id));draw();next();
  },e=>{confirmed=false;draw();onError(e.message);});
  },e=>onError(e.message)));
  draw();return {close(){closed=true;stops.forEach(f=>f());if(stopOrders)stopOrders();if(stopPresence)stopPresence();target.replaceChildren();},next(){draw();next();},pause(){paused=true;draw();}};
