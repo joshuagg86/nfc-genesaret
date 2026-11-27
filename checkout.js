@@ -191,7 +191,7 @@
             const kitchenItems=products.flatMap((doc,index)=>doc.data().requiereCocina===true?[{name:doc.data().nombre,qty:items[index].cantidad,notes:resolved[index].notes}]:[]);
             if(kitchenItems.length)tx.set(eventRef.collection('pedidos_cocina').doc(carritoId),{items:kitchenItems,numeroPedido,fecha:firebase.firestore.FieldValue.serverTimestamp(),estado:'activo',vendedorId:user.uid,pagoPendiente:estado==='pendiente'});
             if(estado==='pagado')tx.set(eventRef.collection('confirmaciones_caja').doc(user.uid),{carritoId,total:total/100,kitchen:kitchenItems.length>0,numeroPedido,fecha:firebase.firestore.FieldValue.serverTimestamp(),vendedorId:user.uid});
-            GenesaretCash.credit(tx,shift,total);
+            GenesaretCash.credit(tx,shift,total,experimentalIntegrity?carritoId:null);
             if (numbered) tx.set(counterRef,{ultimo:numeroPedido},{merge:true});
             if (walletRef) tx.update(walletRef,{saldoActual:after/100,...(experimentalIntegrity?{ultimaVentaId:carritoId}:{})});
             products.forEach((doc,index) => {
