@@ -4,7 +4,7 @@
 
     const money = n => Math.round(Number(n)*100);
     function resolveRecipe(p, selection={}) {
-        const recipe=p.recetaActiva;
+        const recipe=p.recetaActiva?(p.produccionPorLotes?{...p.recetaActiva,lines:[]}:p.recetaActiva):null;
         let removed=selection.removed||[], extra=selection.extra||[];
         if(!Array.isArray(removed)||!Array.isArray(extra)||new Set(removed).size!==removed.length||new Set(extra).size!==extra.length)throw Error('Personalización inválida');
         if(!recipe){if(removed.length||extra.length)throw Error('La receta cambió');return {price:money(p.precio),usage:[],notes:[]};}
@@ -23,8 +23,8 @@
         return fallback;
     }
     async function customize(p) {
-        const recipe=p.recetaActiva, selection={removed:[],extra:[]};
-        if(!recipe)return {...resolveRecipe(p),selection};
+        const recipe=p.recetaActiva?(p.produccionPorLotes?{...p.recetaActiva,lines:[]}:p.recetaActiva):null, selection={removed:[],extra:[]};
+        if(!recipe||(!recipe.lines.length&&!recipe.extras.length))return {...resolveRecipe(p),selection};
         const el=(tag,cls,txt)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(txt!=null)n.textContent=txt;if(txt==='🧴')n.classList.add('water-bottle-icon');return n;};
         const fmt=n=>new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(n/100);
         const form=el('div','modifier-form');
@@ -67,7 +67,7 @@
             }
             section.append(grid);form.append(section);
         }
-        section('Ingredientes incluidos','Toca para quitar o volver a incluir.',recipe.lines,'removed');
+        if(recipe.lines.length)section('Ingredientes incluidos','Toca para quitar o volver a incluir.',recipe.lines,'removed');
         if(recipe.extras.length)section('Hazlo extra','Añade una porción adicional a tu gusto.',recipe.extras,'extra');
         form.append(summary);refresh();
         const res=await Swal.fire({titleText:p.nombre,html:form,width:680,customClass:{popup:'genesaret-smart-modal genesaret-modifier'},showCancelButton:true,confirmButtonText:'Agregar al carrito',cancelButtonText:'Cancelar'});
