@@ -125,8 +125,7 @@
                 if(!order.exists||o.eventId!==eventId||o.estado!=='pendiente'||o.vendedorId!==user.uid||estado!=='pagado')throw Error('Pedido no disponible para cobrar');
                 const station=await tx.get(db.collection('estaciones_venta').doc(o.estacionId));
                 if(!station.exists||!station.data().activo||station.data().vendedorId!==user.uid||station.data().eventId!==eventId)throw Error('Estación no autorizada');
-                const signature=rows=>JSON.stringify(rows.map(i=>[variantKey(i.id,i.selection),i.cantidad,money(i.precio)]).sort((a,b)=>a[0].localeCompare(b[0])));
-                if(signature(o.items)!==signature(items))throw Error('El carrito no coincide con el pedido de Autoservicio');
+                // The assigned cashier may edit the cart before payment. The final items are validated below.
             }
             const last = counter?.exists ? counter.data().ultimo : 0;
             if (numbered && (!Number.isSafeInteger(last) || last < 0 || last >= Number.MAX_SAFE_INTEGER)) throw Error('Contador de pedidos inválido');
@@ -153,13 +152,17 @@
             for(const {doc,qty} of supplies)if(!doc.exists||doc.data().eventId!==eventId||!Number.isSafeInteger(qty)||!Number.isSafeInteger(doc.data().stock)||doc.data().stock<qty)throw Error('Insumo insuficiente: '+(doc.data()?.nombre||'ingrediente'));
             for(const {p,ref,qty} of productTotals.values())if(!p.esInfinito)tx.update(ref,{stock:Number(p.stock)-qty});
             for(const {id,doc,qty} of supplies){const v=doc.data(),stock=v.stock-qty;tx.update(doc.ref,{stock});tx.set(db.collection('movimientos_insumos').doc(),{eventId,insumoId:id,nombre:v.nombre,unit:v.unit,delta:-qty,stockFinal:stock,motivo:'Venta',usuarioId:user.uid,fecha:new Date(),carritoId});}
-            if(orderRef)tx.update(orderRef,{estado:'cobrado',carritoId,numeroPedido,cobradoPor:user.uid,cobradoAt:new Date()});
+            if(orderRef){
+                const finalItems=items.map((i,index)=>({id:i.id,nombre:products[index].data().nombre,cantidad:i.cantidad,precio:resolved[index].price/100,selection:i.selection||{removed:[],extra:[]},notes:resolved[index].notes}));
+                const signature=rows=>JSON.stringify(rows.map(i=>[variantKey(i.id,i.selection),i.cantidad,money(i.precio)]).sort((a,b)=>a[0].localeCompare(b[0])));
+                tx.update(orderRef,{estado:'cobrado',carritoId,numeroPedido,cobradoPor:user.uid,cobradoAt:new Date(),itemsFinales:finalItems,totalFinal:total/100,modificadoEnCaja:signature(order.data().items)!==signature(finalItems)});
+            }
             if (numbered) tx.set(counterRef,{ultimo:numeroPedido},{merge:true});
             if (walletRef) tx.update(walletRef,{saldoActual:after/100});
             products.forEach((doc,index) => {
                 const i = items[index], p = doc.data();
                 const detail=resolved[index];
-                tx.set(sales[index],{eventId,pulseraId,pulsera:wallet ? wallet.data().nombre : pulseraNombre,articulo:p.nombre,articuloId:i.id,cantidad:i.cantidad,lineasVenta:items.length,descuentoProducto:!p.esInfinito?i.cantidad:0,descuentoInsumos:detail.usage.map(l=>({id:l.id,amount:l.amount*i.cantidad})),requiereCocina:p.requiereCocina===true,personalizacion:detail.notes,precioUnitario:detail.price/100,monto:detail.price*i.cantidad/100,saldoAnterior:before/100,saldoNuevo:after/100,vendedor:profile.data().name || user.email || 'Vendedor',vendedorId:user.uid,fecha:new Date(),fechaVenta:new Date(),fechaPago:estado==='pagado'?new Date():null,metodoPago:metodo,estadoPago:estado,carritoId,...(numbered?{numeroPedido}:{}),ventaFueraDePuesto:!!(p.vendedorAsignadoId && p.vendedorAsignadoId !== 'todos' && p.vendedorAsignadoId !== user.uid)});
+                tx.set(sales[index],{eventId,...(selfOrderId?{pedidoAutoservicioId:selfOrderId}:{}),pulseraId,pulsera:wallet ? wallet.data().nombre : pulseraNombre,articulo:p.nombre,articuloId:i.id,cantidad:i.cantidad,lineasVenta:items.length,descuentoProducto:!p.esInfinito?i.cantidad:0,descuentoInsumos:detail.usage.map(l=>({id:l.id,amount:l.amount*i.cantidad})),requiereCocina:p.requiereCocina===true,personalizacion:detail.notes,precioUnitario:detail.price/100,monto:detail.price*i.cantidad/100,saldoAnterior:before/100,saldoNuevo:after/100,vendedor:profile.data().name || user.email || 'Vendedor',vendedorId:user.uid,fecha:new Date(),fechaVenta:new Date(),fechaPago:estado==='pagado'?new Date():null,metodoPago:metodo,estadoPago:estado,carritoId,...(numbered?{numeroPedido}:{}),ventaFueraDePuesto:!!(p.vendedorAsignadoId && p.vendedorAsignadoId !== 'todos' && p.vendedorAsignadoId !== user.uid)});
             });
             return {saldoNuevo:after/100,numeroPedido};
         });
