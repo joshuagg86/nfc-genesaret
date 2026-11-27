@@ -1064,6 +1064,7 @@ function abrirModalEditarArticulo(id) {
     const checkInf = document.getElementById('artInfinito');
     if(checkInf) {
         checkInf.checked = articulo.esInfinito === true;
+        document.getElementById('artCocina').checked = articulo.requiereCocina === true;
         toggleStockInput();
     }
 
@@ -1100,6 +1101,8 @@ function delArt(id) { if(confirm('¿Borrar?')) db.collection('articulos').doc(id
 function eliminarArticulo(id) { delArt(id); }
 
 function abrirModalArticulo(id,n,p,c,s,inf) {
+    const item = articulosGlobales.find(a=>a.id===id);
+    document.getElementById('artCocina').checked = item?.requiereCocina === true;
     document.getElementById('editArticuloId').value=id; 
     document.getElementById('artNombre').value=n; 
     document.getElementById('artPrecio').value=p; 
@@ -1134,6 +1137,7 @@ function guardarArticuloFinal() {
     precio: parseFloat(document.getElementById('articuloPrice').value),
     categoria: document.getElementById('editArticuloCategoria').value,
     vendedorAsignadoId: document.getElementById('editArticuloVendedor').value || 'todos',
+    requiereCocina: document.getElementById('artCocina').checked,
     esInfinito: inf, 
     stock: inf ? 99999 : nuevoStockTotal
 }).then(() => {
@@ -2186,6 +2190,7 @@ function guardarNuevoArticulo() {
     categoria: categoriaVal,
     nombre: nombreVal,
     precio: precioVal,
+    requiereCocina: document.getElementById('newArtCocina').checked,
     esInfinito: esInfinito,
     stock: stockVal,
     vendedorAsignadoId: document.getElementById('articuloVendedor').value || 'todos', // Si lo dejas vacío, lo pueden vender todos
@@ -2201,6 +2206,7 @@ function guardarNuevoArticulo() {
             precioInput.value = '';
             stockInput.value = '';
             checkInfinito.checked = false;
+            document.getElementById('newArtCocina').checked = false;
             
             // Habilitar input de stock de nuevo por si se desactivó
             stockInput.disabled = false;
