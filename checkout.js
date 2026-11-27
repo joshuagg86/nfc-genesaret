@@ -118,6 +118,7 @@
             if (!event.exists || event.data().activo !== true) throw Error('El evento ya no está activo');
             if (!profile.exists || profile.data().activo === false || !['admin','vendedor','administrador'].includes(profile.data().role)) throw Error('Usuario sin autorización');
             if (previous.exists) throw Error('Esta venta ya fue registrada');
+            const shift=metodo==='efectivo'&&estado==='pagado'?await GenesaretCash.read(db,tx,user.uid):null;
             const counter = numbered ? await tx.get(counterRef) : null;
             const order=orderRef?await tx.get(orderRef):null;
             if(orderRef){
@@ -157,12 +158,13 @@
                 const signature=rows=>JSON.stringify(rows.map(i=>[variantKey(i.id,i.selection),i.cantidad,money(i.precio)]).sort((a,b)=>a[0].localeCompare(b[0])));
                 tx.update(orderRef,{estado:'cobrado',carritoId,numeroPedido,cobradoPor:user.uid,cobradoAt:new Date(),itemsFinales:finalItems,totalFinal:total/100,modificadoEnCaja:signature(order.data().items)!==signature(finalItems)});
             }
+            GenesaretCash.credit(tx,shift,total);
             if (numbered) tx.set(counterRef,{ultimo:numeroPedido},{merge:true});
             if (walletRef) tx.update(walletRef,{saldoActual:after/100});
             products.forEach((doc,index) => {
                 const i = items[index], p = doc.data();
                 const detail=resolved[index];
-                tx.set(sales[index],{eventId,...(selfOrderId?{pedidoAutoservicioId:selfOrderId}:{}),pulseraId,pulsera:wallet ? wallet.data().nombre : pulseraNombre,articulo:p.nombre,articuloId:i.id,cantidad:i.cantidad,lineasVenta:items.length,descuentoProducto:!p.esInfinito?i.cantidad:0,descuentoInsumos:detail.usage.map(l=>({id:l.id,amount:l.amount*i.cantidad})),requiereCocina:p.requiereCocina===true,personalizacion:detail.notes,precioUnitario:detail.price/100,monto:detail.price*i.cantidad/100,saldoAnterior:before/100,saldoNuevo:after/100,vendedor:profile.data().name || user.email || 'Vendedor',vendedorId:user.uid,fecha:new Date(),fechaVenta:new Date(),fechaPago:estado==='pagado'?new Date():null,metodoPago:metodo,estadoPago:estado,carritoId,...(numbered?{numeroPedido}:{}),ventaFueraDePuesto:!!(p.vendedorAsignadoId && p.vendedorAsignadoId !== 'todos' && p.vendedorAsignadoId !== user.uid)});
+                tx.set(sales[index],{eventId,...(shift?{turnoCajaId:shift.id}:{}),...(selfOrderId?{pedidoAutoservicioId:selfOrderId}:{}),pulseraId,pulsera:wallet ? wallet.data().nombre : pulseraNombre,articulo:p.nombre,articuloId:i.id,cantidad:i.cantidad,lineasVenta:items.length,descuentoProducto:!p.esInfinito?i.cantidad:0,descuentoInsumos:detail.usage.map(l=>({id:l.id,amount:l.amount*i.cantidad})),requiereCocina:p.requiereCocina===true,personalizacion:detail.notes,precioUnitario:detail.price/100,monto:detail.price*i.cantidad/100,saldoAnterior:before/100,saldoNuevo:after/100,vendedor:profile.data().name || user.email || 'Vendedor',vendedorId:user.uid,fecha:new Date(),fechaVenta:new Date(),fechaPago:estado==='pagado'?new Date():null,metodoPago:metodo,estadoPago:estado,carritoId,...(numbered?{numeroPedido}:{}),ventaFueraDePuesto:!!(p.vendedorAsignadoId && p.vendedorAsignadoId !== 'todos' && p.vendedorAsignadoId !== user.uid)});
             });
             return {saldoNuevo:after/100,numeroPedido};
         });
