@@ -707,20 +707,9 @@ function verHistorialPulsera(pid, nom) {
     });
 }
 
-function anularTransaccion(tid,m,pid) { 
-    if(confirm('¿Anular compra y devolver dinero?')) { 
-        db.collection('pulseras').doc(pid).update({
-            saldoActual: firebase.firestore.FieldValue.increment(m)
-        })
-        .then(()=>db.collection('transacciones').doc(tid).delete())
-        .then(()=>{ 
-            db.collection('anulaciones').add({transaccionId:tid, monto:m, fecha:new Date(), usuario:'Admin'});
-            showSuccess('Anulado'); 
-            document.getElementById('modalHistorialPulsera').classList.remove('active'); 
-        }); 
-    } 
+async function anularTransaccion(tid){
+ try{if(await GenesaretReversals.cancelSale(tid)){showSuccess('Venta cancelada');document.getElementById('modalHistorialPulsera').classList.remove('active');}}catch(e){showError(e.message);}
 }
-
 function toggleBloqueo(pid, estado) {
     if(confirm(estado ? '¿Bloquear pulsera?' : '¿Desbloquear?')) {
         db.collection('pulseras').doc(pid).update({bloqueada: estado}).then(()=>showSuccess('Estado actualizado'));
@@ -1393,8 +1382,8 @@ function renderizarTablaCuentas() {
 
             // B. Cambiar Rol (NUEVO - Azul) 
             // Calcula el rol contrario para enviarlo a la función
-            const siguienteRol = u.role === 'admin' ? 'vendedor' : 'admin';
-            const btnRol = `<button onclick="cambiarRolUsuario('${u.id}', '${u.name}', '${siguienteRol}')" title="Cambiar a ${siguienteRol.toUpperCase()}" class="btn-icon-action action-role"><i class="fas fa-user-tag"></i></button>`;
+            const siguienteRol = u.role;
+            const btnRol = `<button onclick="cambiarRolUsuario('${u.id}')" title="Cambiar rol" class="btn-icon-action action-role"><i class="fas fa-user-tag"></i></button>`;
 
             // C. Reset Password (Amarillo)
             const btnReset = `<button onclick="resetPass('${u.email}')" title="Restablecer Contraseña" class="btn-icon-action action-reset"><i class="fas fa-key"></i></button>`;
@@ -1433,35 +1422,9 @@ function renderizarTablaCuentas() {
 }
 
 // --- FUNCIÓN PARA CAMBIAR ROL (AGREGAR AL FINAL DE ADMIN.JS) ---
-function cambiarRolUsuario(id, nombre, nuevoRol) {
-    Swal.fire({
-        title: `¿Cambiar rol a ${nuevoRol.toUpperCase()}?`,
-        text: `El usuario ${nombre} tendrá permisos de ${nuevoRol}.`,
-        icon: 'info',
-        showCancelButton: true,
-        confirmButtonColor: '#3b82f6', // Azul
-        cancelButtonColor: '#334155',
-        confirmButtonText: 'Sí, cambiar rol',
-        background: '#1e293b',
-        color: '#ffffff'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            db.collection('usuarios').doc(id).update({ role: nuevoRol })
-                .then(() => {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Rol actualizado',
-                        timer: 1500,
-                        showConfirmButton: false,
-                        background: '#1e293b',
-                        color: '#ffffff'
-                    });
-                })
-                .catch(e => showError(e.message));
-        }
-    });
+async function cambiarRolUsuario(id){
+ try{if(id===auth.currentUser.uid)throw Error('No puedes cambiar tu propio rol');const d=await db.collection('usuarios').doc(id).get();if(!d.exists)throw Error('Usuario no encontrado');const r=await Swal.fire({title:'Cambiar rol',input:'select',inputOptions:{admin:'Administrador',vendedor:'Caja / vendedor',cocina:'Cocina',tv:'TV de pedidos',autoservicio:'Autoservicio'},inputValue:d.data().role,showCancelButton:true,confirmButtonText:'Guardar',cancelButtonText:'Cancelar'});if(r.isConfirmed){await d.ref.update({role:r.value});showSuccess('Rol actualizado');}}catch(e){showError(e.message);}
 }
-
 function cambiarPaginaCuentas(delta) {
     paginaActualCuentas += delta;
     renderizarTablaCuentas();
