@@ -138,7 +138,7 @@ const unsubscribe = auth.onAuthStateChanged(user => {
     }
 
     // E. Restaurar pestaña activa
-    const tab = new URLSearchParams(location.search).get('tab')==='dispositivos'?'dispositivos':'dashboard'; 
+    const requestedTab=new URLSearchParams(location.search).get('tab'); const tab=['dashboard','ventas','pulseras','articulos','mas','eventos','cuentas','reportes','dispositivos'].includes(requestedTab)?requestedTab:'dashboard'; 
     if(typeof switchTab === 'function') switchTab(tab);
 
     // F. FINALMENTE: Quitar pantalla de carga
@@ -220,6 +220,7 @@ function switchTab(tab) {
     if(tab==='dispositivos')GenesaretStations.open();
     if(tab==='ventas')switchPOSTab('historial');
     if (tab === 'reportes') {
+        GenesaretReports.open();
         cargarReporteMensual();
         cargarGraficaVentas();
         cargarGraficaPopulares();
@@ -228,7 +229,7 @@ function switchTab(tab) {
 
 function toggleMenu() { document.getElementById('mobileMenu').classList.toggle('active'); }
 function switchTabMobile(t) { switchTab(t); toggleMenu(); }
-function irAReportes() { window.location.href = './reportes.html'; }
+function irAReportes() { switchTab('reportes'); }
 
 // --- LECTOR QR ---
 let html5QrcodeScanner=null; let modoEscaneo='';
