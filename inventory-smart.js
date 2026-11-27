@@ -61,12 +61,47 @@ function renderRecipeList(){
   const head=node('div',null,'recipe-list-head');
   head.append(node('span',root.GenesaretCheckout?.foodIcon(p.nombre)||'🍽️','recipe-list-icon'));
   const info=node('div');info.append(node('h3',p.nombre),node('small',(r.lines||[]).length+' ingredientes · '+(r.extras||[]).length+' extras'));head.append(info);
-  card.append(head,node('span',r.estado==='activa'?'Activa':'Borrador','recipe-list-state '+(r.estado==='activa'?'is-active':'')));
+  if(p.produccionPorLotes)info.append(node('small','Producción por lotes · '+p.stock+' terminados'));card.append(head,node('span',r.estado==='activa'?'Activa':'Borrador','recipe-list-state '+(r.estado==='activa'?'is-active':'')));
   const actions=node('div',null,'smart-actions');
-  actions.append(button('Editar',()=>{if(busy)return;$('recipeProduct').value=p.id;loadDraft();$('recipeEditor').scrollIntoView({behavior:'smooth',block:'start'});}),button('Eliminar',()=>removeRecipe(p.id),'btn-danger'));card.append(actions);target.append(card);
+  if(p.produccionPorLotes)actions.append(button('Preparar al momento',()=>stopBatch(p.id)));if(r.estado==='activa'&&r.lines?.length)actions.append(button('Producir lote',()=>produceBatch(p.id),'btn-primary'));actions.append(button('Editar',()=>{if(busy)return;$('recipeProduct').value=p.id;loadDraft();$('recipeEditor').scrollIntoView({behavior:'smooth',block:'start'});}),button('Eliminar',()=>removeRecipe(p.id),'btn-danger'));card.append(actions);target.append(card);
  }
  if(!rows.length)target.append(node('p','Todavía no hay recetas guardadas para este evento.'));
  $('recipeDelete').disabled=busy||!recipes.has(selectedProduct);
+}
+async function produceBatch(productId){
+ if(busy)return;
+ const ev=eventId,p=products.find(x=>x.id===productId);
+ if(!p)return;
+ const result=await Swal.fire({title:'Producir lote: '+p.nombre,text:'Descontará los ingredientes base y aumentará el stock de productos terminados. La venta descontará el producto y solamente los extras. Para cambiar a preparación al momento, primero agota el stock.',input:'number',inputLabel:'Unidades a preparar',inputAttributes:{min:1,max:10000,step:1},showCancelButton:true,confirmButtonText:'Registrar producción',cancelButtonText:'Cancelar',customClass:{popup:'genesaret-smart-modal'},inputValidator:v=>!Number.isSafeInteger(Number(v))||Number(v)<1||Number(v)>10000?'Ingresa entre 1 y 10,000 unidades':undefined});
+ if(!result.isConfirmed||ev!==eventId||busy)return;
+ busy=true;updateSummary();
+ try{
+ const uid=auth.currentUser.uid,n=Number(result.value),ref=db.collection('articulos').doc(productId),recipeRef=db.collection('recetas_borrador').doc(productId),batch=db.collection('lotes_produccion').doc();
+ await db.runTransaction(async tx=>{
+ const [profile,event,product,recipe]=await Promise.all([tx.get(db.collection('usuarios').doc(uid)),tx.get(db.collection('eventos').doc(ev)),tx.get(ref),tx.get(recipeRef)]);
+ checkAdmin(profile);
+ if(!event.exists||event.data().activo!==true||!product.exists||product.data().eventId!==ev||!recipe.exists||recipe.data().eventId!==ev||recipe.data().estado!=='activa')throw Error('Producto o receta no disponible');
+ const v=product.data(),lines=recipe.data().lines||[];
+ if(!lines.length||!v.recetaActiva)throw Error('Activa una receta con ingredientes base');
+ if(!v.produccionPorLotes&&!v.esInfinito&&Number(v.stock)>0)throw Error('Antes de activar producción por lotes, deja el stock del producto en cero');
+ const old=v.esInfinito?0:Number(v.stock);
+ if(!Number.isSafeInteger(old)||old<0||!Number.isSafeInteger(old+n))throw Error('Stock de producto inválido');
+ const totals=new Map();
+ for(const l of lines){if(!Number.isSafeInteger(l.amount)||l.amount<1)throw Error('Receta inválida');totals.set(l.id,(totals.get(l.id)||0)+l.amount*n);}
+ const docs=await Promise.all([...totals].map(async ([id,amount])=>({id,amount,doc:await tx.get(db.collection('insumos').doc(id))})));
+ for(const {doc,amount} of docs)if(!doc.exists||doc.data().eventId!==ev||!Number.isSafeInteger(amount)||!Number.isSafeInteger(doc.data().stock)||doc.data().stock<amount)throw Error('Insumo insuficiente: '+(doc.data()?.nombre||'ingrediente'));
+ for(const {id,amount,doc} of docs){const d=doc.data(),stock=d.stock-amount;tx.update(doc.ref,{stock});tx.set(db.collection('movimientos_insumos').doc(),{eventId:ev,insumoId:id,nombre:d.nombre,unit:d.unit,delta:-amount,stockFinal:stock,motivo:'Producción por lote',usuarioId:uid,fecha:new Date(),loteId:batch.id});}
+ tx.update(ref,{produccionPorLotes:true,esInfinito:false,stock:old+n});
+ tx.set(batch,{eventId:ev,productId,nombre:v.nombre,cantidad:n,ingredientes:[...totals].map(([id,amount])=>({id,amount})),fecha:new Date(),usuarioId:uid});
+ });
+ showSuccess('Producción registrada: '+n+' unidades');
+ }catch(e){showError(e.message);}finally{busy=false;updateSummary();renderRecipeList();}
+}
+async function stopBatch(productId){
+ if(busy)return;const ev=eventId;
+ const res=await Swal.fire({title:'Volver a preparación al momento',text:'Solo se permite con stock terminado en cero.',showCancelButton:true,confirmButtonText:'Confirmar',cancelButtonText:'Cancelar'});
+ if(!res.isConfirmed||ev!==eventId)return;busy=true;
+ try{const uid=auth.currentUser.uid,ref=db.collection('articulos').doc(productId);await db.runTransaction(async tx=>{const [p,d,e]=await Promise.all([tx.get(db.collection('usuarios').doc(uid)),tx.get(ref),tx.get(db.collection('eventos').doc(ev))]);checkAdmin(p);if(!e.exists||e.data().activo!==true||!d.exists||d.data().eventId!==ev||!d.data().produccionPorLotes||d.data().stock!==0)throw Error('El stock terminado debe estar en cero');tx.update(ref,{produccionPorLotes:false,esInfinito:true,stock:99999});});showSuccess('Preparación al momento activada');}catch(e){showError(e.message);}finally{busy=false;renderRecipeList();}
 }
 async function removeRecipe(productId){
  if(busy||!productId||!recipes.has(productId))return;
@@ -80,7 +115,7 @@ async function removeRecipe(productId){
    const [profile,event,product,recipe]=await Promise.all([tx.get(db.collection('usuarios').doc(uid)),tx.get(db.collection('eventos').doc(ev)),tx.get(productRef),tx.get(ref)]);
    checkAdmin(profile);
    if(!event.exists||event.data().activo!==true||!product.exists||product.data().eventId!==ev||!recipe.exists||recipe.data().eventId!==ev)throw Error('Receta o evento inválido');
-   tx.delete(ref);tx.update(productRef,{recetaActiva:null});
+   if(product.data().produccionPorLotes)throw Error('Desactiva primero la producción por lotes');tx.delete(ref);tx.update(productRef,{recetaActiva:null});
   });
   if(ev===eventId){recipes.delete(productId);if(selectedProduct===productId)loadDraft();renderRecipeList();}
   showSuccess('Receta eliminada. El producto sigue disponible.');
@@ -119,7 +154,7 @@ async function movement(s,type){
 }
 async function saveRecipe(estado){
  if(busy||!selectedProduct||(!draft.length&&!extras.length))return;const ev=eventId,productId=selectedProduct,lines=draft.map(x=>({...x,removable:x.removable===true})),extraLines=extras.map(x=>({id:x.id,amount:x.amount,price:Math.round(x.price*100)/100}));if(new Set(extraLines.map(x=>x.id)).size!==extraLines.length||extraLines.some(x=>!x.id||!Number.isSafeInteger(x.amount)||x.amount<=0||!Number.isFinite(x.price)||x.price<0))return showError('Revisa los extras');if(new Set(lines.map(x=>x.id)).size!==lines.length)return showError('No repitas ingredientes; suma sus cantidades');if(lines.some(x=>!x.id||!Number.isSafeInteger(x.amount)||x.amount<=0))return showError('Revisa las cantidades');busy=true;updateSummary();
- try{const uid=auth.currentUser.uid,ref=db.collection('recetas_borrador').doc(productId);await db.runTransaction(async tx=>{const [p,e,product,...docs]=await Promise.all([tx.get(db.collection('usuarios').doc(uid)),tx.get(db.collection('eventos').doc(ev)),tx.get(db.collection('articulos').doc(productId)),...[...lines,...extraLines].map(l=>tx.get(db.collection('insumos').doc(l.id)))]);checkAdmin(p);if(!e.exists||e.data().activo!==true||!product.exists||product.data().eventId!==ev||docs.some(d=>!d.exists||d.data().eventId!==ev))throw Error('Producto o ingrediente inválido');tx.set(ref,{eventId:ev,productId,lines,extras:extraLines,estado,updatedAt:new Date(),usuarioId:uid});tx.update(db.collection('articulos').doc(productId),{recetaActiva:estado==='activa'?{lines:lines.map((l,i)=>({...l,nombre:docs[i].data().nombre})),extras:extraLines.map((l,i)=>({...l,nombre:docs[lines.length+i].data().nombre}))}:null});});$('recipeState').textContent=estado==='activa'?'Receta activa':'Receta en borrador';showSuccess(estado==='activa'?'Receta activada':'Receta guardada como borrador');}catch(e){showError(e.message);}finally{busy=false;updateSummary();}
+ try{const uid=auth.currentUser.uid,ref=db.collection('recetas_borrador').doc(productId);await db.runTransaction(async tx=>{const [p,e,product,...docs]=await Promise.all([tx.get(db.collection('usuarios').doc(uid)),tx.get(db.collection('eventos').doc(ev)),tx.get(db.collection('articulos').doc(productId)),...[...lines,...extraLines].map(l=>tx.get(db.collection('insumos').doc(l.id)))]);checkAdmin(p);if(!e.exists||e.data().activo!==true||!product.exists||product.data().eventId!==ev||docs.some(d=>!d.exists||d.data().eventId!==ev))throw Error('Producto o ingrediente inválido');if(product.data().produccionPorLotes&&estado!=='activa')throw Error('Desactiva primero la producción por lotes');tx.set(ref,{eventId:ev,productId,lines,extras:extraLines,estado,updatedAt:new Date(),usuarioId:uid});tx.update(db.collection('articulos').doc(productId),{recetaActiva:estado==='activa'?{lines:lines.map((l,i)=>({...l,nombre:docs[i].data().nombre})),extras:extraLines.map((l,i)=>({...l,nombre:docs[lines.length+i].data().nombre}))}:null});});$('recipeState').textContent=estado==='activa'?'Receta activa':'Receta en borrador';showSuccess(estado==='activa'?'Receta activada':'Receta guardada como borrador');}catch(e){showError(e.message);}finally{busy=false;updateSummary();}
 }
 root.GenesaretInventory={open};
 })(globalThis);
