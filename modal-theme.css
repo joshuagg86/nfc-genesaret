@@ -1,0 +1,43 @@
+/* Shared modal theme — Pads-inspired. Loaded last on every application screen. */
+:root{--modal-blue:linear-gradient(145deg,#075ab5 0%,#007dce 48%,#00b9e5 100%);--modal-white:#fff;--modal-ink:#07529b;--modal-border:#ffffff65}
+body .swal2-popup:not(.swal2-toast),body .modal-overlay .modal-box,body .modal-overlay .modal-content,body .modal .modal-content,body .pago-confirmado-content,body .customer-payment-card{
+ background:var(--modal-blue)!important;color:white!important;border:1px solid #ffffff45!important;border-radius:30px!important;box-shadow:0 24px 80px #00183165!important;box-sizing:border-box;
+}
+body .swal2-popup:not(.swal2-toast){padding:clamp(18px,4vw,30px)!important;max-width:calc(100vw - 24px)}
+body .swal2-container.swal2-backdrop-show,body .modal-overlay,body .pago-confirmado-overlay{background:#031324b8!important;backdrop-filter:blur(5px)}
+body .swal2-popup:not(.swal2-toast) :is(.swal2-title,.swal2-html-container,.swal2-input-label,.swal2-footer,.swal2-close,.swal2-timer-progress-bar){color:white!important}
+body .swal2-popup:not(.swal2-toast) .swal2-title{font-size:clamp(23px,4vw,30px);font-weight:800;letter-spacing:-.035em;padding:0 0 10px}
+body .swal2-popup:not(.swal2-toast) .swal2-html-container{line-height:1.5}
+body .swal2-popup:not(.swal2-toast) .swal2-actions{gap:10px;flex-wrap:wrap;margin:20px 0 0;width:100%}
+body .swal2-popup:not(.swal2-toast) .swal2-actions button,body :is(.modal-box,.modal-content) :is(.modal-footer,.modal-buttons) button,body .pago-confirmado-content button{
+ background:white!important;color:#07529b!important;border:1px solid white!important;border-radius:16px!important;font-weight:750!important;min-height:46px;padding:10px 18px!important;box-shadow:0 4px 14px #003a7920!important;margin:0;
+}
+body .swal2-popup:not(.swal2-toast) .swal2-actions :is(.swal2-cancel,.swal2-deny),body :is(.modal-box,.modal-content) :is(.modal-footer,.modal-buttons) .btn-secondary{background:#ffffff12!important;color:white!important;border-color:#ffffff9c!important;box-shadow:none!important}
+body .swal2-popup:not(.swal2-toast) .swal2-actions button:disabled{opacity:.5}
+body .swal2-popup:not(.swal2-toast) :is(input:not([type=checkbox]):not([type=radio]),select,textarea),body :is(.modal-box,.modal-content) :is(input:not([type=checkbox]):not([type=radio]),select,textarea){
+ background:#fff!important;color:#103754!important;border:1px solid #fff!important;border-radius:14px!important;box-shadow:none!important;max-width:100%;
+}
+body .swal2-popup:not(.swal2-toast) :is(input,textarea)::placeholder,body :is(.modal-box,.modal-content) :is(input,textarea)::placeholder{color:#54748d!important}
+body .swal2-popup:not(.swal2-toast) .swal2-validation-message{background:#063b70!important;color:#fff!important;border-radius:12px}
+body .swal2-popup:not(.swal2-toast) .swal2-icon{border-color:#ffffffba!important;color:white!important}
+body .swal2-popup:not(.swal2-toast) .swal2-icon.swal2-success [class^=swal2-success-line]{background:white!important}
+body .swal2-popup:not(.swal2-toast) .swal2-icon.swal2-success .swal2-success-ring{border-color:#ffffff75!important}
+body .swal2-popup:not(.swal2-toast) .swal2-icon.swal2-success :is(.swal2-success-fix,.swal2-success-circular-line-left,.swal2-success-circular-line-right){background:transparent!important}
+body .swal2-popup:not(.swal2-toast) .swal2-icon.swal2-error [class^=swal2-x-mark-line]{background:#fff!important}
+body :is(.modal-box,.modal-content,.pago-confirmado-content){--text-main:#fff;--text-muted:#e1f4ff;--bg-card:#07529b;--bg-input:#fff;--bg-item-list:#064b8f;--border-color:#ffffff50;--color-precio:#fff}
+body :is(.modal-box,.modal-content) :is(.modal-header,.modal-footer,.modal-buttons){border-color:#ffffff55}
+body :is(.modal-box,.modal-content) :is(.modal-header h2,.modal-header h3,.modal-close,label){color:#fff!important}
+body .modal-close{background:#ffffff20!important;border-radius:12px}
+body .swal2-popup:not(.swal2-toast) :is(.modifier-form,.modifier-summary,.modifier-option,.modifier-hero,.smart-modal-check){color:#fff!important;--text-main:#fff;--text-muted:#e1f4ff}
+body .swal2-popup:not(.swal2-toast) :is(.modifier-hero,.modifier-summary,.modifier-option,.smart-modal-check){background:#063d7845!important;border-color:#ffffff55!important;box-shadow:none!important}
+body .swal2-popup:not(.swal2-toast) .modifier-option.is-selected{background:#ffffff30!important;border-color:#fff!important}
+body .swal2-popup:not(.swal2-toast) :is(.modifier-summary strong,.modifier-hint,.modifier-info small){color:white!important}
+body .swal2-popup:not(.swal2-toast) .modifier-marker{background:#ffffff30;color:#fff}
+body .swal2-popup:not(.swal2-toast) .is-selected .modifier-marker{background:white;color:#07529b}
+body .swal2-popup:not(.swal2-toast) .modifier-option:disabled:not(.is-required){opacity:.55}
+body .swal2-toast{background:#07529b!important;color:white!important;border-radius:16px!important;border:1px solid #ffffff45}
+body .swal2-toast .swal2-title{color:white!important}
+body .pago-confirmado-content{padding:30px}
+body .customer-payment-card strong,body .customer-payment-card p,body .customer-payment-number{color:#fff!important}
+body :is(.swal2-popup,.modal-box,.modal-content) :is(button,input,select,textarea):focus-visible{outline:3px solid #d7f8ff!important;outline-offset:3px}
+@media(max-width:480px){body .swal2-popup:not(.swal2-toast) .swal2-actions button{flex:1 1 110px}body .modal-overlay .modal-box,body .modal .modal-content{border-radius:22px!important}}
