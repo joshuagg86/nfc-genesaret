@@ -19,7 +19,7 @@
     }
     function foodIcon(name,fallback='🍽️'){
         const n=String(name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-        for(const [pattern,icon] of [[/aguacate/,'🥑'],[/queso/,'🧀'],[/carne|hamburguesa/,'🍔'],[/sandwich|chapata|torta/,'🥪'],[/jitomate|tomate/,'🍅'],[/cebolla/,'🧅'],[/lechuga|verdura/,'🥬'],[/jamon|tocino/,'🥓'],[/pollo/,'🍗'],[/huevo/,'🥚'],[/pan dulce|dona/,'🍩'],[/pan/,'🍞'],[/agua/,'💧'],[/cafe/,'☕'],[/refresco|jugo/,'🥤'],[/papa/,'🍟'],[/chocolate/,'🍫']])if(pattern.test(n))return icon;
+        for(const [pattern,icon] of [[/aguacate/,'🥑'],[/queso/,'🧀'],[/carne|hamburguesa/,'🍔'],[/sandwich|chapata|torta/,'🥪'],[/jitomate|tomate/,'🍅'],[/cebolla/,'🧅'],[/lechuga|verdura/,'🥬'],[/jamon|tocino/,'🥓'],[/pollo/,'🍗'],[/huevo/,'🥚'],[/pan dulce|dona/,'🍩'],[/pan/,'🍞'],[/agua/,'🧴'],[/cafe/,'☕'],[/refresco|jugo/,'🥤'],[/papa/,'🍟'],[/chocolate/,'🍫']])if(pattern.test(n))return icon;
         return fallback;
     }
     async function customize(p) {
