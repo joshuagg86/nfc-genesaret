@@ -1,4 +1,4 @@
-const fs=require('node:fs'),assert=require('node:assert/strict'),vm=require('node:vm');
+const fs=require('node:fs'),assert=require('node:assert/strict');
 const {initializeTestEnvironment,assertSucceeds,assertFails}=require('@firebase/rules-unit-testing');
 const firebase=require('firebase/compat/app');require('firebase/compat/firestore');
 (async()=>{
@@ -18,14 +18,14 @@ const firebase=require('firebase/compat/app');require('firebase/compat/firestore
  });
  const db=id=>env.authenticatedContext(id).firestore();
  const cashier=db('seller1'),kiosk=db('kiosk'),kitchen=db('kitchen'),admin=db('admin');
- const ctx=vm.createContext({firebase,console});for(const path of ['cash-turns.js','checkout.js'])vm.runInContext(fs.readFileSync(path,'utf8'),ctx,{filename:path});
+ globalThis.firebase=firebase;for(const path of ['cash-turns.js','checkout.js'])require('./'+path);const ctx=globalThis;
  const checkout=(id,method,items=[{id:'sandwich',cantidad:1,precio:35}],extra={})=>ctx.GenesaretCheckout.commit({db:cashier,auth:{currentUser:{uid:'seller1'}},eventId:'cafe',items,pulseraId:method==='nfc'?'wallet':null,pulseraNombre:'Cliente prueba',metodo:method,estado:'pagado',carritoId:id,...extra});
  const data=async(d,p)=>(await d.doc(p).get()).data();
  await test('Venta efectivo real: stock, turno, folio y cocina',async()=>{await assertSucceeds(checkout('cash','efectivo'));assert.equal((await data(admin,'articulos/sandwich')).stock,9);assert.equal((await data(admin,'turnos_caja/shift')).efectivoVentas,3500);assert.equal((await data(admin,'eventos/cafe/contadores/pedidos')).ultimo,1);assert.equal((await data(kitchen,'eventos/cafe/pedidos_cocina/cash')).items.length,1);});
  await test('NFC real: descuento saldo y sin efectivo adicional',async()=>{await assertSucceeds(checkout('nfc','nfc'));assert.equal((await data(admin,'pulseras/wallet')).saldoActual,65);assert.equal((await data(admin,'turnos_caja/shift')).efectivoVentas,3500);});
  await test('Transferencia y producto listo: no aparece en cocina',async()=>{await assertSucceeds(checkout('transfer','transferencia',[{id:'agua',cantidad:1,precio:10}]));assert.equal((await admin.doc('eventos/cafe/pedidos_cocina/transfer').get()).exists,false);assert.equal((await data(admin,'articulos/agua')).stock,9);});
- await test('Reintento de venta no duplica saldo ni stock',async()=>{const before=await data(admin,'pulseras/wallet');await assert.rejects(checkout('nfc','nfc'));assert.equal((await data(admin,'pulseras/wallet')).saldoActual,before.saldoActual);});
- await test('Saldo insuficiente no modifica inventario',async()=>{const before=await data(admin,'articulos/sandwich');await assert.rejects(checkout('insufficient','nfc',[{id:'sandwich',cantidad:3,precio:35}]));assert.equal((await data(admin,'articulos/sandwich')).stock,before.stock);});
+ await test('Reintento de venta no duplica saldo ni stock',async()=>{const before=await data(admin,'pulseras/wallet');assert.ok(before);assert.equal((await admin.doc('transacciones/nfc_0').get()).exists,true,'La venta original debe existir');await assert.rejects(checkout('nfc','nfc'),/registrad|duplicad|existe|procesad/i);assert.equal((await data(admin,'pulseras/wallet')).saldoActual,before.saldoActual);});
+ await test('Saldo insuficiente no modifica inventario',async()=>{const before=await data(admin,'articulos/sandwich');await assert.rejects(checkout('insufficient','nfc',[{id:'sandwich',cantidad:3,precio:35}]),/saldo|insuficiente/i);assert.equal((await data(admin,'articulos/sandwich')).stock,before.stock);});
  await test('Pedido autoservicio, cobro y confirmación',async()=>{await assertSucceeds(kiosk.doc('pedidos_autoservicio/order').set({eventId:'cafe',items:[{id:'sandwich',cantidad:1,precio:35}],total:35,estado:'pendiente',estacionId:'station',vendedorId:'seller1',creadoPor:'kiosk',fecha:firebase.firestore.FieldValue.serverTimestamp()}));await assertSucceeds(checkout('kioskSale','efectivo',undefined,{selfOrderId:'order'}));assert.equal((await data(admin,'pedidos_autoservicio/order')).estado,'cobrado');assert.equal((await data(kiosk,'eventos/cafe/confirmaciones_caja/seller1')).total,35);});
  await test('Vendedor ajeno no cancela pedido',async()=>{await assertFails(db('seller2').doc('pedidos_autoservicio/order').update({estado:'cancelado',canceladoPor:'seller2',canceladoAt:new Date()}));});
  await test('Cierre de caja conserva diferencia correcta',async()=>{const d=await data(admin,'turnos_caja/shift'),expected=d.fondoInicial+d.efectivoVentas+d.entradas-d.salidas;await assertSucceeds(cashier.doc('turnos_caja/shift').update({estado:'cerrado',efectivoEsperado:expected,efectivoContado:expected,diferencia:0,cerradoAt:firebase.firestore.FieldValue.serverTimestamp()}));});
