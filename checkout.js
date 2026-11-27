@@ -93,7 +93,7 @@
     }
     const variantKey=(id,sel={})=>JSON.stringify([id,[...(sel.removed||[])].sort(),[...(sel.extra||[])].sort()]);
     const escapeHtml=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    async function commit({db, auth, eventId, items, pulseraId, pulseraNombre, metodo, estado, carritoId, selfOrderId=null}) {
+    async function commit({db, auth, eventId, items, pulseraId, pulseraNombre, metodo, estado, carritoId, selfOrderId=null,experimentalIntegrity=false}) {
         const user = auth.currentUser;
         if (!user || !eventId || !items.length || !carritoId) throw Error('Datos de venta incompletos');
         if (!['nfc','efectivo','transferencia'].includes(metodo) || !['pagado','pendiente'].includes(estado) || (estado === 'pendiente' && metodo === 'nfc')) throw Error('Método o estado inválido');
@@ -160,7 +160,8 @@
                 if(detail.usage.some(l=>!Number.isFinite(costs.get(l.id))||costs.get(l.id)<0))return null;
                 return Math.round(((base||0)+detail.usage.reduce((a,l)=>a+l.amount*costs.get(l.id),0))*i.cantidad*100)/100;
             });
-            for(const {p,ref,qty} of productTotals.values())if(!p.esInfinito)tx.update(ref,{stock:Number(p.stock)-qty});
+            if(experimentalIntegrity)tx.set(db.collection('ventas_integridad').doc(carritoId),{vendedorId:user.uid,eventId,metodoPago:metodo,estadoPago:estado,pulseraId:pulseraId||null,lineas:items.length,total:total/100});
+            for(const {p,ref,qty} of productTotals.values())if(!p.esInfinito)tx.update(ref,{stock:Number(p.stock)-qty,...(experimentalIntegrity?{ultimaVentaId:carritoId}:{})});
             for(const {id,doc,qty} of supplies){const v=doc.data(),stock=v.stock-qty;tx.update(doc.ref,{stock});tx.set(db.collection('movimientos_insumos').doc(),{eventId,insumoId:id,nombre:v.nombre,unit:v.unit,delta:-qty,stockFinal:stock,motivo:'Venta',usuarioId:user.uid,fecha:new Date(),carritoId});}
             if(orderRef){
                 const finalItems=items.map((i,index)=>({id:i.id,nombre:products[index].data().nombre,cantidad:i.cantidad,precio:resolved[index].price/100,selection:i.selection||{removed:[],extra:[]},notes:resolved[index].notes}));
@@ -172,7 +173,7 @@
             if(estado==='pagado')tx.set(eventRef.collection('confirmaciones_caja').doc(user.uid),{carritoId,total:total/100,kitchen:kitchenItems.length>0,numeroPedido,fecha:firebase.firestore.FieldValue.serverTimestamp(),vendedorId:user.uid});
             GenesaretCash.credit(tx,shift,total);
             if (numbered) tx.set(counterRef,{ultimo:numeroPedido},{merge:true});
-            if (walletRef) tx.update(walletRef,{saldoActual:after/100});
+            if (walletRef) tx.update(walletRef,{saldoActual:after/100,...(experimentalIntegrity?{ultimaVentaId:carritoId}:{})});
             products.forEach((doc,index) => {
                 const i = items[index], p = doc.data();
                 const detail=resolved[index];
