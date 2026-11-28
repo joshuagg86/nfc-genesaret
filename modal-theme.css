@@ -41,3 +41,6 @@ body .pago-confirmado-content{padding:30px}
 body .customer-payment-card strong,body .customer-payment-card p,body .customer-payment-number{color:#fff!important}
 body :is(.swal2-popup,.modal-box,.modal-content) :is(button,input,select,textarea):focus-visible{outline:3px solid #d7f8ff!important;outline-offset:3px}
 @media(max-width:480px){body .swal2-popup:not(.swal2-toast) .swal2-actions button{flex:1 1 110px}body .modal-overlay .modal-box,body .modal .modal-content{border-radius:22px!important}}
+
+/* Keep sale confirmation amounts readable in either theme. */
+body .pago-confirmado-content .pago-monto{color:#fff!important;font-weight:900!important;font-size:clamp(36px,8vw,48px);font-variant-numeric:tabular-nums;text-shadow:0 2px 8px #00356c55}
