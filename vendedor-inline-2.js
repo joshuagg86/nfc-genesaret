@@ -48,22 +48,8 @@ function showError(message) {
         updateThemeIcon();
 
         // --- SISTEMA DE SONIDOS ---
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-        function playTone(freq, type, duration) {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
-            osc.stop(audioCtx.currentTime + duration);
-        }
-
-       function playSound(type) {
-            // Silenciado temporalmente en pruebas de escritorio
-            return;
-        }
+        function playTone(){window.GeneSound?.play('order');}
+function playSound(type){window.GeneSound?.play(type);}
 
         // --- LÓGICA PRINCIPAL ---
         let currentUserId = localStorage.getItem('userId');
@@ -213,7 +199,7 @@ function showError(message) {
         }
         
         function showSuccess(msg) { const a=document.getElementById('successAlert'); a.textContent=msg; a.classList.add('show'); setTimeout(()=>a.classList.remove('show'),3000); }
-        function showError(msg) { playSound('error'); const a=document.getElementById('errorAlert'); a.textContent=msg; a.classList.add('show'); setTimeout(()=>a.classList.remove('show'),3000); }
+        function showError(msg) { playSound(/saldo insuficiente/i.test(String(msg))?'balance':'error'); const a=document.getElementById('errorAlert'); a.textContent=msg; a.classList.add('show'); setTimeout(()=>a.classList.remove('show'),3000); }
 
         function cambiarPestana(tabId, btn) {
             // 1. Cambio visual de pestañas (Lo que ya tenías)
@@ -492,7 +478,7 @@ function cargarProductosPorEvento() {
         function startNFCRead() {
             if (carrito.length === 0) { showError('Agrega productos primero'); return; }
             if (!('NDEFReader' in window)) { showError('Navegador sin soporte NFC'); return; }
-            if (audioCtx.state === 'suspended') audioCtx.resume();
+            void window.GeneSound?.unlock();
             
             document.getElementById('nfcReader').innerHTML = `<div class="nfc-icon">⏳</div><div class="nfc-status">Acerca el gafete...</div>`;
             
@@ -555,10 +541,11 @@ function cargarProductosPorEvento() {
                     // Disparar cobro directo protegido
                     ejecutarCobroInmediatoNFC();
                 } else {
+                    playSound('scan');
                     mostrarPulseraDetectada();
                 }
             }).catch(err => {
-                console.error("Error leyendo pulsera:", err);
+                console.error("Error leyendo pulsera:", err);showError("Error al leer pulsera");
                 isProcessingPayment = false;
             });
         }
@@ -599,7 +586,7 @@ function cargarProductosPorEvento() {
         }
         function startNFCReadConsulta() {
             if (!('NDEFReader' in window)) { showError('Navegador sin soporte NFC'); return; }
-            if (audioCtx.state === 'suspended') audioCtx.resume();
+            void window.GeneSound?.unlock();
             
             document.getElementById('nfcReaderConsulta').innerHTML = `<div class="nfc-icon">⏳</div><div class="nfc-status">Acerca el gafete...</div>`;
             
@@ -643,7 +630,7 @@ function cargarProductosPorEvento() {
         }
         function consultarSaldoSimulado() {
             const val = document.getElementById('simulatedPulseraConsulta').value; if (!val) { resetConsulta(); return; }
-            if (audioCtx.state === 'suspended') audioCtx.resume();
+            void window.GeneSound?.unlock();
             const [id, nom, sal] = val.split('|');
             document.getElementById('consultaNombre').textContent = nom; document.getElementById('consultaSaldo').textContent = parseFloat(sal).toFixed(2);
             document.getElementById('saldoInfoConsulta').style.display = 'block'; document.getElementById('nfcReaderConsulta').innerHTML = `<div class="nfc-icon">✅</div><div class="nfc-status">Simulación activa</div>`;
@@ -671,7 +658,7 @@ function cargarProductosPorEvento() {
             if (carrito.length === 0) { showError('Carrito vacío'); return; }
             
             // Reactivar AudioContext si está suspendido (navegadores modernos)
-            if (audioCtx.state === 'suspended') audioCtx.resume();
+            void window.GeneSound?.unlock();
             
             const btnNFC = document.getElementById('btnPagarNFC');
             const btnDirecto = document.getElementById('btnPagarDirecto'); // El botón verde de registrar
@@ -978,7 +965,6 @@ window.iniciarEscanerQR = function(modo) {
         window.cerrarScannerQR(); // Cerramos inmediatamente
         
         const id = decodedText.trim();
-        playSound('scan');
 
         // Lógica según el modo
         if (modo === 'cobro_nfc') {
@@ -1019,7 +1005,7 @@ function identificarClientePorQR(id) {
             // Forzamos que se muestre el input aunque sea Efectivo, para que veas quién es
             document.getElementById('inputsTransferencia').style.display = 'block';
             
-            showSuccess(`Cliente identificado: ${p.nombre}`);
+            playSound('scan');showSuccess(`Cliente identificado: ${p.nombre}`);
         });
     });
 }
