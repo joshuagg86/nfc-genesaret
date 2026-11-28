@@ -11,7 +11,7 @@ $('tvSettings').onclick=async()=>{
  const user=auth.currentUser;if(!user){location.replace('index.html');return;}
  const token=epoch;
  const result=await Swal.fire({title:'Configuración del operador',text:'Introduce la contraseña de esta cuenta para acceder a los controles.',input:'password',inputAttributes:{autocomplete:'current-password'},showCancelButton:true,confirmButtonText:'Desbloquear',cancelButtonText:'Cancelar',showLoaderOnConfirm:true,allowOutsideClick:()=>!Swal.isLoading(),customClass:{popup:'genesaret-smart-modal'},preConfirm:async value=>{
- try{if(!value||!user.email)throw Error();await user.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(user.email,value));const p=await db.collection('usuarios').doc(user.uid).get();if(!p.exists||p.data().activo===false||!['admin','administrador','tv'].includes(p.data().role))throw Error();role=p.data().role;return true;}catch(e){Swal.showValidationMessage('No se pudo verificar la contraseña o el acceso.');return false;}
+ try{if(!value||!user.email)throw Error();await user.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(user.email,value));const p=await db.collection('usuarios').doc(user.uid).get();if(!p.exists||p.data().activo===false||!['admin','administrador',document.body.dataset.mode==='tv'?'tv':'cocina'].includes(p.data().role))throw Error();role=p.data().role;return true;}catch(e){Swal.showValidationMessage('No se pudo verificar la contraseña o el acceso.');return false;}
  }});
  if(result.isConfirmed&&token===epoch&&auth.currentUser?.uid===user.uid)unlock(user.uid);
 };
