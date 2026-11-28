@@ -1,0 +1,60 @@
+/* Cafetería Gene — shared responsive interface */
+@media(max-width:900px){
+.screen-admin .container>header,.screen-vendedor .container>header{display:flex!important;justify-content:space-between!important;gap:8px;padding-inline:12px!important}
+.screen-admin .container>header>div:first-child,.screen-vendedor .container>header>div:first-child{min-width:0;flex:1;gap:8px!important}
+.screen-admin .shell-brand{min-width:0}
+.screen-admin .shell-brand strong,.screen-vendedor .container>header h2{font-size:15px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.screen-admin .shell-brand small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.screen-admin .container>header .header-right{flex:0 0 auto;gap:4px!important}
+.screen-admin .container>header .actions-pill{display:flex!important;flex:none;margin:0!important;padding:2px!important}
+.screen-admin .container>header .icon-action{width:42px!important;height:42px!important;min-width:42px;padding:0!important;display:grid!important;place-items:center;font-size:17px}
+.screen-admin .container>header .logo-header,.screen-vendedor .container>header .logo-header{width:34px!important;height:34px!important;flex:none}
+.screen-vendedor .container>header>div:last-child{flex:none}
+.screen-vendedor .container>header>div:last-child button{min-width:44px;min-height:44px}
+}
+@media(max-width:600px){
+.screen-admin .overview-hero{gap:8px}
+.screen-admin .overview-hero h2{font-size:23px}
+.screen-admin .overview-filter{display:grid;grid-template-columns:auto minmax(0,1fr);width:100%;gap:8px}
+.screen-admin .overview-filter select{min-width:0;width:100%;max-width:none}
+.screen-admin #dashboard .overview-filter .btn-primary{grid-column:1/-1;justify-content:center;min-height:44px}
+.screen-admin .overview-kpis,.screen-admin #dashboard .overview-payment-grid{gap:8px}
+.screen-admin .overview-kpi,.screen-admin #dashboard .overview-payment-card{border-radius:16px;padding:12px;min-height:0;gap:6px}
+.screen-admin #dashboard .overview-payment-card span{min-height:0}
+.screen-admin .overview-kpi strong,.screen-admin #dashboard .overview-payment-card strong{font-size:clamp(18px,5vw,24px)}
+.screen-admin .overview-kpi span{font-size:12px}
+.screen-admin .overview-kpi small{font-size:10px}
+.screen-admin .container,.screen-vendedor .container{padding-bottom:calc(126px + env(safe-area-inset-bottom))!important}
+}
+body.gene-station header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px clamp(16px,4vw,48px)}
+.gene-station .screen-brand{min-width:0}
+.gene-station header .screen-brand small{font-size:11px;letter-spacing:.08em}
+.gene-station header .screen-brand h1{font-size:clamp(24px,3vw,36px);line-height:1.1}
+.gene-station .station-tools{display:flex;align-items:center;gap:10px;min-width:0}
+.gene-station #tvControls{display:flex;align-items:center;gap:8px}
+.gene-station .station-event{display:flex;align-items:center;gap:8px;color:#b6d4eb;font-size:12px}
+.gene-station .station-event select{min-width:0;max-width:220px;font-size:14px}
+.gene-station .station-action,.gene-station #tvSettings,.gene-station #kioskSettings,.gene-station #kioskOperator button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:9px 13px;border:1px solid #8ad3ff45;border-radius:13px;background:#173d5b;color:#eaf4ff;font-size:13px;font-weight:650;text-decoration:none;box-shadow:inset 0 1px 0 #ffffff10}
+.gene-station .station-action i{font-size:15px}
+.gene-station #tvSettings,.gene-station #kioskSettings{width:44px;min-width:44px;padding:0;opacity:1}
+.gene-station #tvBack,.gene-station #previewBack{background:#155a91;color:#fff}
+.gene-station #tvLogout,.gene-station #kioskLogout{color:#ffb8b8;border-color:#ff777766}
+.gene-station [hidden]{display:none!important}
+@media(max-width:700px){
+body.gene-station header{padding:12px 14px;gap:10px}
+.gene-station header .screen-brand img{width:42px;height:42px}
+.gene-station header .screen-brand{gap:10px}
+.gene-station header .screen-brand h1{font-size:25px}
+.gene-station .station-tools{flex:1 0 100%;justify-content:flex-end}
+.gene-station .station-tools:has(#tvControls[hidden]){flex:0 0 auto}
+.gene-station #tvControls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;gap:8px}
+.gene-station .station-event{grid-column:1/-1;display:grid;grid-template-columns:auto minmax(0,1fr)}
+.gene-station .station-event select{width:100%;max-width:none}
+.gene-station .station-action{font-size:12px;min-width:0;white-space:normal;text-align:center}
+.gene-station main{padding:14px}
+.gene-station main>.card,.gene-station .grid>.card{min-height:0;padding:16px}
+.gene-station[data-mode=tv] .grid>.card{min-height:140px}
+.gene-station #kioskOperator{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.gene-station #kioskOperator strong{grid-column:1/-1}
+.gene-station #previewBack{margin-left:auto}
+}
