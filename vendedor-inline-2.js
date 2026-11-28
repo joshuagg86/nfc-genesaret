@@ -726,7 +726,7 @@ function cargarProductosPorEvento() {
     const items = carrito.map(i => ({...i}));
     const total = obtenerTotalCarrito();
     try {
-        const result = await GenesaretCheckout.commit({experimentalIntegrity:window.GenesaretLocalTest===true,db, auth, eventId, items, pulseraId, pulseraNombre, metodo, estado, carritoId,selfOrderId});
+        const result = await GenesaretCheckout.commit({experimentalIntegrity:true,db, auth, eventId, items, pulseraId, pulseraNombre, metodo, estado, carritoId,selfOrderId});
         if (estado === 'pagado') playSound('success');
         mostrarConfirmacionPago(total, pulseraNombre, result.saldoNuevo, metodo, estado, result.numeroPedido);
         vaciarCarrito(true);
