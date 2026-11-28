@@ -1,0 +1,18 @@
+'use strict';
+const fs=require('node:fs'),path=require('node:path'),{execFileSync}=require('node:child_process');
+const root=path.resolve(__dirname,'..'),dest=path.join(__dirname,'www');
+execFileSync(process.execPath,[path.join(root,'build-training-hosting.cjs')],{cwd:root,stdio:'inherit'});
+const source=path.join(root,'.training-hosting');
+if(fs.existsSync(dest)&&fs.lstatSync(dest).isSymbolicLink())throw Error('Directorio inesperado');
+fs.rmSync(dest,{recursive:true,force:true});fs.cpSync(source,dest,{recursive:true});
+const p=path.join(dest,'config.js');let s=fs.readFileSync(p,'utf8');
+const old="const genesaretTraining = ['genesaret-capacitacion.web.app','genesaret-capacitacion.firebaseapp.com'].includes(location.hostname);";
+if(!s.includes(old)||!s.includes('const firebaseConfig=trainingConfig;'))throw Error('No se pudo verificar aislamiento de capacitación');
+s=s.replace(old,'const genesaretTraining = true;');
+s=s.replace("if(login){const a=", "if(false&&login){const a=");
+fs.writeFileSync(p,s);
+const admin=path.join(dest,'admin.html');let html=fs.readFileSync(admin,'utf8');
+html=html.replace(/<button[^>]*onclick="location\.href=window\.GenesaretTraining[^"]*"[^>]*>[\s\S]*?<\/button>/g,'');
+if(html.includes('location.href=window.GenesaretTraining'))throw Error('Cambio de entorno no eliminado');
+fs.writeFileSync(admin,html);
+console.log('Paquete Android local: solo capacitación, sin acceso a producción.');
