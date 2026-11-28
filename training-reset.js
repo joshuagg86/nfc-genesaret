@@ -43,6 +43,6 @@ async function reset(){
   busy=false;button.disabled=false;
  }
 }
-auth.onAuthStateChanged(async user=>{button.hidden=true;if(!user)return;try{const p=await db.collection('usuarios').doc(user.uid).get(server);if(auth.currentUser?.uid===user.uid&&p.exists&&p.data().activo===true&&['admin','administrador'].includes(p.data().role))button.hidden=false;}catch(e){console.error(e);}});
+auth.onAuthStateChanged(async user=>{button.hidden=true;button.style.display='none';if(!user)return;try{const p=await db.collection('usuarios').doc(user.uid).get(server);if(auth.currentUser?.uid===user.uid&&p.exists&&p.data().activo===true&&['admin','administrador'].includes(p.data().role)){button.hidden=false;button.style.display='';}}catch(e){console.error(e);}});
 button.onclick=()=>reset().catch(e=>Swal.fire({icon:'error',title:'No se pudo reiniciar',text:e.message}));
 })();
