@@ -20,7 +20,7 @@ function showNextPayment(){
  $('customerPaymentAmount').textContent=money(sale.total);
  $('customerPaymentNumber').textContent=sale.kitchen?(sale.number?'Pedido '+sale.number:'Consulta tu número en Caja'):'¡Gracias por tu compra!';
  $('customerPaymentHint').textContent=sale.kitchen?'Consulta la TV para recoger tu pedido.':'Gracias por visitarnos.';
- panel.hidden=false;paymentShowing=true;
+ panel.hidden=false;paymentShowing=true;window.GeneSound?.play('success');
  paymentTimer=setTimeout(()=>{panel.hidden=true;paymentShowing=false;showNextPayment();},5000);
 }
 function watchPaymentDisplay(linked){
