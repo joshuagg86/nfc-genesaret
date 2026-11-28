@@ -1,11 +1,11 @@
 {
-  "name": "NFC Genesaret",
-  "short_name": "Genesaret",
+  "name": "Cafetería Gene",
+  "short_name": "Cafetería Gene",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color":"#001a2e",
+  "background_color": "#001a2e",
   "theme_color": "#003d7a",
-  "description": "Sistema de Cobro NFC para Genesaret",
+  "description": "Sistema de punto de venta y administración de cafetería",
   "icons": [
     {
       "src": "logo.png",
