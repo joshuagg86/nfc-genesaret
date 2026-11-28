@@ -3,7 +3,8 @@ const fs=require('node:fs'),path=require('node:path'),os=require('node:os');
 const {execFileSync}=require('node:child_process');
 const root=__dirname;
 const dest=path.join(root,'.training-hosting');
-fs.mkdirSync(dest,{recursive:true});
+if(fs.existsSync(dest)&&fs.lstatSync(dest).isSymbolicLink())throw Error('Directorio de salida inesperado');
+fs.rmSync(dest,{recursive:true,force:true});fs.mkdirSync(dest,{recursive:true});
 const files=execFileSync('git',['ls-files','-z'],{cwd:root}).toString().split('\0').filter(Boolean);
 const excluded=/^(audit-|backup-|seed-|reset-|firestore-|test|sw\.js$)/;
 for(const file of files){
