@@ -386,3 +386,15 @@ body.light-mode .cash-turn-grid .surplus strong{color:#925500!important}
 .cash-actions button{flex:1 1 120px;min-height:44px;margin:0}
 @media(max-width:700px){.cash-turn-grid .cash-metric,.cash-turn-grid .cash-metric:nth-child(n+5){grid-column:span 6}.cash-turn-grid .cash-metric:last-child:nth-child(odd){grid-column:1/-1}}
 @media(max-width:360px){.cash-turn-grid{gap:7px}.cash-turn-grid .cash-metric{padding:10px}.cash-turn-grid .cash-metric small{font-size:12px}}
+
+/* Independent daily payment and wallet summary cards */
+.screen-admin #dashboard .overview-payment-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:16px 0}
+.screen-admin #dashboard .overview-payment-card{min-width:0;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:7px;padding:14px;min-height:112px}
+.screen-admin #dashboard .overview-payment-card span{line-height:1.3;min-height:2.6em;overflow-wrap:anywhere}
+.screen-admin #dashboard .overview-payment-card strong{font-size:clamp(17px,2vw,25px);line-height:1.2;overflow-wrap:anywhere;margin-top:auto;max-width:100%}
+.screen-admin #dashboard .overview-payment-card i{display:grid;place-items:center;border-radius:10px;width:32px;height:32px;padding:0;font-size:15px;background:#3186d42b;color:#57baff}
+.screen-admin #dashboard .payment-cash i{background:#16a34a26;color:#34d399}
+.screen-admin #dashboard .payment-transfer i{background:#0891b226;color:#38bdf8}
+.screen-admin #dashboard .payment-pending i{background:#d9770626;color:#fbbf24}
+@media(max-width:1000px){.screen-admin #dashboard .overview-payment-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:600px){.screen-admin #dashboard .overview-payment-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.screen-admin #dashboard .overview-payment-card{min-height:104px;padding:12px}}
