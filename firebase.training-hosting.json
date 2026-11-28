@@ -3,10 +3,18 @@
     "site": "genesaret-capacitacion",
     "public": ".training-hosting",
     "ignore": [
-      "**/.*",
       "**/node_modules/**"
     ],
     "headers": [
+      {
+        "source": "/.well-known/assetlinks.json",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ]
+      },
       {
         "source": "**",
         "headers": [
