@@ -1,0 +1,6 @@
+{
+  "appId": "com.genesaret.pos.training",
+  "appName": "Cafetería Gene Pruebas",
+  "webDir": "www",
+  "loggingBehavior": "none"
+}
