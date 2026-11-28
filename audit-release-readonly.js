@@ -26,6 +26,20 @@ for(const [id,s] of map('pedidos_autoservicio'))if(s.estado==='pendiente')note('
 for(const [id,s] of map('transacciones'))if(s.estadoPago==='pendiente'&&(!users.has(s.vendedorId)||!Number.isFinite(s.monto)||!['efectivo','transferencia'].includes(s.metodoPago)))note('revisar','transacciones',id,'Adeudo histórico requiere revisión');
 const summary=names.map(n=>({coleccion:n,documentos:sets[n].size}));
 console.table(summary);console.table(findings);
+const groups={};
+for(const [id,u] of users){
+ const role=typeof u.role==='string'?u.role:'(sin rol)';
+ const active=typeof u.activo==='boolean'?String(u.activo):'(ausente o no booleano)';
+ const key=JSON.stringify([role,active]);
+ if(!groups[key])groups[key]={rol:role,activo:active,cantidad:0};
+ groups[key].cantidad++;
+}
+console.log('PERFILES AGRUPADOS (sin datos personales)');
+console.table(Object.values(groups));
+const pending=Array.from(map('pedidos_autoservicio')).filter(([id,o])=>o.estado==='pendiente').map(([id,o],i)=>({referencia:i+1,evento:events.get(o.eventId)?.nombre||'Sin evento reconocido',vendedor:users.get(o.vendedorId)?.role||'Sin vendedor reconocido',total:o.total??null,fecha:o.fecha?.toDate?.()?.toISOString()||'Sin fecha',partidas:Array.isArray(o.items)?o.items.length:0}));
+console.log('PEDIDOS SIN COBRAR');
+console.table(pending);
+console.log('RESUMEN PARA COMPARTIR',JSON.stringify({perfiles:Object.values(groups),pedidos:pending}));
 const counts={bloqueo:0,migrar:0,revisar:0};for(const f of findings)counts[f.nivel]++;
 console.log('AUDITORÍA SOLO LECTURA — '+JSON.stringify(counts));return {summary,findings,counts};
 })().catch(e=>console.error('Auditoría detenida:',e.message));
