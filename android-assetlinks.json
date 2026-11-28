@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.genesaret.pos",
+      "sha256_cert_fingerprints": [
+        "70:4A:C7:5B:8D:DD:F3:1F:94:A3:81:FF:8F:05:13:4B:26:61:59:83:53:9F:C7:9A:91:A2:24:BC:C1:33:E2:9C"
+      ]
+    }
+  }
+]
