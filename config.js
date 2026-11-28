@@ -38,6 +38,7 @@ if (genesaretLocalTest) {
 if(genesaretTraining || !genesaretLocalTest){
  window.addEventListener('DOMContentLoaded',()=>{
   if(genesaretTraining){const badge=document.createElement('div');badge.textContent='MODO CAPACITACIÓN · SIN DATOS REALES';badge.setAttribute('role','status');badge.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99999;background:#facc15;color:#422006;text-align:center;font: bold 12px/22px system-ui;pointer-events:none';document.body.append(badge);document.body.style.paddingTop='22px';}
+  const title=document.getElementById('trainingModeTitle');if(title&&genesaretTraining)title.textContent='Volver a operación real';
   const login=document.getElementById('loginForm');
   if(login){const a=document.createElement('a');a.href=genesaretTraining?'https://joshuagg86.github.io/nfc-genesaret/':'https://genesaret-capacitacion.web.app/';a.textContent=genesaretTraining?'Ir a operación real':'Entrar a modo capacitación';a.style.cssText='display:block;margin:16px 0 4px;text-align:center;font-weight:700;color:inherit;text-decoration:underline';login.append(a);}
  });
