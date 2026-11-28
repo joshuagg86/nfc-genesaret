@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <link rel="stylesheet" href="app-ui.css?v=blue-glass-11">
-<link rel="stylesheet" href="light-theme.css?v=1"><link rel="stylesheet" href="modal-theme.css?v=1"><link rel="stylesheet" href="gene-responsive.css?v=1"></head>
+<link rel="stylesheet" href="light-theme.css?v=1"><link rel="stylesheet" href="modal-theme.css?v=1"><link rel="stylesheet" href="gene-responsive.css?v=3"></head>
 <body class="screen-vendedor">
     <div id="loadingOverlay">
         <h1 class="loading-text">¡Hola, <span id="loadingUserName" class="loading-name">...</span>! 👋</h1>
@@ -89,7 +89,7 @@
                             <p style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 40px;">
                                 ⬅️ Selecciona un evento arriba para comenzar
                             </p>
-                        </div>
+                        </div><button type="button" class="gene-cart-jump" onclick="document.querySelector('#tab-venta .pos-right').scrollIntoView({block:'start',behavior:'smooth'})"><span><i class="fas fa-shopping-cart" aria-hidden="true"></i> Ir al carrito</span><i class="fas fa-arrow-down" aria-hidden="true"></i></button>
                     </div>
                 </div>
 
