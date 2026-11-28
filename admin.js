@@ -3188,7 +3188,7 @@ function pedirMontoEfectivo(total, origen) {
             Swal.fire({
                 title: '¡Cobro Exitoso!',
                 html: `<div style="font-size:20px; margin-bottom:10px;">Cambio a entregar:</div>
-                       <div style="font-size:42px; font-weight:bold; color:#3b82f6;">$${cambio.toFixed(2)}</div>`,
+                       <div style="font-size:46px; font-weight:800; color:#fff; text-shadow:0 2px 8px #003b6555;">$${cambio.toFixed(2)}</div>`,
                 icon: 'success',
                 confirmButtonText: 'Aceptar',
                 background: '#1e293b', color: '#fff'
