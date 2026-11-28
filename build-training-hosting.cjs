@@ -20,4 +20,6 @@ for(const file of files){
  fs.writeFileSync(path.join(dest,file),bytes);
 }
 for(const f of ['index.html','admin.html','config.js','vendedor.html','cocina.html','tv-pedidos.html','autoservicio.html'])if(!fs.existsSync(path.join(dest,f)))throw Error('Falta '+f);
+fs.mkdirSync(path.join(dest,'.well-known'),{recursive:true});
+fs.copyFileSync(path.join(root,'android-assetlinks.json'),path.join(dest,'.well-known','assetlinks.json'));
 console.log('Paquete capacitación preparado:',dest);
