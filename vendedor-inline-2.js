@@ -144,28 +144,7 @@ function playSound(type){window.GeneSound?.play(type);}
         let isProcessingPayment = false;
 
         // Pitido estilo terminal POS mediante Web Audio API (no requiere archivos externos)
-        function reproducirBeepExito() {
-            try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(880, audioCtx.currentTime); // Tono alto agradable (La5)
-                osc.frequency.exponentialRampToValueAtTime(1760, audioCtx.currentTime + 0.12);
-
-                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
-
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.15);
-            } catch (e) {
-                console.log("AudioContext no disponible o bloqueado por el navegador:", e);
-            }
-        }
+        function reproducirBeepExito(){window.GeneSound?.play('success');}
 
         // Vibración háptica nativa en Android
         function dispararVibracionExito() {
