@@ -408,6 +408,24 @@ const firebase=require('firebase/compat/app');require('firebase/compat/firestore
  assert.equal((await data(admin,'ventas_integridad/adminReleaseSale')).vendedorId,'admin');
  assert.equal((await data(admin,'transacciones/adminReleaseSale_0')).monto,10);
  });
+ await test('Registro histórico sin rol no tiene acceso operativo',async()=>{
+ await env.withSecurityRulesDisabled(async c=>{await c.firestore().doc('usuarios/legacy').set({nombre:'Histórico'});});
+ await assertFails(db('legacy').doc('articulos/agua').get());
+ await assertFails(db('legacy').collection('transacciones').get());
+ });
+ await test('Admin cancela pedido huérfano sin modificar inventario ni saldo',async()=>{
+ const ref=admin.doc('pedidos_autoservicio/orphanRelease');
+ await env.withSecurityRulesDisabled(async c=>{await c.firestore().doc(ref.path).set({eventId:'cafe',vendedorId:'missing',estacionId:'missing',estado:'pendiente',total:42,items:[]});});
+ const stock=(await data(admin,'articulos/agua')).stock,saldo=(await data(admin,'pulseras/wallet')).saldoActual;
+ const patch={estado:'cancelado',canceladoPor:'admin',canceladoAt:firebase.firestore.FieldValue.serverTimestamp()};
+ await assertFails(cashier.doc(ref.path).update({...patch,canceladoPor:'seller1'}));
+ await assertFails(ref.update({...patch,total:0}));
+ await assertSucceeds(ref.update(patch));
+ assert.equal((await ref.get()).data().estado,'cancelado');
+ await assertFails(ref.update(patch));
+ assert.equal((await data(admin,'articulos/agua')).stock,stock);
+ assert.equal((await data(admin,'pulseras/wallet')).saldoActual,saldo);
+ });
  console.log('Resultado: '+passed+' correctas, '+failed+' fallidas. Las fallidas requieren corrección antes de publicar.');
  if(failed)process.exitCode=1;
  }finally{await env.cleanup();}
