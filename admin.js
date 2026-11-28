@@ -47,34 +47,22 @@ function getSkeletonTable(c,r){
 }
 
 // --- SISTEMA DE NOTIFICACIONES Y SONIDO ---
-function showSuccess(msg) { 
-    playSound('success'); 
+function showSuccess(msg, sound='success') { 
+    playSound(sound); 
     const a=document.getElementById('successAlert'); 
     a.textContent=msg; a.classList.add('show'); 
     setTimeout(()=>a.classList.remove('show'),3000); 
 }
 
 function showError(msg) { 
-    playSound('error'); 
+    playSound(/saldo insuficiente/i.test(String(msg))?'balance':'error'); 
     const a=document.getElementById('errorAlert'); 
     a.textContent=msg; a.classList.add('show'); 
     setTimeout(()=>a.classList.remove('show'),3000); 
 }
 
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-function playTone(freq, type, duration) { 
-    if (audioCtx.state === 'suspended') audioCtx.resume(); 
-    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); 
-    osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime); 
-    osc.connect(gain); gain.connect(audioCtx.destination); 
-    osc.start(); gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration); 
-    osc.stop(audioCtx.currentTime + duration); 
-}
-
-function playSound(t) {
-    // Silenciado temporalmente en pruebas de escritorio
-    return;
-}
+function playTone(){window.GeneSound?.play('order');}
+function playSound(type){window.GeneSound?.play(type);}
 
 // --- AUTENTICACIÓN E INICIALIZACIÓN ---
 let currentUserId = localStorage.getItem('userId'); // Solo una vez
@@ -242,14 +230,14 @@ function iniciarEscanerQR(modo) {
         cerrarScannerQR(); const id = decodedText.trim().toUpperCase(); 
         if(modo==='registro') { 
             document.getElementById('pulseraId').value=id; 
-            showSuccess('QR Leído: '+id); 
+            showSuccess('QR Leído: '+id, 'scan'); 
             verificarPulseraExistente(id); 
         } else { 
             const sel = document.getElementById('recargaPulsera'); 
             for(let i=0;i<sel.options.length;i++) { 
                 if(sel.options[i].text.includes(id)) { 
                     sel.value=sel.options[i].value; 
-                    mostrarSaldoActual(); 
+                    mostrarSaldoActual();playSound('scan'); 
                     break; 
                 } 
             } 
@@ -1800,8 +1788,7 @@ async function startNFCReadAdmin() {
                 }
 
                 document.getElementById('pulseraId').value = id;
-                showSuccess('✅ Chip disponible: ' + id);
-                playSound('scan');
+                showSuccess('✅ Chip disponible: ' + id,'scan');
                 
                 document.getElementById('nfcReaderAdmin').innerHTML = `
                     <div class="nfc-icon">✅</div>
@@ -1903,8 +1890,7 @@ async function startNFCRecarga() {
                 const inputMonto = document.getElementById('montoRecarga');
                 if (inputMonto) inputMonto.focus();
 
-                showSuccess(`Pulsera de ${data.nombre} lista para recargar`);
-                playSound('scan');
+                showSuccess(`Pulsera de ${data.nombre} lista para recargar`,'scan');
 
                 if (readerEl) {
                     readerEl.innerHTML = `
