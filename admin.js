@@ -423,7 +423,7 @@ function cargarPulseras() {
             sel += `<option value="${d.id}|${p.saldoActual}|${p.nombre}|${p.eventId}">${p.nombre} ($${p.saldoActual.toFixed(2)})</option>`;
         });
         
-        renderPulseras(allPulseras);
+        // The paginated bracelet table has its own snapshot listener (cargarPulserasTabla).
         
         const recargaSel = document.getElementById('recargaPulsera');
         if(recargaSel) recargaSel.innerHTML=sel;
