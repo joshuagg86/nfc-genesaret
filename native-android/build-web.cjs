@@ -5,18 +5,32 @@ execFileSync(process.execPath,[path.join(root,'build-training-hosting.cjs')],{cw
 const source=path.join(root,'.training-hosting');
 if(fs.existsSync(dest)&&fs.lstatSync(dest).isSymbolicLink())throw Error('Directorio inesperado');
 fs.rmSync(dest,{recursive:true,force:true});fs.cpSync(source,dest,{recursive:true});
-const p=path.join(dest,'config.js');let s=fs.readFileSync(p,'utf8');
+const p=path.join(dest,'config.js');
+const release=process.argv.includes('--release');
+let s=fs.readFileSync(p,'utf8');
 const old="const genesaretTraining = ['genesaret-capacitacion.web.app','genesaret-capacitacion.firebaseapp.com'].includes(location.hostname);";
-if(!s.includes(old)||!s.includes('const firebaseConfig=trainingConfig;'))throw Error('No se pudo verificar aislamiento de capacitación');
-s=s.replace(old,'const genesaretTraining = true;');
-s=s.replace("if(login){const a=", "if(false&&login){const a=");
-fs.writeFileSync(p,s);
+if(!s.includes(old)||!s.includes('const firebaseConfig=trainingConfig;'))throw Error('No se pudo verificar configuración');
 const admin=path.join(dest,'admin.html');let html=fs.readFileSync(admin,'utf8');
-html=html.replace(/<button[^>]*onclick="location\.href=window\.GenesaretTraining[^"]*"[^>]*>[\s\S]*?<\/button>/g,'');
-if(html.includes('location.href=window.GenesaretTraining'))throw Error('Cambio de entorno no eliminado');
+if(release){
+ s=fs.readFileSync(path.join(root,'config.js'),'utf8');
+ if(!s.includes(old)||!s.includes("const firebaseConfig = genesaretLocalTest"))throw Error('Configuración original inesperada');
+ s=s.replace(old,"const genesaretTraining = sessionStorage.getItem('gene.native.environment') !== 'production';");
+ s=s.replace("if (!genesaretLocalTest && !genesaretTraining) db.enablePersistence()","if (false) db.enablePersistence()");
+ s=s.replace("if (!genesaretLocalTest && !genesaretTraining && 'serviceWorker' in navigator)","if (false && 'serviceWorker' in navigator)");
+ s=s.replace("if(login){const a=document.createElement('a');","if(login){const a=document.createElement('a');a.addEventListener('click',e=>{e.preventDefault();window.GeneSwitchEnvironment();});");
+ s += "\nwindow.GeneSwitchEnvironment=async function(){if(window.geneSwitchBusy)return;const target=genesaretTraining?'producción REAL':'capacitación';if(!confirm('Cambiar a '+target+' y cerrar sesión?'))return;window.geneSwitchBusy=true;try{if(auth.currentUser){await Promise.race([db.waitForPendingWrites(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('Hay operaciones pendientes o falta conexión')),10000))]);await auth.signOut();}sessionStorage.setItem('gene.native.environment',genesaretTraining?'production':'training');location.replace('index.html');}catch(e){alert('No se pudo cambiar de entorno: '+e.message);}finally{window.geneSwitchBusy=false;}};\n";
+ const switchPattern=/onclick="location\.href=window\.GenesaretTraining[^"]*"/;
+ if(!switchPattern.test(html))throw Error('Selector de entorno no encontrado');
+ html=html.replace(switchPattern,'onclick="GeneSwitchEnvironment()"');
+}else{
+ s=s.replace(old,'const genesaretTraining = true;');
+ s=s.replace("if(login){const a=", "if(false&&login){const a=");
+ html=html.replace(/<button[^>]*onclick="location\.href=window\.GenesaretTraining[^"]*"[^>]*>[\s\S]*?<\/button>/g,'');
+ if(html.includes('location.href=window.GenesaretTraining'))throw Error('Cambio de entorno no eliminado');
+}
+fs.writeFileSync(p,s);
 fs.writeFileSync(admin,html);
-console.log('Paquete Android local: solo capacitación, sin acceso a producción.');
-
+console.log(release?'Paquete Android comercial: inicia en capacitación y permite cambiar a producción con confirmación.':'Paquete Android local: solo capacitación.');
 fs.copyFileSync(path.join(__dirname,'gene-native-nfc.js'),path.join(dest,'gene-native-nfc.js'));
 for(const name of ['admin.html','vendedor.html']){
  const file=path.join(dest,name);
