@@ -84,3 +84,7 @@ body.screen-admin.light-mode #dashboard .overview-kpi.ventas i{background:#fffff
 .screen-admin #reportes .reports-advanced .rep-section:not(.active){display:none}
 .screen-admin #reportes .reports-advanced .chart-bar,.screen-admin #reportes .reports-advanced .chart-line-bar{background:var(--app-gradient)!important}
 body.screen-admin.light-mode #reportes .stat-label[style*="22c55e"],body.screen-admin.light-mode #reportes .stat-value[style*="22c55e"],body.screen-admin.light-mode #reportes td[style*="22c55e"]{color:#087452!important}
+
+/* Product catalog contrast on light surfaces. */
+body.light-mode:is(.screen-admin,.screen-vendedor) .producto-card .prod-nombre{color:#143451!important;font-weight:750}
+body.light-mode:is(.screen-admin,.screen-vendedor) .producto-card .prod-precio{color:#075ca9!important;font-weight:800}
