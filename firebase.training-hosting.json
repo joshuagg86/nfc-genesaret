@@ -1,0 +1,21 @@
+{
+  "hosting": {
+    "site": "genesaret-capacitacion",
+    "public": ".training-hosting",
+    "ignore": [
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "headers": [
+      {
+        "source": "**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      }
+    ]
+  }
+}
