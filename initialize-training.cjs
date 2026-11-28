@@ -2,7 +2,7 @@
 const {initializeApp,applicationDefault}=require('firebase-admin/app');
 const {getFirestore,FieldValue}=require('firebase-admin/firestore');
 const {getAuth}=require('firebase-admin/auth');
-const {randomBytes}=require('node:crypto');
+const {randomBytes,randomInt}=require('node:crypto');
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
 if(process.env.FIRESTORE_EMULATOR_HOST||process.env.FIREBASE_AUTH_EMULATOR_HOST)throw Error('No usar con emuladores');
 const source=initializeApp({projectId:'nfc-genesaret',credential:applicationDefault()},'source-readonly');
@@ -28,7 +28,7 @@ async function main(){
   if(n==='insumos')v.stock=1000;
   set(dst.collection(n).doc(d.id),v);
  }
- for(const e of events){const id='training-'+e.id,code=randomBytes(4).toString('hex').toUpperCase();set(dst.collection('estaciones_venta').doc(id),{nombre:'Caja de capacitación',eventId:e.id,vendedorId:'training-vendedor',activo:true,codigoVinculacion:code,fecha:FieldValue.serverTimestamp()});set(dst.collection('estaciones_asignaciones').doc(e.id+'_training-vendedor'),{estacionId:id,eventId:e.id,vendedorId:'training-vendedor'});set(dst.collection('estaciones_codigos').doc(code),{estacionId:id});}
+ const codes=new Set();for(const e of events){const id='training-'+e.id;let code;do{code=String(randomInt(100000,1000000));}while(codes.has(code));codes.add(code);set(dst.collection('estaciones_venta').doc(id),{nombre:'Caja de capacitación',eventId:e.id,vendedorId:'training-vendedor',activo:true,codigoVinculacion:code,fecha:FieldValue.serverTimestamp()});set(dst.collection('estaciones_asignaciones').doc(e.id+'_training-vendedor'),{estacionId:id,eventId:e.id,vendedorId:'training-vendedor'});set(dst.collection('estaciones_codigos').doc(code),{estacionId:id});}
  const created=[];
  try{for(const u of users){await auth.createUser({uid:u.uid,email:u.email,password:u.password,displayName:'Capacitación '+u.role});created.push(u.uid);}await batch.commit();}
  catch(e){console.error('Inicialización no confirmada; conserva el archivo de accesos y revisa el proyecto de capacitación. No se realizaron escrituras en producción.');throw e;}
