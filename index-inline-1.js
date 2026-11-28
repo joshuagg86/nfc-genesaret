@@ -1,3 +1,4 @@
+const loginAlert = options => typeof Swal !== 'undefined' ? Swal.fire(options) : (showError(options.text || options.title), Promise.resolve());
 const rolePages={admin:'admin.html',vendedor:'vendedor.html',cocina:'cocina.html',tv:'tv-pedidos.html',autoservicio:'autoservicio.html'};
 // Utilidades UI
         const showError = (msg) => {
@@ -24,7 +25,7 @@ const rolePages={admin:'admin.html',vendedor:'vendedor.html',cocina:'cocina.html
 
         // 2. VALIDAR
         if (!email || !password) {
-            Swal.fire({
+            loginAlert({
                 icon: 'warning',
                 title: 'Faltan datos',
                 text: 'Por favor ingresa tu correo y contraseña',
@@ -71,12 +72,13 @@ const rolePages={admin:'admin.html',vendedor:'vendedor.html',cocina:'cocina.html
                 
                 // Mensajes de error amigables
                 let msg = "Error al iniciar sesión";
+                if(error.code === "permission-denied") msg = "Firebase bloqueó la lectura de tu perfil. Revisa las reglas de Firestore."
                 if(error.code === 'auth/wrong-password') msg = "La contraseña es incorrecta";
                 if(error.code === 'auth/user-not-found') msg = "Este correo no está registrado";
                 if(error.code === 'auth/invalid-email') msg = "El correo no es válido";
                 if(error.code === 'auth/too-many-requests') msg = "Muchos intentos fallidos. Espera un momento.";
 
-                Swal.fire({
+                loginAlert({
                     icon: 'error',
                     title: 'No pudimos entrar',
                     text: msg,
